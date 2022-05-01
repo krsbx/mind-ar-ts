@@ -81,7 +81,7 @@ const computeScreenCoordiate = (
   modelViewProjectionTransform: number[][],
   x: number,
   y: number,
-  z: number
+  z = 0
 ) => {
   const {
     x: ux,

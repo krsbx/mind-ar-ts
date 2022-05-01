@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { Vector2, Vector3 } from 'three';
 import { estimate } from './estimate';
 import { IRefineEstimations } from './interfaces';
 import { refineEstimate } from './refine-estimate';
@@ -12,7 +12,7 @@ class Estimator {
 
   // Solve homography between screen points and world points using Direct Linear Transformation
   // then decompose homography into rotation and translation matrix (i.e. modelViewTransform)
-  estimate({ screenCoords, worldCoords }: { screenCoords: Vector3[]; worldCoords: Vector3[] }) {
+  estimate({ screenCoords, worldCoords }: { screenCoords: Vector2[]; worldCoords: Vector3[] }) {
     const modelViewTransform = estimate({
       screenCoords,
       worldCoords,
@@ -40,6 +40,4 @@ class Estimator {
   }
 }
 
-module.exports = {
-  Estimator,
-};
+export { Estimator };

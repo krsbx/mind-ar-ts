@@ -1,5 +1,5 @@
 import { Matrix, inverse } from 'ml-matrix';
-import { Vector3 } from 'three';
+import { Vector2, Vector3 } from 'three';
 import { image_target } from '../../utils';
 
 // build world matrix with list of matching worldCoords|screenCoords
@@ -15,7 +15,7 @@ const estimate = ({
   worldCoords,
   projectionTransform,
 }: {
-  screenCoords: Vector3[];
+  screenCoords: Vector2[];
   worldCoords: Vector3[];
   projectionTransform: number[][];
 }) => {

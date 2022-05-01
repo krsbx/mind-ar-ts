@@ -1,10 +1,10 @@
-import { Vector3 } from 'three';
+import { Vector2, Vector3 } from 'three';
 
 export interface IRefineEstimations {
   initialModelViewTransform: number[][];
   projectionTransform: number[][];
   worldCoords: Vector3[];
-  screenCoords: Vector3[];
+  screenCoords: Vector2[];
 }
 
 export interface IICP extends IRefineEstimations {
