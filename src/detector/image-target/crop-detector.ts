@@ -31,17 +31,17 @@ class CropDetector {
     // crop center
     const startY = Math.floor(this.height / 2 - this.cropSize / 2);
     const startX = Math.floor(this.width / 2 - this.cropSize / 2);
-    const result = this._detect(inputImageT, startX, startY) as any;
+    const result = this._detect(inputImageT, startX, startY);
+    const debugExtra = result.debugExtra as typeof result.debugExtra & Record<any, any>;
 
     if (this.debugMode && result.debugExtra)
-      result.debugExtra = {
-        ...result.debugExtra,
-        crop: {
-          startX,
-          startY,
-          cropSize: this.cropSize,
-        },
+      debugExtra.crop = {
+        startX,
+        startY,
+        cropSize: this.cropSize,
       };
+
+    result.debugExtra = debugExtra;
 
     return result;
   }
@@ -69,8 +69,8 @@ class CropDetector {
   _detect(inputImageT: tf.Tensor<tf.Rank>, startX: number, startY: number) {
     const cropInputImageT = inputImageT.slice([startY, startX], [this.cropSize, this.cropSize]);
 
-    const { featurePoints, ...result } = this.detector.detect(cropInputImageT);
-    const debugExtra = result.debugExtra as any;
+    const { featurePoints, debugExtra: debExtr } = this.detector.detect(cropInputImageT);
+    const debugExtra = debExtr as typeof debExtr & Record<any, any>;
 
     featurePoints.forEach((p) => {
       p.x += startX;
