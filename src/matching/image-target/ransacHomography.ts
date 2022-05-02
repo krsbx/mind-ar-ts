@@ -32,7 +32,8 @@ const computeHomography = (options: any) => {
 
   const randomizer = image_target.createRandomizer();
 
-  const perm = [];
+  const perm: number[] = [];
+
   for (let i = 0; i < srcPoints.length; i++) {
     perm[i] = i;
   }
@@ -45,7 +46,8 @@ const computeHomography = (options: any) => {
   // build numerous hypotheses by randoming draw four points
   // TODO: optimize: if number of points is less than certain number, can brute force all combinations
   let trial = 0;
-  const Hs = [];
+  const Hs: number[][] = [];
+
   while (trial < maxTrials && Hs.length < numHypothesis) {
     trial += 1;
 
@@ -70,7 +72,8 @@ const computeHomography = (options: any) => {
       [srcPoints[perm[0]], srcPoints[perm[1]], srcPoints[perm[2]], srcPoints[perm[3]]],
       [dstPoints[perm[0]], dstPoints[perm[1]], dstPoints[perm[2]], dstPoints[perm[3]]]
     );
-    if (H === null) continue;
+
+    if (!H) continue;
 
     if (!_checkHomographyPointsGeometricallyConsistent({ H, testPoints })) continue;
 
@@ -105,9 +108,8 @@ const computeHomography = (options: any) => {
       }
     }
 
-    hypotheses.sort((h1, h2) => {
-      return h1.cost - h2.cost;
-    });
+    hypotheses.sort((h1, h2) => h1.cost - h2.cost);
+
     hypotheses.splice(-Math.floor((hypotheses.length + 1) / 2)); // keep the best half
   }
 
@@ -135,7 +137,8 @@ const _checkHeuristics = ({
   keyframe: ImageData;
 }) => {
   const HInv = matrixInverse33(H, 0.00001);
-  if (HInv === null) return false;
+
+  if (!HInv) return false;
 
   const mp: number[][] = [];
 

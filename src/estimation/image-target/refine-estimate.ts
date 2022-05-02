@@ -93,7 +93,7 @@ const refineEstimate = ({
     }
   }
 
-  if (finalModelViewTransform === null) return null;
+  if (!finalModelViewTransform) return null;
 
   // de-normalize
   finalModelViewTransform[0][3] =

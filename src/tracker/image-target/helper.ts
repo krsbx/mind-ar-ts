@@ -201,7 +201,8 @@ const selectFeature = (options: IOptions) => {
           imageDataCumsum,
           imageDataSqrCumsum,
         });
-        if (sim === null) continue;
+
+        if (!sim) continue;
 
         if (sim < min) {
           min = sim;
@@ -228,10 +229,12 @@ const selectFeature = (options: IOptions) => {
     for (let j = -occSize; j <= occSize; j++) {
       for (let i = -occSize; i <= occSize; i++) {
         if (cy + j < 0 || cy + j >= height || cx + i < 0 || cx + i >= width) continue;
+
         image2[(cy + j) * width + (cx + i)] = 1.0;
       }
     }
   }
+
   return coords;
 };
 
