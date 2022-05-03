@@ -1,10 +1,5 @@
 // Ref: https://jaantollander.com/post/noise-filtering-using-one-euro-filter/#mjx-eqn%3A1
 
-interface IConstructor {
-  minCutOff: number;
-  beta: number;
-}
-
 const smoothingFactor = (te: number, cutoff: number) => {
   const r = 2 * Math.PI * cutoff * te;
 
@@ -22,7 +17,7 @@ class OneEuroFilter {
   private tPrev: number | null;
   private initialized: boolean;
 
-  constructor({ minCutOff, beta }: IConstructor) {
+  constructor({ minCutOff, beta }: { minCutOff: number; beta: number }) {
     this.minCutOff = minCutOff;
     this.beta = beta;
     this.dCutOff = 0.001; // period in milliseconds, so default to 0.001 = 1Hz

@@ -1,9 +1,9 @@
-import tf from '@tensorflow/tfjs';
-import THREE from 'three';
-import { Controller } from './controller/image-target';
-import { Compiler } from './compiler/image-target';
+import * as tf from '@tensorflow/tfjs';
+import * as THREE from 'three';
+import { Controller } from './image-target/controller';
+import { Compiler } from './image-target/compiler';
 import { UI } from './ui/ui';
-import { MindARThree } from './three/image-target';
+import { MindARThree } from './image-target/three';
 
 declare global {
   interface Window {
@@ -13,8 +13,8 @@ declare global {
         Compiler: typeof Compiler;
         UI: typeof UI;
         MindARThree: typeof MindARThree;
-        THREE: typeof THREE;
-        tf: typeof tf;
+        THREE: THREE;
+        tf: tf;
       };
       FACE: {
         Controller: typeof Controller;

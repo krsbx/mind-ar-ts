@@ -1,4 +1,4 @@
-import tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   AR2_DEFAULT_TS,

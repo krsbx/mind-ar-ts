@@ -3,6 +3,8 @@ import { Estimator } from './estimation/estimator';
 import { WorkerEvent } from './utils/types/controller';
 import { WORKER_EVENT } from './utils/constant/controller';
 
+const ctx: Worker = self as any;
+
 let matchingDataList: any[] = [];
 let debugMode = false;
 let matcher: Matcher;
@@ -43,7 +45,7 @@ const match = (data: any) => {
     }
   }
 
-  postMessage({
+  ctx.postMessage({
     type: 'matchDone',
     targetIndex: matchedTargetIndex,
     modelViewTransform: matchedModelViewTransform,
@@ -58,13 +60,14 @@ const trackUpdate = (data: any) => {
     worldCoords,
     screenCoords,
   });
-  postMessage({
+
+  ctx.postMessage({
     type: 'trackUpdateDone',
     modelViewTransform: finalModelViewTransform,
   });
 };
 
-onmessage = (msg) => {
+ctx.addEventListener('message', (msg) => {
   const { data } = msg;
 
   switch (data.type as WorkerEvent) {
@@ -80,4 +83,4 @@ onmessage = (msg) => {
     default:
       break;
   }
-};
+});

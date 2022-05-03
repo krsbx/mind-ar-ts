@@ -105,17 +105,11 @@ const extract = (image: ImageData) => {
     k--;
   }
 
-  //console.log("image size: ", width * height);
-  //console.log("extracted featues: ", allCount);
-  //console.log("filtered featues: ", filteredCount);
-
   for (let i = 0; i < isPixelSelected.length; i++) {
     if (isPixelSelected[i]) {
       if (dValue[i] * 1000 < k) isPixelSelected[i] = false;
     }
   }
-
-  //console.log("selected count: ", isPixelSelected.reduce((a, b) => {return a + (b?1:0);}, 0));
 
   // Step 2
   // prebuild cumulative sum matrix for fast computation

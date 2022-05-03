@@ -1,5 +1,6 @@
-import tf from '@tensorflow/tfjs';
-import msgpack from '@msgpack/msgpack';
+import * as tf from '@tensorflow/tfjs';
+import * as msgpack from '@msgpack/msgpack';
+import CompilerWorker from './compiler.worker.ts';
 import { Detector } from './detector/detector';
 import { buildImageList, buildTrackingImageList } from './image-list';
 import { build as hierarchicalClusteringBuild } from './matching/hierarchical-clustering';
@@ -92,9 +93,9 @@ class Compiler {
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
         return new Promise<any>((resolve) => {
-          const worker = new Worker('./worker.ts');
+          const worker = new CompilerWorker();
 
-          worker.onmessage = (e) => {
+          worker.onmessage = (e: MessageEvent) => {
             if (e.data.type === 'progress') {
               progressCallback(50 + e.data.percent);
             } else if (e.data.type === 'compileDone') {
@@ -119,7 +120,6 @@ class Compiler {
     const dataList = [];
     for (let i = 0; i < this.data.length; i++) {
       dataList.push({
-        //targetImage: this.data[i].targetImage,
         targetImage: {
           width: this.data[i].targetImage.width,
           height: this.data[i].targetImage.height,
@@ -174,11 +174,10 @@ const _extractMatchingFeatures = async (
 
     await tf.nextFrame();
     tf.tidy(() => {
-      //const inputT = tf.tensor(image.data, [image.data.length]).reshape([image.height, image.width]);
       const inputT = tf
         .tensor(image.data, [image.data.length], 'float32')
         .reshape([image.height, image.width]);
-      //const ps = detector.detectImageData(image.data);
+
       const { featurePoints: ps } = detector.detect(inputT);
 
       const maximaPoints = ps.filter((p) => p.maxima);

@@ -10,6 +10,13 @@ const imageTarget = {
   MindARThree,
 };
 
+if (!window.MINDAR) window.MINDAR = {} as typeof window.MINDAR;
+
 if (!window.MINDAR.IMAGE) window.MINDAR.IMAGE = imageTarget as typeof window.MINDAR.IMAGE;
+else
+  window.MINDAR.IMAGE = {
+    ...window.MINDAR.IMAGE,
+    ...imageTarget,
+  };
 
 export default imageTarget;

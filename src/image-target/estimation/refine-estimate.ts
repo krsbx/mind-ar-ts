@@ -85,8 +85,6 @@ const refineEstimate = ({
 
     updatedModelViewTransform = ret.modelViewTransform;
 
-    //console.log("err", ret.err);
-
     if (ret.err < TRACKING_THRESH) {
       finalModelViewTransform = updatedModelViewTransform;
       break;
@@ -179,8 +177,6 @@ const _doICP = ({
     }
 
     err1 /= worldCoords.length;
-
-    //console.log("icp loop", inlierProb, l, err1);
 
     if (err1 < ICP_BREAK_LOOP_ERROR_THRESH) break;
     //if (l > 0 && err1 < ICP_BREAK_LOOP_ERROR_THRESH2 && err1/err0 > ICP_BREAK_LOOP_ERROR_RATIO_THRESH) break;

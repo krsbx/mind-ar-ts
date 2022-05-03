@@ -1,4 +1,5 @@
-import tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
+import ControllerWorker from './controller.worker.ts';
 import { Tracker } from './tracker/tracker';
 import { CropDetector } from './detector/crop-detector';
 import { Compiler } from './compiler';
@@ -12,6 +13,7 @@ import {
   ON_UPDATE_EVENT,
 } from './utils/constant/controller';
 import { IOnUpdate } from './utils/types/controller';
+import { ControllerConstructor } from './utils/types/image-target';
 
 class Controller {
   private inputWidth: number;
@@ -46,7 +48,7 @@ class Controller {
     missTolerance = null,
     filterMinCF = null,
     filterBeta = null,
-  }: IConstructor) {
+  }: ControllerConstructor) {
     this.inputWidth = inputWidth;
     this.inputHeight = inputHeight;
     this.maxTrack = maxTrack;
@@ -85,7 +87,7 @@ class Controller {
       far: far,
     });
 
-    this.worker = new Worker('./worker.ts');
+    this.worker = new ControllerWorker();
     this.workerMatchDone = null;
     this.workerTrackDone = null;
     this.worker.onmessage = (e) => {
@@ -486,15 +488,3 @@ class Controller {
 }
 
 export { Controller };
-
-interface IConstructor {
-  inputWidth: number;
-  inputHeight: number;
-  onUpdate?: (data: IOnUpdate) => void | null;
-  debugMode?: boolean;
-  maxTrack?: number;
-  warmupTolerance?: number | null;
-  missTolerance?: number | null;
-  filterMinCF?: number | null;
-  filterBeta?: number | null;
-}

@@ -165,8 +165,6 @@ const computeHoughMatches = (options: {
     (maxVoteIndex - binX - binY * numXBins - binAngle * numXYBins) / numXYAngleBins
   );
 
-  //console.log("hough voted: ", {binX, binY, binAngle, binScale, maxVoteIndex});
-
   const houghMatches = [];
   for (let i = 0; i < matches.length; i++) {
     if (!querypointValids[i]) continue;

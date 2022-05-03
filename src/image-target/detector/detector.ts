@@ -1,6 +1,6 @@
 // result should be similar to previous
 // improve freka descriptors computation
-import tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   EDGE_HESSIAN_THRESHOLD,
@@ -159,9 +159,7 @@ class Detector {
         const v4 = freakDescriptorsArr[i][m + 3];
 
         const combined = v1 * 16777216 + v2 * 65536 + v3 * 256 + v4;
-        //if (m === freakDescriptorsArr[i].length-4) { // last one, legacy reason
-        //  combined /= 32;
-        //}
+
         descriptors.push(combined);
       }
 
@@ -181,8 +179,7 @@ class Detector {
         descriptors: descriptors,
       });
     }
-    //console.log("feature points", featurePoints);
-    //console.table(tf.memory());
+
     return { featurePoints, debugExtra };
   }
 

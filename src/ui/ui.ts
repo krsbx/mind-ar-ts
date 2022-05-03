@@ -1,5 +1,4 @@
 import './ui.scss';
-import { UiConfirmation } from './interface';
 import loadingHTML from './loading.html?raw';
 import compatibilityHTML from './compatibility.html?raw';
 import scanningHTML from './scanning.html?raw';
@@ -9,7 +8,15 @@ class UI {
   private compatibilityModal: HTMLElement;
   private scanningMask: HTMLElement;
 
-  constructor({ uiLoading, uiScanning, uiError }: IConstructor) {
+  constructor({
+    uiLoading,
+    uiScanning,
+    uiError,
+  }: {
+    uiLoading: string;
+    uiScanning: string;
+    uiError: string;
+  }) {
     if (uiLoading === 'yes') this.loadingModal = this._loadHTML(loadingHTML);
     else this.loadingModal = document.querySelector(uiLoading);
 
@@ -61,9 +68,3 @@ class UI {
 }
 
 export { UI };
-
-interface IConstructor {
-  uiLoading: UiConfirmation | string;
-  uiScanning: UiConfirmation | string;
-  uiError: UiConfirmation | string;
-}

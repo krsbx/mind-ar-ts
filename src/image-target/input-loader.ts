@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 
 // More efficient implementation for tf.browser.fromPixels
@@ -21,7 +20,7 @@ class InputLoader {
 
     const canvas = document.createElement('canvas') as unknown as HTMLCanvasElement;
 
-    const context = canvas.getContext('2d')!;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
     context.canvas.width = width;
     context.canvas.height = height;
     this.context = context;

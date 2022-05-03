@@ -1,10 +1,11 @@
-import THREE from 'three';
-import tf from '@tensorflow/tfjs';
+import * as THREE from 'three';
+import * as tf from '@tensorflow/tfjs';
 import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
 import { Controller } from './controller';
 import { UI } from '../ui/ui';
 import { ON_UPDATE_EVENT } from './utils/constant/controller';
 import { IOnUpdate } from './utils/types/controller';
+import { ThreeConstructor, IAnchor } from './utils/types/image-target';
 
 const cssScaleDownMatrix = new THREE.Matrix4();
 cssScaleDownMatrix.compose(
@@ -43,7 +44,7 @@ class MindARThree {
     filterBeta = null,
     warmupTolerance = null,
     missTolerance = null,
-  }: IConstructor) {
+  }: ThreeConstructor) {
     this.container = container;
     this.imageTargetSrc = imageTargetSrc;
     this.maxTrack = maxTrack;
@@ -322,30 +323,16 @@ class MindARThree {
   }
 }
 
-window.MINDAR.IMAGE.MindARThree = MindARThree;
-window.MINDAR.IMAGE.THREE = THREE;
-window.MINDAR.IMAGE.tf = tf;
+if (!window.MINDAR) window.MINDAR = {} as typeof window.MINDAR;
+
+if (!window.MINDAR.IMAGE)
+  window.MINDAR.IMAGE = { MindARThree, THREE, tf } as typeof window.MINDAR.IMAGE;
+else
+  window.MINDAR.IMAGE = {
+    ...window.MINDAR.IMAGE,
+    MindARThree,
+    THREE,
+    tf,
+  };
 
 export { MindARThree };
-
-interface IConstructor {
-  container: HTMLDivElement;
-  imageTargetSrc: string;
-  maxTrack: number;
-  uiLoading?: string;
-  uiScanning?: string;
-  uiError?: string;
-  filterMinCF?: number | null;
-  filterBeta?: number | null;
-  warmupTolerance?: number | null;
-  missTolerance?: number | null;
-}
-
-interface IAnchor {
-  group: THREE.Group;
-  targetIndex: number;
-  onTargetFound: (() => void) | null;
-  onTargetLost: (() => void) | null;
-  css: boolean;
-  visible: boolean;
-}
