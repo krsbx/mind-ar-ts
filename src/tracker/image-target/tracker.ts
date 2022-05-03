@@ -20,12 +20,8 @@ import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 const PRECISION_ADJUST = 1000;
 
 class Tracker {
-  private markerDimensions: number[][];
-  private trackingDataList: number[][];
   private projectionTransform: number[][];
   private trackingKeyframeList: any[];
-  private inputWidth: number;
-  private inputHeight: number;
   private debugMode: boolean;
   private kernelCaches: Record<any, any>;
   private featurePointsListT: tf.Tensor<tf.Rank>[];
@@ -33,19 +29,15 @@ class Tracker {
   private imagePropertiesListT: tf.Tensor<tf.Rank>[];
 
   constructor(
-    markerDimensions: number[][],
+    _markerDimensions: number[][],
     trackingDataList: number[][],
     projectionTransform: number[][],
-    inputWidth: number,
-    inputHeight: number,
+    _inputWidth: number,
+    _inputHeight: number,
     debugMode = false
   ) {
-    this.markerDimensions = markerDimensions;
-    this.trackingDataList = trackingDataList;
     this.projectionTransform = projectionTransform;
     this.debugMode = debugMode;
-    this.inputWidth = inputWidth;
-    this.inputHeight = inputHeight;
 
     this.trackingKeyframeList = [];
 

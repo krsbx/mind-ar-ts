@@ -213,7 +213,7 @@ const _query = ({ node, keypoints, querypoint, queue, keypointIndexes, numPop }:
   }
 
   if (numPop < CLUSTER_MAX_POP && queue.length > 0) {
-    const { node, d } = queue.pop();
+    const { node } = queue.pop();
     numPop += 1;
     _query({ node, keypoints, querypoint, queue, keypointIndexes, numPop });
   }

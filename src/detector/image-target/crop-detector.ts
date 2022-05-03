@@ -7,7 +7,6 @@ class CropDetector {
   private debugMode: boolean;
   private cropSize: number;
   private detector: Detector;
-  private kernelCaches: Record<any, any>;
   private lastRandomIndex: number;
 
   constructor(width: number, height: number, debugMode = false) {
@@ -23,7 +22,6 @@ class CropDetector {
 
     this.detector = new Detector(cropSize, cropSize, debugMode);
 
-    this.kernelCaches = {};
     this.lastRandomIndex = 4;
   }
 
