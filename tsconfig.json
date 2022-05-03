@@ -16,7 +16,16 @@
     "noImplicitReturns": true,
     "skipLibCheck": true,
     "allowJs": true,
-    "outDir": "out"
+    "outDir": "out",
+    "baseUrl": "src",
+    "paths": {
+      "image-target/*": [
+        "./src/image-target/*"
+      ],
+      "utils/*": [
+        "./src/utils/*"
+      ]
+    },
   },
   "include": ["src"]
 }
