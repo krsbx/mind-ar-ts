@@ -1,7 +1,7 @@
 import TinyQueue from 'tinyqueue';
 import { compute as hammingCompute } from './hamming-distance';
 import { computeHoughMatches } from './hough';
-import { computeHomography } from './ransacHomography.js';
+import { computeHomography } from './ransacHomography';
 import { Geometry } from '../utils';
 import {
   CLUSTER_MAX_POP,

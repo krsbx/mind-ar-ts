@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as tf from '@tensorflow/tfjs';
-import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
 import { Controller } from './controller';
 import { UI } from '../ui/ui';
 import { ON_UPDATE_EVENT } from './utils/constant/controller';

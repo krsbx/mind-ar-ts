@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --config webpack.config.prod.ts",
+    "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --watch --config webpack.config.dev.ts",
     "preview": "vite preview",
     "prepare": "husky install"
   },
@@ -17,7 +19,7 @@
     "@commitlint/cli": "^16.2.4",
     "@commitlint/config-conventional": "^16.2.4",
     "@types/aframe": "^1.2.0",
-    "@types/stats": "^0.16.30",
+    "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "@typescript-eslint/parser": "^5.21.0",
     "css-loader": "^6.7.1",
@@ -27,10 +29,20 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.0.0",
     "html-loader": "^3.1.0",
+    "husky": "^7.0.4",
+    "node-sass": "^7.0.1",
     "prettier": "^2.6.2",
+    "sass": "^1.51.0",
+    "sass-loader": "^12.6.0",
     "style-loader": "^3.3.1",
+    "terser-webpack-plugin": "^5.3.1",
+    "ts-loader": "^9.3.0",
+    "tsconfig-paths": "^4.0.0",
     "typescript": "^4.5.4",
-    "vite": "^2.9.5"
+    "vite": "^2.9.5",
+    "webpack": "^5.72.0",
+    "webpack-cli": "^4.9.2",
+    "worker-loader": "^3.0.8"
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",
