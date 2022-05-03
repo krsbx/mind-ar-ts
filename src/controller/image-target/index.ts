@@ -24,10 +24,10 @@ class Controller {
   private cropDetector: CropDetector;
   private inputLoader: InputLoader;
   private markerDimensions: number[][];
-  private onUpdate: (event: IOnUpdate) => void;
+  private onUpdate: (event: IOnUpdate) => void | null;
   private debugMode: boolean;
   private processingVideo: boolean;
-  private interestedTargetIndex: number;
+  public interestedTargetIndex: number;
   private projectionTransform: number[][];
   private projectionMatrix: number[];
   private worker: Worker;
@@ -102,7 +102,7 @@ class Controller {
 
   addImageTargets(fileURL: string) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
+    return new Promise<ReturnType<Controller['addImageTargetsFromBuffer']>>(async (resolve) => {
       const content = await fetch(fileURL);
       const buffer = await content.arrayBuffer();
       const result = this.addImageTargetsFromBuffer(buffer);
@@ -354,7 +354,7 @@ class Controller {
 
   _workerMatch(featurePoints: any, targetIndexes: number[]) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
+    return new Promise<any>(async (resolve) => {
       this.workerMatchDone = (data) => {
         resolve({
           targetIndex: data.targetIndex,
@@ -369,7 +369,7 @@ class Controller {
 
   _workerTrackUpdate(modelViewTransform: number[][], trackingFeatures: any) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
+    return new Promise<any>(async (resolve) => {
       this.workerTrackDone = (data) => {
         resolve(data.modelViewTransform);
       };
@@ -490,7 +490,7 @@ export { Controller };
 interface IConstructor {
   inputWidth: number;
   inputHeight: number;
-  onUpdate?: () => void;
+  onUpdate?: (data: IOnUpdate) => void | null;
   debugMode?: boolean;
   maxTrack?: number;
   warmupTolerance?: number | null;

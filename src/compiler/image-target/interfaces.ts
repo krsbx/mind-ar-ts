@@ -1,4 +1,4 @@
-export interface IMaximaMinimaPoint {
+interface IMaximaMinimaPoint {
   maxima: boolean;
   x: number;
   y: number;
@@ -7,9 +7,9 @@ export interface IMaximaMinimaPoint {
   descriptors: number[];
 }
 
-export type ImageDataWithScale = ImageData & { scale: number };
+type ImageDataWithScale = ImageData & { scale: number };
 
-export interface IKeyFrame {
+interface IKeyFrame {
   maximaPoints: IMaximaMinimaPoint[];
   minimaPoints: IMaximaMinimaPoint[];
   maximaPointsCluster: {
@@ -22,3 +22,5 @@ export interface IKeyFrame {
   height: number;
   scale: any;
 }
+
+export type { IMaximaMinimaPoint, ImageDataWithScale, IKeyFrame };

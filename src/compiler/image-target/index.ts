@@ -26,7 +26,7 @@ class Compiler {
   // input html Images
   compileImageTargets(images: ImageData[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
+    return new Promise<typeof this.data>(async (resolve) => {
       const targetImages: ImageData[] = [];
 
       for (let i = 0; i < images.length; i++) {
@@ -92,7 +92,7 @@ class Compiler {
 
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
-        return new Promise((resolve) => {
+        return new Promise<any>((resolve) => {
           const worker = new Worker('./worker.ts');
 
           worker.onmessage = (e) => {
