@@ -12,6 +12,7 @@
     "build": "tsc && vite build",
     "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --config webpack.config.prod.ts",
     "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --watch --config webpack.config.dev.ts",
+    "lint": "eslint --cache --fix src/*",
     "preview": "vite preview",
     "prepare": "husky install"
   },
