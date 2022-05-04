@@ -9,6 +9,10 @@ import {
   INLIER_THRESHOLD,
   MIN_NUM_INLIERS,
 } from '../utils/constant/matching';
+import { IDebugExtra, IMatches } from '../utils/types/detector';
+import { IKeyFrame, IMaximaMinimaPoint } from '../utils/types/compiler';
+import { INode, INodeQueue } from '../utils/types/matching';
+import { Helper } from '../../libs';
 
 const { multiplyPointHomographyInhomogenous, matrixInverse33 } = Geometry;
 
@@ -22,13 +26,13 @@ const match = ({
   queryheight,
   debugMode,
 }: {
-  keyframe: any;
-  querypoints: any[];
+  keyframe: IKeyFrame;
+  querypoints: IMaximaMinimaPoint[];
   querywidth: number;
   queryheight: number;
   debugMode: boolean;
 }) => {
-  const debugExtra: Record<any, any> = {};
+  const debugExtra: IDebugExtra = {} as IDebugExtra;
 
   const matches = [];
   for (let j = 0; j < querypoints.length; j++) {
@@ -40,11 +44,9 @@ const match = ({
       ? keyframe.maximaPointsCluster.rootNode
       : keyframe.minimaPointsCluster.rootNode;
 
-    const keypointIndexes: any[] = [];
+    const keypointIndexes: number[] = [];
 
-    const queue = new TinyQueue([], (a1: any, a2: any) => {
-      return a1.d - a2.d;
-    });
+    const queue = new TinyQueue([], (a1: INodeQueue, a2: INodeQueue) => a1.d - a2.d);
 
     // query all potential keypoints
     _query({ node: rootNode, keypoints, querypoint, queue, keypointIndexes, numPop: 0 });
@@ -57,20 +59,21 @@ const match = ({
       const keypoint = keypoints[keypointIndexes[k]];
 
       const d = hammingCompute({ v1: keypoint.descriptors, v2: querypoint.descriptors });
+
       if (d < bestD1) {
         bestD2 = bestD1;
         bestD1 = d;
-        bestIndex = keypointIndexes[k];
+        bestIndex = k;
       } else if (d < bestD2) {
         bestD2 = d;
       }
     }
+
     if (
       bestIndex !== -1 &&
       (bestD2 === MAX_SAFE_INTEGER || (1.0 * bestD1) / bestD2 < HAMMING_THRESHOLD)
-    ) {
+    )
       matches.push({ querypoint, keypoint: keypoints[bestIndex] });
-    }
   }
 
   if (debugMode) debugExtra.matches = matches;
@@ -88,8 +91,8 @@ const match = ({
   if (debugMode) debugExtra.houghMatches = houghMatches;
 
   const H = computeHomography({
-    srcPoints: houghMatches.map((m) => [m.keypoint.x, m.keypoint.y]),
-    dstPoints: houghMatches.map((m) => [m.querypoint.x, m.querypoint.y]),
+    srcPoints: houghMatches.map((m) => [m.keypoint.x, m.keypoint.y]) as number[][],
+    dstPoints: houghMatches.map((m) => [m.querypoint.x, m.querypoint.y]) as number[][],
     keyframe,
   });
 
@@ -181,7 +184,21 @@ const match = ({
   return { H: H2, matches: inlierMatches2, debugExtra };
 };
 
-const _query = ({ node, keypoints, querypoint, queue, keypointIndexes, numPop }: any) => {
+const _query = ({
+  node,
+  keypoints,
+  querypoint,
+  queue,
+  keypointIndexes,
+  numPop,
+}: {
+  node: INode;
+  keypoints: IMaximaMinimaPoint[];
+  querypoint: IMaximaMinimaPoint;
+  queue: TinyQueue<INodeQueue>;
+  keypointIndexes: number[];
+  numPop: number;
+}) => {
   if (node.leaf) {
     for (let i = 0; i < node.pointIndexes.length; i++) {
       keypointIndexes.push(node.pointIndexes[i]);
@@ -195,6 +212,8 @@ const _query = ({ node, keypoints, querypoint, queue, keypointIndexes, numPop }:
   for (let i = 0; i < node.children.length; i++) {
     const childNode = node.children[i];
     const centerPointIndex = childNode.centerPointIndex;
+
+    if (Helper.isNil(centerPointIndex)) continue;
 
     const d = hammingCompute({
       v1: keypoints[centerPointIndex].descriptors,
@@ -214,6 +233,7 @@ const _query = ({ node, keypoints, querypoint, queue, keypointIndexes, numPop }:
       queue.push({ node: node.children[i], d: distances[i] });
     }
   }
+
   for (let i = 0; i < node.children.length; i++) {
     if (distances[i] === minD) {
       _query({ node: node.children[i], keypoints, querypoint, queue, keypointIndexes, numPop });
@@ -221,18 +241,23 @@ const _query = ({ node, keypoints, querypoint, queue, keypointIndexes, numPop }:
   }
 
   if (numPop < CLUSTER_MAX_POP && queue.length > 0) {
-    const { node } = queue.pop();
-    numPop += 1;
-    _query({ node, keypoints, querypoint, queue, keypointIndexes, numPop });
+    const popResult = queue.pop();
+
+    if (popResult) {
+      const { node } = popResult as INodeQueue;
+      numPop += 1;
+
+      _query({ node, keypoints, querypoint, queue, keypointIndexes, numPop });
+    }
   }
 };
 
-const _findInlierMatches = (options: { H: number[]; matches: any[]; threshold: number }) => {
+const _findInlierMatches = (options: { H: number[]; matches: IMatches[]; threshold: number }) => {
   const { H, matches, threshold } = options;
 
   const threshold2 = threshold * threshold;
 
-  const goodMatches = [];
+  const goodMatches: IMatches[] = [];
 
   for (let i = 0; i < matches.length; i++) {
     const querypoint = matches[i].querypoint;

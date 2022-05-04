@@ -7,6 +7,8 @@ const WORKER_EVENT = {
   SETUP: 'setup',
   MATCH: 'match',
   TRACK_UPDATE: 'trackUpdate',
+  MATCH_DONE: 'matchDone',
+  TRACK_UPDATE_DONE: 'trackUpdateDone',
 } as const;
 
 const ON_UPDATE_EVENT = {

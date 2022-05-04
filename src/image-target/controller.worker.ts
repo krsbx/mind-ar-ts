@@ -1,23 +1,23 @@
+import { Vector2, Vector3 } from 'three';
 import { Matcher } from './matching/matcher';
 import { Estimator } from './estimation/estimator';
-import { WorkerEvent } from './utils/types/controller';
+import { IControllerWorker, WorkerEvent } from './utils/types/controller';
 import { WORKER_EVENT } from './utils/constant/controller';
+import { IKeyFrame } from './utils/types/compiler';
 
-const ctx: Worker = self as any;
-
-let matchingDataList: any[] = [];
+let matchingDataList: IKeyFrame[][] = [];
 let debugMode = false;
 let matcher: Matcher;
 let estimator: Estimator;
 
-const setup = (data: any) => {
+const setup = (data: IControllerWorker['SETUP']) => {
   matchingDataList = data.matchingDataList;
   debugMode = data.debugMode;
   matcher = new Matcher(data.inputWidth, data.inputHeight, debugMode);
   estimator = new Estimator(data.projectionTransform);
 };
 
-const match = (data: any) => {
+const match = (data: IControllerWorker['MATCH']) => {
   const interestedTargetIndexes = data.targetIndexes;
 
   let matchedTargetIndex = -1;
@@ -31,10 +31,14 @@ const match = (data: any) => {
       matchingDataList[matchingIndex],
       data.featurePoints
     );
+
     matchedDebugExtra = debugExtra;
 
-    if (keyframeIndex !== -1 && screenCoords && worldCoords) {
-      const modelViewTransform = estimator.estimate({ screenCoords, worldCoords });
+    if (keyframeIndex !== -1) {
+      const modelViewTransform = estimator.estimate({
+        screenCoords: screenCoords as Vector2[],
+        worldCoords: worldCoords as Vector3[],
+      });
 
       if (modelViewTransform) {
         matchedTargetIndex = matchingIndex;
@@ -45,29 +49,30 @@ const match = (data: any) => {
     }
   }
 
-  ctx.postMessage({
-    type: 'matchDone',
+  postMessage({
+    type: WORKER_EVENT.MATCH_DONE,
     targetIndex: matchedTargetIndex,
     modelViewTransform: matchedModelViewTransform,
     debugExtra: matchedDebugExtra,
   });
 };
 
-const trackUpdate = (data: any) => {
+const trackUpdate = (data: IControllerWorker['TRACK_UPDATE']) => {
   const { modelViewTransform, worldCoords, screenCoords } = data;
+
   const finalModelViewTransform = estimator.refineEstimate({
     initialModelViewTransform: modelViewTransform,
     worldCoords,
     screenCoords,
   });
 
-  ctx.postMessage({
-    type: 'trackUpdateDone',
+  postMessage({
+    type: WORKER_EVENT.TRACK_UPDATE_DONE,
     modelViewTransform: finalModelViewTransform,
   });
 };
 
-ctx.addEventListener('message', (msg) => {
+onmessage = (msg) => {
   const { data } = msg;
 
   switch (data.type as WorkerEvent) {
@@ -83,4 +88,7 @@ ctx.addEventListener('message', (msg) => {
     default:
       break;
   }
-});
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default null as any;

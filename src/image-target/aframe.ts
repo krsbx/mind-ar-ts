@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
 import { AEntity } from 'aframe';
 import { Matrix4 } from 'three';
@@ -72,9 +73,10 @@ AFRAME.registerSystem('mindar-image-system', {
     this.container = this.el.sceneEl.parentNode;
 
     if (this.showStats) {
-      this.mainStats = new Stats() as Stats;
+      this.mainStats = new Stats();
       this.mainStats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-      this.mainStats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;z-index:999';
+      this.mainStats.domElement.style.cssText =
+        'position: absolute; top: 0px; left: 0px; z-index: 999';
       this.container.appendChild(this.mainStats.domElement);
     }
 
@@ -105,9 +107,7 @@ AFRAME.registerSystem('mindar-image-system', {
   },
 
   pause: function (keepVideo = false) {
-    if (!keepVideo) {
-      this.video.pause();
-    }
+    if (!keepVideo) this.video.pause();
 
     this.controller.stopProcessVideo();
   },
@@ -123,16 +123,19 @@ AFRAME.registerSystem('mindar-image-system', {
     this.video.setAttribute('autoplay', '');
     this.video.setAttribute('muted', '');
     this.video.setAttribute('playsinline', '');
+
     this.video.style.position = 'absolute';
     this.video.style.top = '0px';
     this.video.style.left = '0px';
     this.video.style.zIndex = '-2';
+
     this.container.appendChild(this.video);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       // TODO: show unsupported error
       this.el.emit('arError', { error: 'VIDEO_FAIL' });
       this.ui.showCompatibility();
+
       return;
     }
 
@@ -158,8 +161,6 @@ AFRAME.registerSystem('mindar-image-system', {
   },
 
   _startAR: async function () {
-    if (!this.video) return;
-
     this.controller = new ControllerClass({
       inputWidth: this.video.videoWidth,
       inputHeight: this.video.videoHeight,
@@ -208,10 +209,10 @@ AFRAME.registerSystem('mindar-image-system', {
   },
 
   _resize: function () {
-    const { video, container, controller } = this;
+    const video = this.video;
+    const container = this.container;
 
-    let vw: number, vh: number; // display css width, height
-
+    let vw, vh; // display css width, height
     const videoRatio = video.videoWidth / video.videoHeight;
     const containerRatio = container.clientWidth / container.clientHeight;
 
@@ -223,7 +224,7 @@ AFRAME.registerSystem('mindar-image-system', {
       vh = vw / videoRatio;
     }
 
-    const proj = controller.getProjectionMatrix();
+    const proj = this.controller.getProjectionMatrix();
     const fov = (2 * Math.atan((1 / proj[5] / vh) * container.clientHeight) * 180) / Math.PI; // vertical fov
     const near = proj[14] / (proj[10] - 1.0);
     const far = proj[14] / (proj[10] + 1.0);
@@ -265,35 +266,22 @@ AFRAME.registerComponent('mindar-image', {
   },
 
   init: function () {
-    const {
-      imageTargetSrc,
-      maxTrack,
-      filterMinCF,
-      filterBeta,
-      missTolerance,
-      warmupTolerance,
-      showStats,
-      uiLoading,
-      uiScanning,
-      uiError,
-      autoStart,
-    } = this.data;
     const arSystem = this.el.sceneEl.systems['mindar-image-system'];
 
     arSystem.setup({
-      imageTargetSrc,
-      maxTrack,
-      filterMinCF: filterMinCF === -1 ? null : filterMinCF,
-      filterBeta: filterBeta === -1 ? null : filterBeta,
-      missTolerance: missTolerance === -1 ? null : missTolerance,
-      warmupTolerance: warmupTolerance === -1 ? null : warmupTolerance,
-      showStats,
-      uiLoading,
-      uiScanning,
-      uiError,
+      imageTargetSrc: this.data.imageTargetSrc,
+      maxTrack: this.data.maxTrack,
+      filterMinCF: this.data.filterMinCF === -1 ? null : this.data.filterMinCF,
+      filterBeta: this.data.filterBeta === -1 ? null : this.data.filterBeta,
+      missTolerance: this.data.missTolerance === -1 ? null : this.data.missTolerance,
+      warmupTolerance: this.data.warmupTolerance === -1 ? null : this.data.warmupTolerance,
+      showStats: this.data.showStats,
+      uiLoading: this.data.uiLoading,
+      uiScanning: this.data.uiScanning,
+      uiError: this.data.uiError,
     });
 
-    if (autoStart)
+    if (this.data.autoStart)
       this.el.sceneEl.addEventListener('renderstart', () => {
         arSystem.start();
       });
@@ -303,7 +291,7 @@ AFRAME.registerComponent('mindar-image', {
 AFRAME.registerComponent('mindar-image-target', {
   dependencies: ['mindar-image-system'],
   el: null as any,
-  postMatrix: new Matrix4() as Matrix4, // rescale the anchor to make width of 1 unit = physical width of card
+  postMatrix: null as unknown as Matrix4, // rescale the anchor to make width of 1 unit = physical width of card
 
   schema: {
     targetIndex: { type: 'number' },
@@ -334,11 +322,11 @@ AFRAME.registerComponent('mindar-image-target', {
     this.postMatrix.compose(position, quaternion, scale);
   },
 
-  updateWorldMatrix(worldMatrix: number[]) {
+  updateWorldMatrix(worldMatrix: number[] | null) {
     if (!this.el.object3D.visible && worldMatrix) this.el.emit('targetFound');
     else if (this.el.object3D.visible && !worldMatrix) this.el.emit('targetLost');
 
-    this.el.object3D.visible = worldMatrix;
+    this.el.object3D.visible = !!worldMatrix;
     if (!worldMatrix) return;
 
     const m = new AFRAME.THREE.Matrix4();

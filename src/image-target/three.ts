@@ -29,9 +29,9 @@ class MindARThree {
   private cssRenderer: CSS3DRenderer;
   private camera: THREE.PerspectiveCamera;
   private anchors: IAnchor[];
-  private controller?: Controller;
-  private video?: HTMLVideoElement;
-  private postMatrixs: THREE.Matrix4[];
+  private controller!: Controller;
+  private video!: HTMLVideoElement;
+  private postMatrixs!: THREE.Matrix4[];
 
   constructor({
     container,
@@ -52,10 +52,9 @@ class MindARThree {
     this.filterBeta = filterBeta;
     this.warmupTolerance = warmupTolerance;
     this.missTolerance = missTolerance;
-    this.postMatrixs = [];
-    this.anchors = [];
 
     this.ui = new UI({ uiLoading, uiScanning, uiError });
+
     this.scene = new THREE.Scene();
     this.cssScene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -63,6 +62,7 @@ class MindARThree {
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.camera = new THREE.PerspectiveCamera();
+    this.anchors = [];
 
     this.renderer.domElement.style.position = 'absolute';
     this.cssRenderer.domElement.style.position = 'absolute';
@@ -79,8 +79,6 @@ class MindARThree {
   }
 
   stop() {
-    if (!this.controller || !this.video) return;
-
     this.controller.stopProcessVideo();
 
     const { srcObject } = this.video;
@@ -164,11 +162,7 @@ class MindARThree {
           },
         });
 
-        if (!this.video) return reject();
-
         this.video.addEventListener('loadedmetadata', () => {
-          if (!this.video) return reject();
-
           this.video.setAttribute('width', this.video.videoWidth.toString());
           this.video.setAttribute('height', this.video.videoHeight.toString());
 
@@ -178,6 +172,7 @@ class MindARThree {
         this.video.srcObject = stream;
       } catch (err) {
         console.log('getUserMedia error', err);
+
         reject();
       }
     });
@@ -185,9 +180,7 @@ class MindARThree {
 
   _startAR() {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise<void>(async (resolve, reject) => {
-      if (!this.video) return reject();
-
+    return new Promise<void>(async (resolve) => {
       this.controller = new Controller({
         inputWidth: this.video.videoWidth,
         inputHeight: this.video.videoHeight,
@@ -223,13 +216,13 @@ class MindARThree {
                 if (this.anchors[i].visible && !worldMatrix) {
                   this.anchors[i].visible = false;
 
-                  if (this.anchors[i].onTargetLost) this.anchors[i].onTargetLost?.();
+                  this.anchors[i].onTargetLost?.();
                 }
 
-                if (!this.anchors[i].visible && !worldMatrix) {
+                if (!this.anchors[i].visible && worldMatrix) {
                   this.anchors[i].visible = true;
 
-                  if (this.anchors[i].onTargetFound) this.anchors[i].onTargetFound?.();
+                  this.anchors[i].onTargetFound?.();
                 }
 
                 if (worldMatrix) this.ui.hideScanning();
@@ -323,16 +316,8 @@ class MindARThree {
   }
 }
 
-if (!window.MINDAR) window.MINDAR = {} as typeof window.MINDAR;
-
-if (!window.MINDAR.IMAGE)
-  window.MINDAR.IMAGE = { MindARThree, THREE, tf } as typeof window.MINDAR.IMAGE;
-else
-  window.MINDAR.IMAGE = {
-    ...window.MINDAR.IMAGE,
-    MindARThree,
-    THREE,
-    tf,
-  };
+if (!window.MINDAR.IMAGE.MindARThree) window.MINDAR.IMAGE.MindARThree = MindARThree;
+if (!window.MINDAR.IMAGE.THREE) window.MINDAR.IMAGE.THREE = THREE;
+if (!window.MINDAR.IMAGE.tf) window.MINDAR.IMAGE.tf = tf;
 
 export { MindARThree };

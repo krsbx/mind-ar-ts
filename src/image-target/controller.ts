@@ -4,16 +4,23 @@ import { Tracker } from './tracker/tracker';
 import { CropDetector } from './detector/crop-detector';
 import { Compiler } from './compiler';
 import { InputLoader } from './input-loader';
-import { OneEuroFilter } from '../libs/one-euro-filter';
+import { OneEuroFilter } from '../libs';
 import {
   DEFAULT_FILTER_BETA,
   DEFAULT_FILTER_CUTOFF,
   DEFAULT_MISS_TOLERANCE,
   DEFAULT_WARMUP_TOLERANCE,
   ON_UPDATE_EVENT,
+  WORKER_EVENT,
 } from './utils/constant/controller';
-import { IOnUpdate } from './utils/types/controller';
+import {
+  IControllerWorkerResult,
+  IOnUpdate,
+  ITrackingCoords,
+  ITrackingState,
+} from './utils/types/controller';
 import { ControllerConstructor } from './utils/types/image-target';
+import { IKeyFrame, IMaximaMinimaPoint, ITrackingFeature } from './utils/types/compiler';
 
 class Controller {
   private inputWidth: number;
@@ -26,22 +33,22 @@ class Controller {
   private cropDetector: CropDetector;
   private inputLoader: InputLoader;
   private markerDimensions: number[][];
-  private onUpdate: (event: IOnUpdate) => void | null;
+  private onUpdate: ((event: IOnUpdate) => void) | null;
   private debugMode: boolean;
   private processingVideo: boolean;
   public interestedTargetIndex: number;
   private projectionTransform: number[][];
   private projectionMatrix: number[];
   private worker: Worker;
-  private workerMatchDone: null | ((data: any) => void);
-  private workerTrackDone: null | ((data: any) => void);
-  private trackingStates: any[];
-  private tracker: Tracker | null;
+  private workerMatchDone: null | ((data: IControllerWorkerResult['MATCH']) => void);
+  private workerTrackDone: null | ((data: IControllerWorkerResult['TRACK_UPDATE']) => void);
+  private trackingStates: ITrackingState[];
+  private tracker!: Tracker;
 
   constructor({
     inputWidth,
     inputHeight,
-    onUpdate = () => {},
+    onUpdate = null,
     debugMode = false,
     maxTrack = 1,
     warmupTolerance = null,
@@ -52,10 +59,10 @@ class Controller {
     this.inputWidth = inputWidth;
     this.inputHeight = inputHeight;
     this.maxTrack = maxTrack;
-    this.filterMinCF = filterMinCF === null ? DEFAULT_FILTER_CUTOFF : filterMinCF;
-    this.filterBeta = filterBeta === null ? DEFAULT_FILTER_BETA : filterBeta;
-    this.warmupTolerance = warmupTolerance === null ? DEFAULT_WARMUP_TOLERANCE : warmupTolerance;
-    this.missTolerance = missTolerance === null ? DEFAULT_MISS_TOLERANCE : missTolerance;
+    this.filterMinCF = !filterMinCF ? DEFAULT_FILTER_CUTOFF : filterMinCF;
+    this.filterBeta = !filterBeta ? DEFAULT_FILTER_BETA : filterBeta;
+    this.warmupTolerance = !warmupTolerance ? DEFAULT_WARMUP_TOLERANCE : warmupTolerance;
+    this.missTolerance = !missTolerance ? DEFAULT_MISS_TOLERANCE : missTolerance;
     this.cropDetector = new CropDetector(this.inputWidth, this.inputHeight, debugMode);
     this.inputLoader = new InputLoader(this.inputWidth, this.inputHeight);
     this.markerDimensions = [];
@@ -64,12 +71,12 @@ class Controller {
     this.processingVideo = false;
     this.interestedTargetIndex = -1;
     this.trackingStates = [];
-    this.tracker = null;
 
     const near = 10;
     const far = 100000;
     const fovy = (45.0 * Math.PI) / 180; // 45 in radian. field of view vertical
     const f = this.inputHeight / 2 / Math.tan(fovy / 2);
+
     //     [fx  s cx]
     // K = [ 0 fx cy]
     //     [ 0  0  1]
@@ -88,12 +95,19 @@ class Controller {
     });
 
     this.worker = new ControllerWorker();
+
     this.workerMatchDone = null;
     this.workerTrackDone = null;
-    this.worker.onmessage = (e) => {
-      if (e.data.type === 'matchDone' && this.workerMatchDone) this.workerMatchDone(e.data);
 
-      if (e.data.type === 'trackUpdateDone' && this.workerTrackDone) this.workerTrackDone(e.data);
+    this.worker.onmessage = (e) => {
+      switch (e.data.type) {
+        case WORKER_EVENT.MATCH_DONE:
+          this.workerMatchDone?.(e.data);
+          break;
+        case WORKER_EVENT.TRACK_UPDATE_DONE:
+          this.workerTrackDone?.(e.data);
+          break;
+      }
     };
   }
 
@@ -117,9 +131,9 @@ class Controller {
     const compiler = new Compiler();
     const dataList = compiler.importData(buffer);
 
-    const trackingDataList = [];
-    const matchingDataList = [];
-    const dimensions = [];
+    const trackingDataList: ITrackingFeature[][] = [];
+    const matchingDataList: IKeyFrame[][] = [];
+    const dimensions: number[][] = [];
 
     for (let i = 0; i < dataList.length; i++) {
       matchingDataList.push(dataList[i].matchingData);
@@ -137,7 +151,7 @@ class Controller {
     );
 
     this.worker.postMessage({
-      type: 'setup',
+      type: WORKER_EVENT.SETUP,
       inputWidth: this.inputWidth,
       inputHeight: this.inputHeight,
       projectionTransform: this.projectionTransform,
@@ -147,7 +161,7 @@ class Controller {
 
     this.markerDimensions = dimensions;
 
-    return { dimensions: dimensions, matchingDataList, trackingDataList };
+    return { dimensions, matchingDataList, trackingDataList };
   }
 
   // warm up gpu - build kernels is slow
@@ -155,7 +169,7 @@ class Controller {
     const inputT = this.inputLoader.loadInput(input);
     this.cropDetector.detect(inputT);
 
-    this.tracker?.dummyRun(inputT);
+    this.tracker.dummyRun(inputT);
     inputT.dispose();
   }
 
@@ -169,16 +183,17 @@ class Controller {
 
   async _detectAndMatch(inputT: tf.Tensor<tf.Rank>, targetIndexes: number[]) {
     const { featurePoints } = this.cropDetector.detectMoving(inputT);
-    const { targetIndex: matchedTargetIndex, modelViewTransform } = (await this._workerMatch(
+    const { targetIndex: matchedTargetIndex, modelViewTransform } = await this._workerMatch(
       featurePoints,
       targetIndexes
-    )) as any;
+    );
 
     return { targetIndex: matchedTargetIndex, modelViewTransform };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async _trackAndUpdate(inputT: any, lastModelViewTransform: number[][], targetIndex: number) {
-    const trackResult = this.tracker?.track(inputT, lastModelViewTransform, targetIndex);
+    const trackResult = this.tracker.track(inputT, lastModelViewTransform, targetIndex);
 
     if (!trackResult) return null;
 
@@ -209,7 +224,7 @@ class Controller {
         trackCount: 0,
         trackMiss: 0,
         filter: new OneEuroFilter({ minCutOff: this.filterMinCF, beta: this.filterBeta }),
-      });
+      } as ITrackingState);
     }
 
     const startProcessing = async () => {
@@ -228,6 +243,7 @@ class Controller {
           const matchingIndexes = [];
           for (let i = 0; i < this.trackingStates.length; i++) {
             const trackingState = this.trackingStates[i];
+
             if (trackingState.isTracking === true) continue;
             if (this.interestedTargetIndex !== -1 && this.interestedTargetIndex !== i) continue;
 
@@ -250,7 +266,8 @@ class Controller {
           if (trackingState.isTracking) {
             const modelViewTransform = await this._trackAndUpdate(
               inputT,
-              trackingState.currentModelViewTransform,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              trackingState.currentModelViewTransform!,
               i
             );
 
@@ -263,6 +280,7 @@ class Controller {
             if (trackingState.isTracking) {
               trackingState.trackMiss = 0;
               trackingState.trackCount += 1;
+
               if (trackingState.trackCount > this.warmupTolerance) {
                 trackingState.showing = true;
                 trackingState.trackingMatrix = null;
@@ -280,7 +298,8 @@ class Controller {
               if (trackingState.trackMiss > this.missTolerance) {
                 trackingState.showing = false;
                 trackingState.trackingMatrix = null;
-                if (this.onUpdate)
+
+                this.onUpdate &&
                   this.onUpdate({
                     type: ON_UPDATE_EVENT.UPDATE_MATRIX,
                     targetIndex: i,
@@ -294,15 +313,19 @@ class Controller {
 
           // if showing, then call onUpdate, with world matrix
           if (trackingState.showing) {
-            const worldMatrix = this._glModelViewMatrix(trackingState.currentModelViewTransform, i);
+            const worldMatrix = this._glModelViewMatrix(
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              trackingState.currentModelViewTransform!,
+              i
+            );
             trackingState.trackingMatrix = trackingState.filter.filter(Date.now(), worldMatrix);
 
             const clone: number[] = [];
-            for (let j = 0; j < trackingState.trackingMatrix.length; j++) {
-              clone[j] = trackingState.trackingMatrix[j];
-            }
 
-            if (this.onUpdate)
+            for (let j = 0; j < trackingState.trackingMatrix.length; j++)
+              clone[j] = trackingState.trackingMatrix[j];
+
+            this.onUpdate &&
               this.onUpdate({
                 type: ON_UPDATE_EVENT.UPDATE_MATRIX,
                 targetIndex: i,
@@ -312,7 +335,9 @@ class Controller {
         }
 
         inputT.dispose();
-        if (this.onUpdate) this.onUpdate({ type: ON_UPDATE_EVENT.DONE });
+
+        this.onUpdate && this.onUpdate({ type: ON_UPDATE_EVENT.DONE });
+
         await tf.nextFrame();
       }
     };
@@ -332,32 +357,33 @@ class Controller {
     return { featurePoints, debugExtra };
   }
 
-  async match(featurePoints: any, targetIndex: number) {
-    const { modelViewTransform, debugExtra } = (await this._workerMatch(featurePoints, [
+  async match(featurePoints: IMaximaMinimaPoint[], targetIndex: number) {
+    const { modelViewTransform, debugExtra } = await this._workerMatch(featurePoints, [
       targetIndex,
-    ])) as any;
+    ]);
 
     return { modelViewTransform, debugExtra };
   }
 
   async track(input: CanvasImageSource, modelViewTransform: number[][], targetIndex: number) {
     const inputT = this.inputLoader.loadInput(input);
-    const result = this.tracker?.track(inputT, modelViewTransform, targetIndex);
+    const result = this.tracker.track(inputT, modelViewTransform, targetIndex);
 
     inputT.dispose();
     return result;
   }
 
-  async trackUpdate(modelViewTransform: number[][], trackFeatures: any) {
+  async trackUpdate(modelViewTransform: number[][], trackFeatures: ITrackingCoords) {
     if (trackFeatures.worldCoords.length < 4) return null;
+
     const modelViewTransform2 = await this._workerTrackUpdate(modelViewTransform, trackFeatures);
     return modelViewTransform2;
   }
 
-  _workerMatch(featurePoints: any, targetIndexes: number[]) {
+  _workerMatch(featurePoints: IMaximaMinimaPoint[], targetIndexes: number[]) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise<any>(async (resolve) => {
-      this.workerMatchDone = (data) => {
+    return new Promise<IControllerWorkerResult['MATCH']>(async (resolve) => {
+      this.workerMatchDone = (data: IControllerWorkerResult['MATCH']) => {
         resolve({
           targetIndex: data.targetIndex,
           modelViewTransform: data.modelViewTransform,
@@ -365,21 +391,21 @@ class Controller {
         });
       };
 
-      this.worker.postMessage({ type: 'match', featurePoints: featurePoints, targetIndexes });
+      this.worker.postMessage({ type: WORKER_EVENT.MATCH, featurePoints, targetIndexes });
     });
   }
 
-  _workerTrackUpdate(modelViewTransform: number[][], trackingFeatures: any) {
+  _workerTrackUpdate(modelViewTransform: number[][], trackingFeatures: ITrackingCoords) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise<any>(async (resolve) => {
-      this.workerTrackDone = (data) => {
+    return new Promise<number[][]>(async (resolve) => {
+      this.workerTrackDone = (data: IControllerWorkerResult['TRACK_UPDATE']) => {
         resolve(data.modelViewTransform);
       };
 
       const { worldCoords, screenCoords } = trackingFeatures;
 
       this.worker.postMessage({
-        type: 'trackUpdate',
+        type: WORKER_EVENT.TRACK_UPDATE,
         modelViewTransform,
         worldCoords,
         screenCoords,
@@ -443,6 +469,7 @@ class Controller {
       -(modelViewTransform[2][1] * height + modelViewTransform[2][3]),
       1,
     ];
+
     return openGLWorldMatrix;
   }
 
@@ -477,12 +504,13 @@ class Controller {
       [0, 0, -(far + near) / (far - near), (-2 * far * near) / (far - near)],
       [0, 0, -1, 0],
     ];
-    const projMatrix = [];
+
+    const projMatrix: number[] = [];
+
     for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        projMatrix.push(proj[j][i]);
-      }
+      for (let j = 0; j < 4; j++) projMatrix.push(proj[j][i]);
     }
+
     return projMatrix;
   }
 }

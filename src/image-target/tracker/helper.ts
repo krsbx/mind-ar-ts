@@ -1,5 +1,6 @@
 import { TEMPLATE_SIZE } from '../utils/constant/tracker';
 import { IOptions, ISimiliarityOptions, ITemplateOptions } from '../utils/types/tracker';
+import { Helper } from '../../libs';
 
 // compute variances of the pixels, centered at (cx, cy)
 const templateVar = ({
@@ -27,12 +28,13 @@ const templateVar = ({
   //v = sum((pixel_i - avg)^2) for all pixel i within the template
   //  = sum(pixel_i^2) - sum(2 * avg * pixel_i) + sum(avg^avg)
 
-  let vlen = imageDataSqrCumsum.query(
+  let vlen: number = imageDataSqrCumsum.query(
     cx - TEMPLATE_SIZE,
     cy - TEMPLATE_SIZE,
     cx + TEMPLATE_SIZE,
     cy + TEMPLATE_SIZE
   );
+
   vlen -=
     2 *
     average *
@@ -42,6 +44,7 @@ const templateVar = ({
       cx + TEMPLATE_SIZE,
       cy + TEMPLATE_SIZE
     );
+
   vlen += nPixels * average * average;
 
   if (vlen / nPixels < sdThresh * sdThresh) return null;
@@ -109,11 +112,14 @@ const getSimilarity = (options: ISimiliarityOptions) => {
   sxy -= templateAverage * sx;
 
   let vlen2 = sxx - (sx * sx) / (templateWidth * templateWidth);
+
   if (vlen2 == 0) return null;
+
   vlen2 = Math.sqrt(vlen2);
 
   // covariance between template and current pixel
   const sim = (1.0 * sxy) / (vlen * vlen2);
+
   return sim;
 };
 
@@ -173,7 +179,7 @@ const selectFeature = (options: IOptions) => {
       imageDataSqrCumsum,
     });
 
-    if (!vlen) {
+    if (Helper.isNil(vlen)) {
       image2[cy * width + cx] = 1.0;
       continue;
     }
@@ -202,7 +208,7 @@ const selectFeature = (options: IOptions) => {
           imageDataSqrCumsum,
         });
 
-        if (!sim) continue;
+        if (Helper.isNil(sim)) continue;
 
         if (sim < min) {
           min = sim;

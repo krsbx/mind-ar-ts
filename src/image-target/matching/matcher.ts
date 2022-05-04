@@ -1,5 +1,6 @@
 import { Vector2, Vector3 } from 'three';
 import { match } from './matching';
+import { IKeyFrame, IMaximaMinimaPoint } from '../utils/types/compiler';
 
 class Matcher {
   private queryWidth: number;
@@ -12,7 +13,8 @@ class Matcher {
     this.debugMode = debugMode;
   }
 
-  matchDetection(keyframes: any[], featurePoints: any[]) {
+  matchDetection(keyframes: IKeyFrame[], featurePoints: IMaximaMinimaPoint[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const debugExtra: Record<any, any> = { frames: [] };
 
     let bestResult = null;

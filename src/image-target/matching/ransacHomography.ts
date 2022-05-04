@@ -5,6 +5,7 @@ import {
   NUM_HYPOTHESES,
   NUM_HYPOTHESES_QUICK,
 } from '../utils/constant/matching';
+import { IKeyFrame } from '../utils/types/compiler';
 
 const {
   quadrilateralConvex,
@@ -17,7 +18,12 @@ const {
 const { solveHomography } = Homography;
 
 // Using RANSAC to estimate homography
-const computeHomography = (options: any) => {
+const computeHomography = (options: {
+  srcPoints: number[][];
+  dstPoints: number[][];
+  keyframe: IKeyFrame;
+  quickMode?: boolean;
+}) => {
   const { srcPoints, dstPoints, keyframe, quickMode } = options;
 
   // testPoints is four corners of keyframe
@@ -85,10 +91,11 @@ const computeHomography = (options: any) => {
     Hs.push(H);
   }
 
-  if (!Hs.length) return null;
+  if (Hs.length === 0) return null;
 
   // pick the best hypothesis
   const hypotheses = [];
+
   for (let i = 0; i < Hs.length; i++)
     hypotheses.push({
       H: Hs[i],
@@ -96,6 +103,7 @@ const computeHomography = (options: any) => {
     });
 
   let curChuckSize = chuckSize;
+
   for (let i = 0; i < srcPoints.length && hypotheses.length > 2; i += curChuckSize) {
     curChuckSize = Math.min(chuckSize, srcPoints.length - i);
     const chuckEnd = i + curChuckSize;
@@ -139,7 +147,7 @@ const _checkHeuristics = ({
 }: {
   H: number[];
   testPoints: number[][];
-  keyframe: ImageData;
+  keyframe: IKeyFrame;
 }) => {
   const HInv = matrixInverse33(H, 0.00001);
 
@@ -220,6 +228,7 @@ const _checkHomographyPointsGeometricallyConsistent = ({
     )
       return false;
   }
+
   return true;
 };
 

@@ -1,3 +1,4 @@
+import { Vector2 } from 'three';
 import { CumulativeSum } from '../utils';
 import {
   MAX_SIM_THRESH,
@@ -11,6 +12,7 @@ import {
   TEMPLATE_SIZE,
 } from '../utils/constant/tracker';
 import { getSimilarity, selectFeature, templateVar } from './helper';
+import { Helper } from '../../libs';
 
 /*
  * Input image is in grey format. the imageData array size is width * height. value range from 0-255
@@ -143,7 +145,7 @@ const extract = (image: ImageData) => {
         imageDataSqrCumsum,
       });
 
-      if (!vlen) {
+      if (Helper.isNil(vlen)) {
         featureMap[pos] = 1.0;
         continue;
       }
@@ -157,14 +159,14 @@ const extract = (image: ImageData) => {
             image,
             cx: i + ii,
             cy: j + jj,
-            vlen: vlen,
+            vlen,
             tx: i,
             ty: j,
             imageDataCumsum,
             imageDataSqrCumsum,
           });
 
-          if (!sim) continue;
+          if (Helper.isNil(sim)) continue;
 
           if (sim > max) {
             max = sim;
@@ -191,7 +193,7 @@ const extract = (image: ImageData) => {
     imageDataSqrCumsum,
   });
 
-  return coords;
+  return coords as Vector2[];
 };
 
 export { extract };

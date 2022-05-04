@@ -30,16 +30,13 @@ class CropDetector {
     const startY = Math.floor(this.height / 2 - this.cropSize / 2);
     const startX = Math.floor(this.width / 2 - this.cropSize / 2);
     const result = this._detect(inputImageT, startX, startY);
-    const debugExtra = result.debugExtra as typeof result.debugExtra & Record<any, any>;
 
-    if (this.debugMode && result.debugExtra)
-      debugExtra.crop = {
+    if (this.debugMode)
+      result.debugExtra.crop = {
         startX,
         startY,
         cropSize: this.cropSize,
       };
-
-    result.debugExtra = debugExtra;
 
     return result;
   }
@@ -67,19 +64,19 @@ class CropDetector {
   _detect(inputImageT: tf.Tensor<tf.Rank>, startX: number, startY: number) {
     const cropInputImageT = inputImageT.slice([startY, startX], [this.cropSize, this.cropSize]);
 
-    const { featurePoints, debugExtra: debExtr } = this.detector.detect(cropInputImageT);
-    const debugExtra = debExtr as typeof debExtr & Record<any, any>;
+    const { featurePoints, debugExtra } = this.detector.detect(cropInputImageT);
 
     featurePoints.forEach((p) => {
       p.x += startX;
       p.y += startY;
     });
 
-    if (this.debugMode && debugExtra) debugExtra.projectedImage = cropInputImageT.arraySync();
+    if (this.debugMode && debugExtra)
+      debugExtra.projectedImage = cropInputImageT.arraySync() as number[][];
 
     cropInputImageT.dispose();
 
-    return { featurePoints: featurePoints, debugExtra };
+    return { featurePoints, debugExtra };
   }
 }
 

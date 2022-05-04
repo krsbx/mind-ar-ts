@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { Vector2, Vector3 } from 'three';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   AR2_DEFAULT_TS,
@@ -9,6 +10,8 @@ import {
   TRACKING_KEYFRAME,
 } from '../utils/constant/tracker';
 import { buildModelViewProjectionTransform, computeScreenCoordiate } from '../estimation/utils';
+import { ITrackingFeature } from '../utils/types/compiler';
+import { IDebugExtra } from '../utils/types/detector';
 
 // For some mobile device, only 16bit floating point texture is supported
 //   ref: https://www.tensorflow.org/js/guide/platform_environment#precision
@@ -18,8 +21,9 @@ const PRECISION_ADJUST = 1000;
 
 class Tracker {
   private projectionTransform: number[][];
-  private trackingKeyframeList: any[];
+  private trackingKeyframeList: ITrackingFeature[];
   private debugMode: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private kernelCaches: Record<any, any>;
   private featurePointsListT: tf.Tensor<tf.Rank>[];
   private imagePixelsListT: tf.Tensor<tf.Rank>[];
@@ -27,7 +31,7 @@ class Tracker {
 
   constructor(
     _markerDimensions: number[][],
-    trackingDataList: number[][],
+    trackingDataList: ITrackingFeature[][],
     projectionTransform: number[][],
     _inputWidth: number,
     _inputHeight: number,
@@ -64,7 +68,7 @@ class Tracker {
     this.kernelCaches = {};
   }
 
-  dummyRun(inputT: any) {
+  dummyRun(inputT: tf.Tensor<tf.Rank>) {
     const transform: number[][] = [
       [1, 1, 1, 1],
       [1, 1, 1, 1],
@@ -75,8 +79,8 @@ class Tracker {
       this.track(inputT, transform, targetIndex);
   }
 
-  track(inputImageT: any, lastModelViewTransform: number[][], targetIndex: number) {
-    let debugExtra: Record<any, any> = {};
+  track(inputImageT: tf.Tensor<tf.Rank>, lastModelViewTransform: number[][], targetIndex: number) {
+    let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const modelViewProjectionTransform = buildModelViewProjectionTransform(
       this.projectionTransform,
@@ -107,9 +111,9 @@ class Tracker {
     const sim = simT.arraySync() as number[];
 
     const trackingFrame = this.trackingKeyframeList[targetIndex];
-    const worldCoords = [];
-    const screenCoords = [];
-    const goodTrack = [];
+    const worldCoords: Vector3[] = [];
+    const screenCoords: Vector2[] = [];
+    const goodTrack: number[] = [];
 
     for (let i = 0; i < matchingPoints.length; i++) {
       if (sim[i] > AR2_SIM_THRESH && i < trackingFrame.points.length) {
@@ -121,22 +125,22 @@ class Tracker {
           matchingPoints[i][1]
         );
 
-        screenCoords.push(point);
+        screenCoords.push(point as Vector2);
         worldCoords.push({
           x: trackingFrame.points[i].x / trackingFrame.scale,
           y: trackingFrame.points[i].y / trackingFrame.scale,
           z: 0,
-        });
+        } as Vector3);
       }
     }
 
     if (this.debugMode)
       debugExtra = {
-        projectedImage: projectedImageT.arraySync(),
-        matchingPoints: matchingPointsT.arraySync(),
+        projectedImage: projectedImageT.arraySync() as number[][],
+        matchingPoints: matchingPointsT.arraySync() as number[][],
         goodTrack,
         trackedPoints: screenCoords,
-      };
+      } as IDebugExtra;
 
     // tensors cleanup
     modelViewProjectionTransformT.dispose();
@@ -306,7 +310,7 @@ class Tracker {
 
   _computeProjection(
     modelViewProjectionTransformT: tf.Tensor<tf.Rank>,
-    inputImageT: any,
+    inputImageT: tf.Tensor<tf.Rank>,
     targetIndex: number
   ) {
     const {
@@ -382,7 +386,7 @@ class Tracker {
     });
   }
 
-  _prebuild(trackingFrame: any, maxCount: number) {
+  _prebuild(trackingFrame: ITrackingFeature, maxCount: number) {
     return tf.tidy(() => {
       const { data, height, width, scale } = trackingFrame;
 

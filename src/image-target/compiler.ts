@@ -4,20 +4,21 @@ import CompilerWorker from './compiler.worker.ts';
 import { Detector } from './detector/detector';
 import { buildImageList, buildTrackingImageList } from './image-list';
 import { build as hierarchicalClusteringBuild } from './matching/hierarchical-clustering';
-import { IKeyFrame, ImageDataWithScale } from './utils/types/compiler';
+import {
+  ICompilerData,
+  IDataList,
+  IKeyFrame,
+  ImageDataWithScale,
+  ITrackingFeature,
+} from './utils/types/compiler';
+import { WORKER_EVENT } from './utils/constant/compiler';
 
 // TODO: better compression method. now grey image saved in pixels, which could be larger than original image
 
 const CURRENT_VERSION = 2;
 
 class Compiler {
-  private data: {
-    targetImage: ImageData;
-    imageList: ImageDataWithScale[];
-    matchingData: IKeyFrame[];
-    trackingImageList: ImageDataWithScale[];
-    trackingData?: any;
-  }[];
+  private data: ICompilerData[];
 
   constructor() {
     this.data = [];
@@ -26,7 +27,7 @@ class Compiler {
   // input html Images
   compileImageTargets(images: ImageData[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise<typeof this.data>(async (resolve) => {
+    return new Promise<ICompilerData[]>(async (resolve) => {
       const targetImages: ImageData[] = [];
 
       for (let i = 0; i < images.length; i++) {
@@ -79,10 +80,10 @@ class Compiler {
         });
 
         this.data.push({
-          targetImage: targetImage,
-          imageList: imageList,
-          matchingData: matchingData,
-        } as typeof this.data[number]);
+          targetImage,
+          imageList,
+          matchingData,
+        } as ICompilerData);
       }
 
       for (let i = 0; i < targetImages.length; i++) {
@@ -92,22 +93,25 @@ class Compiler {
 
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
-        return new Promise<any>((resolve) => {
+        return new Promise<ITrackingFeature[][]>((resolve) => {
           const worker = new CompilerWorker();
 
-          worker.onmessage = (e: MessageEvent) => {
-            if (e.data.type === 'progress') {
-              progressCallback(50 + e.data.percent);
-            } else if (e.data.type === 'compileDone') {
-              resolve(e.data.list);
+          worker.onmessage = (e) => {
+            switch (e.data.type) {
+              case WORKER_EVENT.PROGRESS:
+                progressCallback(50 + e.data.percent);
+                break;
+              case WORKER_EVENT.COMPILE_DONE:
+                resolve(e.data.list);
+                break;
             }
           };
 
-          worker.postMessage({ type: 'compile', targetImages });
+          worker.postMessage({ type: WORKER_EVENT.COMPILE, targetImages });
         });
       };
 
-      const trackingDataList = (await compileTrack()) as any[];
+      const trackingDataList = await compileTrack();
 
       for (let i = 0; i < targetImages.length; i++) this.data[i].trackingData = trackingDataList[i];
 
@@ -117,7 +121,8 @@ class Compiler {
 
   // not exporting imageList because too large. rebuild this using targetImage
   exportData() {
-    const dataList = [];
+    const dataList: IDataList[] = [];
+
     for (let i = 0; i < this.data.length; i++) {
       dataList.push({
         targetImage: {
@@ -138,7 +143,10 @@ class Compiler {
   }
 
   importData(buffer: string | ArrayBuffer) {
-    const content = msgpack.decode(new Uint8Array(buffer as ArrayBuffer)) as any;
+    const content = msgpack.decode(new Uint8Array(buffer as ArrayBuffer)) as {
+      v: number;
+      dataList: IDataList[];
+    };
 
     if (!content.v || content.v !== CURRENT_VERSION) {
       console.error('Your compiled .mind might be outdated. Please recompile');
@@ -155,14 +163,15 @@ class Compiler {
         targetImage: dataList[i].targetImage,
         trackingData: dataList[i].trackingData,
         matchingData: dataList[i].matchingData,
-      } as typeof this.data[number]);
+      } as ICompilerData);
     }
+
     return this.data;
   }
 }
 
 const _extractMatchingFeatures = async (
-  imageList: any,
+  imageList: ImageDataWithScale[],
   doneCallback: (iteration: number) => void
 ) => {
   const keyframes: IKeyFrame[] = [];
@@ -173,6 +182,7 @@ const _extractMatchingFeatures = async (
     const detector = new Detector(image.width, image.height);
 
     await tf.nextFrame();
+
     tf.tidy(() => {
       const inputT = tf
         .tensor(image.data, [image.data.length], 'float32')

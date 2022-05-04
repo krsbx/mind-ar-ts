@@ -1,5 +1,8 @@
 import { compute as hammingCompute } from './hamming-distance';
 import { createRandomizer } from '../utils';
+import { INode, RandomizerType } from '../utils/types/matching';
+import { IMaximaMinimaPoint } from '../utils/types/compiler';
+import { Helper } from '../../libs';
 
 const MIN_FEATURE_PER_NODE = 16;
 const NUM_ASSIGNMENT_HYPOTHESES = 128;
@@ -7,9 +10,9 @@ const NUM_CENTERS = 8;
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
 const _computeKMedoids = (options: {
-  points: any[];
+  points: IMaximaMinimaPoint[];
   pointIndexes: number[];
-  randomizer: ReturnType<typeof createRandomizer>;
+  randomizer: RandomizerType;
 }) => {
   const { points, pointIndexes, randomizer } = options;
 
@@ -31,17 +34,21 @@ const _computeKMedoids = (options: {
       let bestD = MAX_SAFE_INTEGER;
       for (let k = 0; k < NUM_CENTERS; k++) {
         const centerIndex = pointIndexes[randomPointIndexes[k]];
+
         const d = hammingCompute({
           v1: points[pointIndexes[j]].descriptors,
           v2: points[centerIndex].descriptors,
         });
+
         if (d < bestD) {
           assignment[j] = randomPointIndexes[k];
           bestD = d;
         }
       }
+
       sumD += bestD;
     }
+
     assignments.push(assignment);
 
     if (sumD < bestSumD) {
@@ -49,6 +56,7 @@ const _computeKMedoids = (options: {
       bestAssignmentIndex = i;
     }
   }
+
   return assignments[bestAssignmentIndex];
 };
 
@@ -60,8 +68,8 @@ const _computeKMedoids = (options: {
 //   pointIndexes: [], list of int, point indexes
 //   centerPointIndex: int
 // }
-const build = ({ points }: { points: any[] }) => {
-  const pointIndexes = [];
+const build = ({ points }: { points: IMaximaMinimaPoint[] }) => {
+  const pointIndexes: number[] = [];
 
   for (let i = 0; i < points.length; i++) {
     pointIndexes.push(i);
@@ -81,10 +89,10 @@ const build = ({ points }: { points: any[] }) => {
 
 // recursive build hierarchy clusters
 const _build = (options: {
-  points: any[];
+  points: IMaximaMinimaPoint[];
   pointIndexes: number[];
   centerPointIndex: number | null;
-  randomizer: ReturnType<typeof createRandomizer>;
+  randomizer: RandomizerType;
 }) => {
   const { points, pointIndexes, centerPointIndex, randomizer } = options;
 
@@ -94,29 +102,30 @@ const _build = (options: {
     isLeaf = true;
   }
 
-  const clusters: Record<any, any> = {};
+  const clusters: number[][] = [];
+
   if (!isLeaf) {
     // compute clusters
     const assignment = _computeKMedoids({ points, pointIndexes, randomizer });
 
     for (let i = 0; i < assignment.length; i++) {
-      if (clusters[pointIndexes[assignment[i]]] === undefined) {
+      if (Helper.isNil(clusters[pointIndexes[assignment[i]]]))
         clusters[pointIndexes[assignment[i]]] = [];
-      }
+
       clusters[pointIndexes[assignment[i]]].push(pointIndexes[i]);
     }
   }
-  if (Object.keys(clusters).length === 1) {
-    isLeaf = true;
-  }
 
-  const node: Record<any, any> = {
+  if (Object.keys(clusters).length === 1) isLeaf = true;
+
+  const node: INode = {
     centerPointIndex,
-  };
+  } as INode;
 
   if (isLeaf) {
     node.leaf = true;
     node.pointIndexes = [];
+
     for (let i = 0; i < pointIndexes.length; i++) node.pointIndexes.push(pointIndexes[i]);
 
     return node;

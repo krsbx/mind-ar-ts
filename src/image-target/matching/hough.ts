@@ -1,3 +1,8 @@
+import { IMatches } from '../utils/types/detector';
+import { IQueryBinLocation } from '../utils/types/matching';
+import { IMaximaMinimaPoint } from '../utils/types/compiler';
+import { Helper } from '../../libs';
+
 const kHoughBinDelta = 1;
 
 // mathces [querypointIndex:x, keypointIndex: x]
@@ -6,7 +11,7 @@ const computeHoughMatches = (options: {
   keyheight: number;
   querywidth: number;
   queryheight: number;
-  matches: any[];
+  matches: IMatches[];
 }) => {
   const { keywidth, keyheight, querywidth, queryheight, matches } = options;
 
@@ -53,13 +58,12 @@ const computeHoughMatches = (options: {
   const numXYAngleBins = numXYBins * numAngleBins;
 
   // do voting
-  const querypointValids = [];
-  const querypointBinLocations = [];
-  const votes: Record<any, any> = {};
+  const querypointValids: boolean[] = [];
+  const querypointBinLocations: IQueryBinLocation[] = [];
+  const votes: Record<number, number> = {};
 
   for (let i = 0; i < matches.length; i++) {
-    const querypoint = matches[i].querypoint;
-    const keypoint = matches[i].keypoint;
+    const { querypoint, keypoint } = matches[i];
 
     const { x, y, scale, angle } = _mapCorrespondence({
       querypoint,
@@ -130,18 +134,20 @@ const computeHoughMatches = (options: {
             const binIndex =
               binX2 + binY2 * numXBins + binAngle2 * numXYBins + binScale2 * numXYAngleBins;
 
-            if (!votes[binIndex]) votes[binIndex] = 0;
+            if (Helper.isNil(votes[binIndex])) votes[binIndex] = 0;
 
             votes[binIndex] += 1;
           }
         }
       }
     }
+
     querypointValids[i] = true;
   }
 
   let maxVotes = 0;
   let maxVoteIndex = -1;
+
   Object.keys(votes).forEach((id) => {
     const index = Number(id);
 
@@ -200,7 +206,13 @@ const _mapCorrespondence = ({
   keycenterX,
   keycenterY,
   scaleOneOverLogK,
-}: any) => {
+}: {
+  querypoint: IMaximaMinimaPoint;
+  keypoint: IMaximaMinimaPoint;
+  keycenterX: number;
+  keycenterY: number;
+  scaleOneOverLogK: number;
+}) => {
   // map angle to (-pi, pi]
   let angle = querypoint.angle - keypoint.angle;
   if (angle <= -Math.PI) angle += 2 * Math.PI;
@@ -220,7 +232,7 @@ const _mapCorrespondence = ({
   return {
     x: S[0] * keycenterX + S[1] * keycenterY + tx,
     y: S[2] * keycenterX + S[3] * keycenterY + ty,
-    angle: angle,
+    angle,
     scale: Math.log(scale) * scaleOneOverLogK,
   };
 };
