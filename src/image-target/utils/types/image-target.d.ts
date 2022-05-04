@@ -1,12 +1,13 @@
 import * as ICompiler from './compiler';
 import * as IController from './controller';
 import * as IEstimation from './estimation';
+import * as IMatching from './matching';
 import * as ITracker from './tracker';
 
 interface ControllerConstructor {
   inputWidth: number;
   inputHeight: number;
-  onUpdate?: (data: IOnUpdate) => void | null;
+  onUpdate?: ((data: IOnUpdate) => void) | null;
   debugMode?: boolean;
   maxTrack?: number;
   warmupTolerance?: number | null;
@@ -41,6 +42,7 @@ export type {
   ICompiler,
   IController,
   IEstimation,
+  IMatching,
   ITracker,
   ControllerConstructor,
   ThreeConstructor,
