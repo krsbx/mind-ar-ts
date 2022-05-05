@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
+import { Helper } from '../libs';
 
 // More efficient implementation for tf.browser.fromPixels
 //   original implementation: /node_modules/@tensorflow/tfjs-backend-webgl/src/kernels/FromPixels.ts
@@ -18,7 +19,7 @@ class InputLoader {
     this.height = height;
     this.textShape = [height, width];
 
-    const canvas = document.createElement('canvas') as unknown as HTMLCanvasElement;
+    const canvas = Helper.castTo<HTMLCanvasElement>(document.createElement('canvas'));
 
     const context = canvas.getContext('2d') as CanvasRenderingContext2D;
     context.canvas.width = width;

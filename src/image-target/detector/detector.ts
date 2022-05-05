@@ -19,6 +19,7 @@ import {
 import { FREAKPOINTS } from '../utils/constant/freak';
 import { IMaximaMinimaPoint } from '../utils/types/compiler';
 import { IDebugExtra } from '../utils/types/detector';
+import { Helper } from '../../libs';
 
 class Detector {
   private debugMode: boolean;
@@ -62,7 +63,7 @@ class Detector {
       arr[4 * i + 3] = 255;
     }
 
-    const img = new ImageData(arr, this.width, this.height) as unknown as tf.Tensor<tf.Rank>;
+    const img = Helper.castTo<tf.Tensor<tf.Rank>>(new ImageData(arr, this.width, this.height));
 
     return this.detect(img);
   }

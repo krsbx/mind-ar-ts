@@ -12,6 +12,7 @@ import {
   ITrackingFeature,
 } from './utils/types/compiler';
 import { WORKER_EVENT } from './utils/constant/compiler';
+import { Helper } from '../libs';
 
 // TODO: better compression method. now grey image saved in pixels, which could be larger than original image
 
@@ -25,7 +26,7 @@ class Compiler {
   }
 
   // input html Images
-  compileImageTargets(images: ImageData[], progressCallback: (progress: number) => void) {
+  compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
       const targetImages: ImageData[] = [];
@@ -33,12 +34,12 @@ class Compiler {
       for (let i = 0; i < images.length; i++) {
         const img = images[i];
 
-        const processCanvas = document.createElement('canvas') as unknown as HTMLCanvasElement;
+        const processCanvas = Helper.castTo<HTMLCanvasElement>(document.createElement('canvas'));
         processCanvas.width = img.width;
         processCanvas.height = img.height;
 
         const processContext = processCanvas.getContext('2d') as CanvasRenderingContext2D;
-        processContext.drawImage(img as unknown as CanvasImageSource, 0, 0, img.width, img.height);
+        processContext.drawImage(img, 0, 0, img.width, img.height);
 
         const processData = processContext.getImageData(0, 0, img.width, img.height);
         const greyImageData = new Uint8ClampedArray(img.width * img.height);

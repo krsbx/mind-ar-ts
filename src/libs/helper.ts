@@ -1,3 +1,5 @@
 const isNil = (value: unknown): value is null | undefined => value === null || value === undefined;
 
-export { isNil };
+const castTo = <NewType>(value: unknown): NewType => value as unknown as NewType;
+
+export { isNil, castTo };

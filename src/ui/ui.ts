@@ -2,6 +2,7 @@ import './ui.scss';
 import loadingHTML from './loading.html?raw';
 import compatibilityHTML from './compatibility.html?raw';
 import scanningHTML from './scanning.html?raw';
+import { Helper } from '../libs';
 
 class UI {
   private loadingModal: HTMLElement;
@@ -57,7 +58,7 @@ class UI {
   }
 
   _loadHTML(html: string) {
-    const e = document.createElement('template') as unknown as HTMLTemplateElement;
+    const e = Helper.castTo<HTMLTemplateElement>(document.createElement('template'));
     e.innerHTML = html.trim();
 
     const rootNode = e.content.firstChild as ChildNode;

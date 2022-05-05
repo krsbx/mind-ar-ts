@@ -6,12 +6,13 @@ import { UI } from '../ui/ui';
 import { Controller } from './controller';
 import { ON_UPDATE_EVENT } from './utils/constant/controller';
 import { IOnUpdate } from './utils/types/controller';
+import { Helper } from '../libs';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.IMAGE;
 
 AFRAME.registerSystem('mindar-image-system', {
-  container: null as unknown as HTMLDivElement,
-  video: null as unknown as HTMLVideoElement,
+  container: Helper.castTo<HTMLDivElement>(null),
+  video: Helper.castTo<HTMLVideoElement>(null),
   processingImage: false,
   anchorEntities: [] as any[],
   imageTargetSrc: '',
@@ -21,10 +22,10 @@ AFRAME.registerSystem('mindar-image-system', {
   missTolerance: -Infinity,
   warmupTolerance: -Infinity,
   showStats: <boolean>false,
-  controller: null as unknown as Controller,
-  ui: null as unknown as UI,
+  controller: Helper.castTo<Controller>(null),
+  ui: Helper.castTo<UI>(null),
   el: null as any,
-  mainStats: null as unknown as Stats,
+  mainStats: Helper.castTo<Stats>(null),
 
   init: function () {
     this.anchorEntities = [];
@@ -118,7 +119,7 @@ AFRAME.registerSystem('mindar-image-system', {
   },
 
   _startVideo: async function () {
-    this.video = document.createElement('video') as unknown as HTMLVideoElement;
+    this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
     this.video.setAttribute('autoplay', '');
     this.video.setAttribute('muted', '');
@@ -291,7 +292,7 @@ AFRAME.registerComponent('mindar-image', {
 AFRAME.registerComponent('mindar-image-target', {
   dependencies: ['mindar-image-system'],
   el: null as any,
-  postMatrix: null as unknown as Matrix4, // rescale the anchor to make width of 1 unit = physical width of card
+  postMatrix: Helper.castTo<Matrix4>(null), // rescale the anchor to make width of 1 unit = physical width of card
 
   schema: {
     targetIndex: { type: 'number' },

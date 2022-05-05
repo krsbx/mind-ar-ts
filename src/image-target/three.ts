@@ -6,6 +6,7 @@ import { UI } from '../ui/ui';
 import { ON_UPDATE_EVENT } from './utils/constant/controller';
 import { IOnUpdate } from './utils/types/controller';
 import { ThreeConstructor, IAnchor } from './utils/types/image-target';
+import { Helper } from '../libs';
 
 const cssScaleDownMatrix = new THREE.Matrix4();
 cssScaleDownMatrix.compose(
@@ -137,7 +138,7 @@ class MindARThree {
   _startVideo() {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<void>(async (resolve, reject) => {
-      this.video = document.createElement('video') as unknown as HTMLVideoElement;
+      this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
       this.video.setAttribute('autoplay', '');
       this.video.setAttribute('muted', '');
