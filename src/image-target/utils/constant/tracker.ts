@@ -1,3 +1,9 @@
+// For some mobile device, only 16bit floating point texture is supported
+//   ref: https://www.tensorflow.org/js/guide/platform_environment#precision
+// Empirical results shows that modelViewProjectTransform can go up beyond that, resulting in error
+// We get around this by dividing the transform matrix by 1000, and then multiply back inside webgl program
+const PRECISION_ADJUST = 1000;
+
 const SEARCH_SIZE1 = 10;
 const SEARCH_SIZE2 = 2;
 
@@ -21,6 +27,7 @@ const AR2_SIM_THRESH = 0.8;
 const TRACKING_KEYFRAME = 1; // 0: 256px, 1: 128px
 
 export {
+  PRECISION_ADJUST,
   SEARCH_SIZE1,
   SEARCH_SIZE2,
   TEMPLATE_SIZE,
