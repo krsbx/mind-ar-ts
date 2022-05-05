@@ -3,14 +3,10 @@
 import * as tf from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
-  EDGE_HESSIAN_THRESHOLD,
   FREAK_CONPARISON_COUNT,
-  FREAK_EXPANSION_FACTOR,
-  LAPLACIAN_SQR_THRESHOLD,
   MAX_FEATURES_PER_BUCKET,
   NUM_BUCKETS_PER_DIMENSION,
   ORIENTATION_GAUSSIAN_EXPANSION_FACTOR,
-  ORIENTATION_NUM_BINS,
   ORIENTATION_REGION_EXPANSION_FACTOR,
   ORIENTATION_SMOOTHING_ITERATIONS,
   PYRAMID_MAX_OCTAVE,
@@ -20,6 +16,7 @@ import { FREAKPOINTS } from '../utils/constant/freak';
 import { IMaximaMinimaPoint } from '../utils/types/compiler';
 import { IDebugExtra } from '../utils/types/detector';
 import { Helper } from '../../libs';
+import { DetectorKernel } from '../utils/kernels';
 
 class Detector {
   private debugMode: boolean;
@@ -195,7 +192,7 @@ class Detector {
     return { featurePoints, debugExtra };
   }
 
-  _computeFreakDescriptors(extremaFreaks: tf.Tensor<tf.Rank>) {
+  private _computeFreakDescriptors(extremaFreaks: tf.Tensor<tf.Rank>) {
     if (!this.tensorCaches.computeFreakDescriptors) {
       const in1Arr: number[] = [];
       const in2Arr: number[] = [];
@@ -224,36 +221,11 @@ class Detector {
     const descriptorCount = Math.ceil(FREAK_CONPARISON_COUNT / 8);
 
     if (!this.kernelCaches.computeFreakDescriptors) {
-      const kernel = {
-        variableNames: ['freak', 'p'],
-        outputShape: [extremaFreaks.shape[0], descriptorCount],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-	    int featureIndex = coords[0];
-	    int descIndex = coords[1] * 8;
-
-	    int sum = 0;
-	    for (int i = 0; i < 8; i++) {
-	      if (descIndex + i >= ${FREAK_CONPARISON_COUNT}) {
-		continue;
-	      }
-
-	      int p1 = int(getP(descIndex + i, 0));
-	      int p2 = int(getP(descIndex + i, 1));
-
-	      float v1 = getFreak(featureIndex, p1);
-	      float v2 = getFreak(featureIndex, p2);
-
-	      if (v1 < v2 + 0.01) {
-	        sum += int(pow(2.0, float(7 - i)));
-	      }
-	    }
-	    setOutput(float(sum));
-	  }
-	`,
-      };
-      this.kernelCaches.computeFreakDescriptors = [kernel];
+      this.kernelCaches.computeFreakDescriptors = DetectorKernel.computeFreakDescriptors(
+        extremaFreaks,
+        descriptorCount,
+        FREAK_CONPARISON_COUNT
+      );
     }
 
     return tf.tidy(() => {
@@ -263,7 +235,7 @@ class Detector {
     });
   }
 
-  _computeExtremaFreak(
+  private _computeExtremaFreak(
     pyramidImagesT: tf.Tensor<tf.Rank>[][],
     prunedExtremas: tf.Tensor<tf.Rank>,
     prunedExtremasAngles: tf.Tensor<tf.Rank>
@@ -283,74 +255,10 @@ class Detector {
     for (let i = 1; i < pyramidImagesT.length; i++) gaussianImagesT.push(pyramidImagesT[i][1]); // better
 
     if (!this.kernelCaches._computeExtremaFreak) {
-      const imageVariableNames: string[] = [];
-
-      for (let i = 1; i < pyramidImagesT.length; i++) {
-        imageVariableNames.push('image' + i);
-      }
-
-      let pixelsSubCodes = `float getPixel(int octave, int y, int x) {`;
-
-      for (let i = 1; i < pyramidImagesT.length; i++)
-        pixelsSubCodes += `
-	  if (octave == ${i}) {
-	    return getImage${i}(y, x);
-	  }
-	`;
-
-      pixelsSubCodes += `}`;
-
-      const kernel = {
-        variableNames: [...imageVariableNames, 'extrema', 'angles', 'freakPoints'],
-        outputShape: [prunedExtremas.shape[0], FREAKPOINTS.length],
-        userCode: `
-	  ${pixelsSubCodes}
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-	    int featureIndex = coords[0];
-	    int freakIndex = coords[1];
-
-	    float freakSigma = getFreakPoints(freakIndex, 0);
-	    float freakX = getFreakPoints(freakIndex, 1);
-	    float freakY = getFreakPoints(freakIndex, 2);
-
-	    int octave = int(getExtrema(featureIndex, 1));
-	    float inputY = getExtrema(featureIndex, 2);
-	    float inputX = getExtrema(featureIndex, 3);
-	    float inputAngle = getAngles(featureIndex);
-            float cos = ${FREAK_EXPANSION_FACTOR}. * cos(inputAngle);
-            float sin = ${FREAK_EXPANSION_FACTOR}. * sin(inputAngle);
-
-	    float yp = inputY + freakX * sin + freakY * cos;
-	    float xp = inputX + freakX * cos + freakY * -sin;
-
-	    int x0 = int(floor(xp));
-	    int x1 = x0 + 1;
-	    int y0 = int(floor(yp));
-	    int y1 = y0 + 1;
-
-	    float f1 = getPixel(octave, y0, x0);
-	    float f2 = getPixel(octave, y0, x1);
-	    float f3 = getPixel(octave, y1, x0);
-	    float f4 = getPixel(octave, y1, x1);
-
-	    float x1f = float(x1);
-	    float y1f = float(y1);
-	    float x0f = float(x0);
-	    float y0f = float(y0);
-
-	    // ratio for interpolation between four neighbouring points
-	    float value = (x1f - xp) * (y1f - yp) * f1
-			+ (xp - x0f) * (y1f - yp) * f2
-			+ (x1f - xp) * (yp - y0f) * f3
-			+ (xp - x0f) * (yp - y0f) * f4;
-
-	    setOutput(value);
-	  }
-	`,
-      };
-
-      this.kernelCaches._computeExtremaFreak = [kernel];
+      this.kernelCaches._computeExtremaFreak = DetectorKernel.computeExtremaFreak(
+        pyramidImagesT,
+        prunedExtremas
+      );
     }
 
     return tf.tidy(() => {
@@ -366,65 +274,9 @@ class Detector {
     });
   }
 
-  _computeExtremaAngles(histograms: tf.Tensor<tf.Rank>) {
+  private _computeExtremaAngles(histograms: tf.Tensor<tf.Rank>) {
     if (!this.kernelCaches.computeExtremaAngles) {
-      const kernel = {
-        variableNames: ['histogram'],
-        outputShape: [histograms.shape[0]],
-        userCode: `
-	  void main() {
-	    int featureIndex = getOutputCoords();
-
-	    int maxIndex = 0;
-	    for (int i = 1; i < ${ORIENTATION_NUM_BINS}; i++) {
-	      if (getHistogram(featureIndex, i) > getHistogram(featureIndex, maxIndex)) {
-		maxIndex = i;
-	      }
-	    }
-
-	    int prev = imod(maxIndex - 1 + ${ORIENTATION_NUM_BINS}, ${ORIENTATION_NUM_BINS});
-	    int next = imod(maxIndex + 1, ${ORIENTATION_NUM_BINS});
-
-	    /**
-	     * Fit a quatratic to 3 points. The system of equations is:
-	     *
-	     * y0 = A*x0^2 + B*x0 + C
-	     * y1 = A*x1^2 + B*x1 + C
-	     * y2 = A*x2^2 + B*x2 + C
-	     *
-	     * This system of equations is solved for A,B,C.
-	     */
-	    float p10 = float(maxIndex - 1);
-	    float p11 = getHistogram(featureIndex, prev); 
-	    float p20 = float(maxIndex);
-	    float p21 = getHistogram(featureIndex, maxIndex); 
-	    float p30 = float(maxIndex + 1);
-	    float p31 = getHistogram(featureIndex, next); 
-
-	    float d1 = (p30-p20)*(p30-p10);
-	    float d2 = (p10-p20)*(p30-p10);
-	    float d3 = p10-p20;
-
-	    // If any of the denominators are zero then, just use maxIndex.
-            float fbin = float(maxIndex);
-	    if ( abs(d1) > 0.00001 && abs(d2) > 0.00001 && abs(d3) > 0.00001) {
-	      float a = p10*p10;
-	      float b = p20*p20;
-
-	      // Solve for the coefficients A,B,C
-	      float A = ((p31-p21)/d1)-((p11-p21)/d2);
-	      float B = ((p11-p21)+(A*(b-a)))/d3;
-	      float C = p11-(A*a)-(B*p10);
-	      fbin = -B / (2. * A);
-	    }
-
-	    float an = 2.0 *${Math.PI} * (fbin + 0.5) / ${ORIENTATION_NUM_BINS}. - ${Math.PI};
-	    setOutput(an);
-	  }
-	`,
-      };
-
-      this.kernelCaches.computeExtremaAngles = kernel;
+      this.kernelCaches.computeExtremaAngles = DetectorKernel.computeExtremaAngles(histograms);
     }
 
     return tf.tidy(() => {
@@ -435,7 +287,7 @@ class Detector {
   }
 
   // TODO: maybe can try just using average momentum, instead of histogram method. histogram might be overcomplicated
-  _computeOrientationHistograms(
+  private _computeOrientationHistograms(
     prunedExtremasT: tf.Tensor<tf.Rank>,
     pyramidImagesT: tf.Tensor<tf.Rank>[][]
   ) {
@@ -480,104 +332,12 @@ class Detector {
     const { radialPropertiesT } = this.tensorCaches.orientationHistograms;
 
     if (!this.kernelCaches.computeOrientationHistograms) {
-      const imageVariableNames: string[] = [];
-
-      for (let i = 1; i < pyramidImagesT.length; i++) {
-        imageVariableNames.push('image' + i);
-      }
-
-      let kernel1SubCodes = `float getPixel(int octave, int y, int x) {`;
-      for (let i = 1; i < pyramidImagesT.length; i++) {
-        kernel1SubCodes += `
-	  if (octave == ${i}) {
-	    return getImage${i}(y, x);
-	  }
-	`;
-      }
-
-      kernel1SubCodes += `}`;
-
-      const kernel1 = {
-        variableNames: [...imageVariableNames, 'extrema', 'radial'],
-        outputShape: [prunedExtremasT.shape[0], radialPropertiesT.shape[0], 2], // last dimension: [fbin, magnitude]
-        userCode: `
-	  ${kernel1SubCodes}
-
-	  void main() {
-	    ivec3 coords = getOutputCoords();
-	    int featureIndex = coords[0];
-	    int radialIndex = coords[1];
-	    int propertyIndex = coords[2];
-
-	    int radialY = int(getRadial(radialIndex, 0));
-	    int radialX = int(getRadial(radialIndex, 1));
-	    float radialW = getRadial(radialIndex, 2);
-
-	    int octave = int(getExtrema(featureIndex, 1));
-	    int y = int(getExtrema(featureIndex, 2));
-	    int x = int(getExtrema(featureIndex, 3));
-
-	    int xp = x + radialX;
-	    int yp = y + radialY;
-
-	    float dy = getPixel(octave, yp+1, xp) - getPixel(octave, yp-1, xp);
-	    float dx = getPixel(octave, yp, xp+1) - getPixel(octave, yp, xp-1);
-
-	    if (propertyIndex == 0) {
-	      // be careful that atan(0, 0) gives 1.57 instead of 0 (different from js), but doesn't matter here, coz magnitude is 0
-	      
-	      float angle = atan(dy, dx) + ${Math.PI};
-	      float fbin = angle * ${ORIENTATION_NUM_BINS}. * ${oneOver2PI};
-	      setOutput(fbin);
-	      return;
-	    }
-
-	    if (propertyIndex == 1) {
-	      float mag = sqrt(dx * dx + dy * dy);
-	      float magnitude = radialW * mag;
-	      setOutput(magnitude);
-	      return;
-	    }
-	  }
-
-	`,
-      };
-
-      const kernel2 = {
-        variableNames: ['fbinMag'],
-        outputShape: [prunedExtremasT.shape[0], ORIENTATION_NUM_BINS],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-	    int featureIndex = coords[0];
-	    int binIndex = coords[1];
-
-	    float sum = 0.;
-	    for (int i = 0; i < ${radialPropertiesT.shape[0]}; i++) {
-	      float fbin = getFbinMag(featureIndex, i, 0);
-	      int bin = int(floor(fbin - 0.5));
-	      int b1 = imod(bin + ${ORIENTATION_NUM_BINS}, ${ORIENTATION_NUM_BINS});
-	      int b2 = imod(bin + 1 + ${ORIENTATION_NUM_BINS}, ${ORIENTATION_NUM_BINS});
-
-	      if (b1 == binIndex || b2 == binIndex) {
-		float magnitude = getFbinMag(featureIndex, i, 1);
-		float w2 = fbin - float(bin) - 0.5;
-		float w1 = w2 * -1. + 1.;
-
-		if (b1 == binIndex) {
-		  sum += w1 * magnitude;
-		}
-		if (b2 == binIndex) {
-		  sum += w2 * magnitude;
-		}
-	      }
-	    }
-	    setOutput(sum);
-	  }
-	`,
-      };
-
-      this.kernelCaches.computeOrientationHistograms = [kernel1, kernel2];
+      this.kernelCaches.computeOrientationHistograms = DetectorKernel.computeOrientationHistograms(
+        pyramidImagesT,
+        prunedExtremasT,
+        radialPropertiesT,
+        oneOver2PI
+      );
     }
 
     return tf.tidy(() => {
@@ -596,28 +356,9 @@ class Detector {
   }
 
   // The histogram is smoothed with a Gaussian, with sigma = 1
-  _smoothHistograms(histograms: tf.Tensor<tf.Rank>) {
+  private _smoothHistograms(histograms: tf.Tensor<tf.Rank>) {
     if (!this.kernelCaches.smoothHistograms) {
-      const kernel = {
-        variableNames: ['histogram'],
-        outputShape: [histograms.shape[0], ORIENTATION_NUM_BINS],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-
-	    int featureIndex = coords[0];
-	    int binIndex = coords[1];
-
-	    int prevBin = imod(binIndex - 1 + ${ORIENTATION_NUM_BINS}, ${ORIENTATION_NUM_BINS});
-	    int nextBin = imod(binIndex + 1, ${ORIENTATION_NUM_BINS});
-
-            float result = 0.274068619061197 * getHistogram(featureIndex, prevBin) + 0.451862761877606 * getHistogram(featureIndex, binIndex) + 0.274068619061197 * getHistogram(featureIndex, nextBin);
-
-	    setOutput(result);
-	  }
-	`,
-      };
-      this.kernelCaches.smoothHistograms = kernel;
+      this.kernelCaches.smoothHistograms = DetectorKernel.smoothHistograms(histograms);
     }
 
     return tf.tidy(() => {
@@ -630,49 +371,15 @@ class Detector {
     });
   }
 
-  _computeLocalization(prunedExtremasList: number[][], dogPyramidImagesT: tf.Tensor<tf.Rank>[]) {
+  private _computeLocalization(
+    prunedExtremasList: number[][],
+    dogPyramidImagesT: tf.Tensor<tf.Rank>[]
+  ) {
     if (!this.kernelCaches.computeLocalization) {
-      const dogVariableNames: string[] = [];
-
-      let dogSubCodes = `float getPixel(int octave, int y, int x) {`;
-      for (let i = 1; i < dogPyramidImagesT.length; i++) {
-        // extrema starts from second octave
-        dogVariableNames.push('image' + i);
-
-        dogSubCodes += `
-	  if (octave == ${i}) {
-	    return getImage${i}(y, x);
-	  }
- 	`;
-      }
-
-      dogSubCodes += `}`;
-
-      const kernel = {
-        variableNames: [...dogVariableNames, 'extrema'],
-        outputShape: [prunedExtremasList.length, 3, 3], // 3x3 pixels around the extrema
-        userCode: `
-	  ${dogSubCodes}
-
-	  void main() {
-	    ivec3 coords = getOutputCoords();
-	    int featureIndex = coords[0];
-	    float score = getExtrema(featureIndex, 0);
-	    if (score == 0.0) {
-	      return;
-	    }
-
-	    int dy = coords[1]-1;
-	    int dx = coords[2]-1;
-	    int octave = int(getExtrema(featureIndex, 1));
-	    int y = int(getExtrema(featureIndex, 2));
-	    int x = int(getExtrema(featureIndex, 3));
-	    setOutput(getPixel(octave, y+dy, x+dx));
-	  }
-	`,
-      };
-
-      this.kernelCaches.computeLocalization = [kernel];
+      this.kernelCaches.computeLocalization = DetectorKernel.computeLocalization(
+        dogPyramidImagesT,
+        prunedExtremasList
+      );
     }
 
     return tf.tidy(() => {
@@ -741,7 +448,7 @@ class Detector {
   // faster to do it in CPU
   // if we do in gpu, we probably need to use tf.topk(), which seems to be run in CPU anyway (no gpu operation for that)
   //  TODO: research adapative maximum supression method
-  _applyPrune(extremasResultsT: tf.Tensor<tf.Rank>[]) {
+  private _applyPrune(extremasResultsT: tf.Tensor<tf.Rank>[]) {
     const nBuckets = NUM_BUCKETS_PER_DIMENSION * NUM_BUCKETS_PER_DIMENSION;
     const nFeatures = MAX_FEATURES_PER_BUCKET;
 
@@ -754,40 +461,7 @@ class Detector {
         const extremaHeight = extremasResultsT[k].shape[0] as number;
         const extremaWidth = extremasResultsT[k].shape[1] as number;
 
-        const kernel = {
-          variableNames: ['extrema'],
-          outputShape: [Math.floor(extremaHeight / 2), Math.floor(extremaWidth / 2)],
-          userCode: `
-	    void main() {
-	      ivec2 coords = getOutputCoords();
-	      int y = coords[0] * 2;
-	      int x = coords[1] * 2;
-
-	      float location = 0.0;
-	      float values = getExtrema(y, x);
-
-	      if (getExtrema(y+1, x) != 0.0) {
-	        location = 1.0;
-		values = getExtrema(y+1, x);
-	      }
-	      else if (getExtrema(y, x+1) != 0.0) {
-	        location = 2.0;
-		values = getExtrema(y, x+1);
-	      }
-	      else if (getExtrema(y+1, x+1) != 0.0) {
-	        location = 3.0;
-		values = getExtrema(y+1, x+1);
-	      }
-
-	      if (values < 0.0) {
-	        setOutput(location * -1000.0 + values);
-	      } else {
-	        setOutput(location * 1000.0 + values);
-	      }
-	    }
-	  `,
-        };
-        reductionKernels.push(kernel);
+        reductionKernels.push(DetectorKernel.applyPrune(extremaHeight, extremaWidth));
       }
 
       this.kernelCaches.applyPrune = { reductionKernels };
@@ -872,7 +546,7 @@ class Detector {
     return list;
   }
 
-  _buildExtremas(
+  private _buildExtremas(
     image0: tf.Tensor<tf.Rank>,
     image1: tf.Tensor<tf.Rank>,
     image2: tf.Tensor<tf.Rank>
@@ -885,78 +559,10 @@ class Detector {
     if (!this.kernelCaches.buildExtremas) this.kernelCaches.buildExtremas = {};
 
     if (!this.kernelCaches.buildExtremas[kernelKey]) {
-      const kernel = {
-        variableNames: ['image0', 'image1', 'image2'],
-        outputShape: [imageHeight, imageWidth],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-
-	    int y = coords[0];
-	    int x = coords[1];
-
-	    float value = getImage1(y, x);
-
-	    // Step 1: find local maxima/minima
-	    if (value * value < ${LAPLACIAN_SQR_THRESHOLD}.) {
-	      setOutput(0.);
-	      return;
-	    }
-	    if (y < ${FREAK_EXPANSION_FACTOR} || y > ${imageHeight - 1 - FREAK_EXPANSION_FACTOR}) {
-	      setOutput(0.);
-	      return;
-	    }
-	    if (x < ${FREAK_EXPANSION_FACTOR} || x > ${imageWidth - 1 - FREAK_EXPANSION_FACTOR}) {
-	      setOutput(0.);
-	      return;
-	    }
-
-	    bool isMax = true;
-	    bool isMin = true;
-	    for (int dy = -1; dy <= 1; dy++) {
-	      for (int dx = -1; dx <= 1; dx++) {
-	        float value0 = getImage0(y+dy, x+dx);
-	        float value1 = getImage1(y+dy, x+dx);
-	        float value2 = getImage2(y+dy, x+dx);
-
-		if (value < value0 || value < value1 || value < value2) {
-		  isMax = false;
-		}
-		if (value > value0 || value > value1 || value > value2) {
-		  isMin = false;
-		}
-	      }
-	    }
-
-	    if (!isMax && !isMin) {
-	      setOutput(0.);
-	      return;
-	    }
-
-	    // compute edge score and reject based on threshold
-	    float dxx = getImage1(y, x+1) + getImage1(y, x-1) - 2. * getImage1(y, x);
-	    float dyy = getImage1(y+1, x) + getImage1(y-1, x) - 2. * getImage1(y, x);
-	    float dxy = 0.25 * (getImage1(y-1,x-1) + getImage1(y+1,x+1) - getImage1(y-1,x+1) - getImage1(y+1,x-1));
-
-	    float det = (dxx * dyy) - (dxy * dxy);
-
-	    if (abs(det) < 0.0001) { // determinant undefined. no solution
-	      setOutput(0.);
-	      return;
-	    }
-
-	    float edgeScore = (dxx + dyy) * (dxx + dyy) / det;
-
-	    if (abs(edgeScore) >= ${EDGE_HESSIAN_THRESHOLD} ) {
-	      setOutput(0.);
-	      return;
-	    }
-	    setOutput(getImage1(y,x));
-	  }
-	`,
-      };
-
-      this.kernelCaches.buildExtremas[kernelKey] = kernel;
+      this.kernelCaches.buildExtremas[kernelKey] = DetectorKernel.buildExtremas(
+        imageHeight,
+        imageWidth
+      );
     }
 
     return tf.tidy(() => {
@@ -968,56 +574,25 @@ class Detector {
     });
   }
 
-  _differenceImageBinomial(image1: tf.Tensor<tf.Rank>, image2: tf.Tensor<tf.Rank>) {
+  private _differenceImageBinomial(image1: tf.Tensor<tf.Rank>, image2: tf.Tensor<tf.Rank>) {
     return tf.tidy(() => {
       return image1.sub(image2);
     });
   }
 
   // 4th order binomail filter [1,4,6,4,1] X [1,4,6,4,1]
-  _applyFilter(image: tf.Tensor<tf.Rank>) {
-    const imageHeight = image.shape[0];
-    const imageWidth = image.shape[1];
+  private _applyFilter(image: tf.Tensor<tf.Rank>) {
+    const imageHeight = image.shape[0] as number;
+    const imageWidth = image.shape[1] as number;
 
     const kernelKey = 'w' + imageWidth;
     if (!this.kernelCaches.applyFilter) this.kernelCaches.applyFilter = {};
 
     if (!this.kernelCaches.applyFilter[kernelKey]) {
-      const kernel1 = {
-        variableNames: ['p'],
-        outputShape: [imageHeight, imageWidth],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-
-	    float sum = getP(coords[0], coords[1]-2);
-	    sum += getP(coords[0], coords[1]-1) * 4.;
-	    sum += getP(coords[0], coords[1]) * 6.;
-	    sum += getP(coords[0], coords[1]+1) * 4.;
-	    sum += getP(coords[0], coords[1]+2);
-	    setOutput(sum);
-	  }
-	`,
-      };
-
-      const kernel2 = {
-        variableNames: ['p'],
-        outputShape: [imageHeight, imageWidth],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-
-	    float sum = getP(coords[0]-2, coords[1]);
-	    sum += getP(coords[0]-1, coords[1]) * 4.;
-	    sum += getP(coords[0], coords[1]) * 6.;
-	    sum += getP(coords[0]+1, coords[1]) * 4.;
-	    sum += getP(coords[0]+2, coords[1]);
-	    sum /= 256.;
-	    setOutput(sum);
-	  }
-	`,
-      };
-      this.kernelCaches.applyFilter[kernelKey] = [kernel1, kernel2];
+      this.kernelCaches.applyFilter[kernelKey] = DetectorKernel.applyFilter(
+        imageHeight,
+        imageWidth
+      );
     }
 
     return tf.tidy(() => {
@@ -1029,46 +604,17 @@ class Detector {
     });
   }
 
-  _upsampleBilinear(image: tf.Tensor<tf.Rank>, targetImage: tf.Tensor<tf.Rank>) {
-    const imageWidth = image.shape[1];
+  private _upsampleBilinear(image: tf.Tensor<tf.Rank>, targetImage: tf.Tensor<tf.Rank>) {
+    const imageWidth = image.shape[1] as number;
 
     const kernelKey = 'w' + imageWidth;
     if (!this.kernelCaches.upsampleBilinear) this.kernelCaches.upsampleBilinear = {};
 
     if (!this.kernelCaches.upsampleBilinear[kernelKey]) {
-      const kernel = {
-        variableNames: ['p'],
-        outputShape: [targetImage.shape[0], targetImage.shape[1]],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-	    int j = coords[0];
-	    int i = coords[1];
-
-	    float sj = 0.5 * float(j) - 0.25; 
-	    float si = 0.5 * float(i) - 0.25;
-
-	    float sj0 = floor(sj);
-	    float sj1 = ceil(sj);
-	    float si0 = floor(si);
-	    float si1 = ceil(si);
-
-	    int sj0I = int(sj0);
-	    int sj1I = int(sj1);
-	    int si0I = int(si0);
-	    int si1I = int(si1);
-
-	    float sum = 0.0;
-	    sum += getP(sj0I, si0I) * (si1 - si) * (sj1 - sj);
-	    sum += getP(sj1I, si0I) * (si1 - si) * (sj - sj0);
-	    sum += getP(sj0I, si1I) * (si - si0) * (sj1 - sj);
-	    sum += getP(sj1I, si1I) * (si - si0) * (sj - sj0);
-	    setOutput(sum);
-	  }
-	`,
-      };
-
-      this.kernelCaches.upsampleBilinear[kernelKey] = kernel;
+      this.kernelCaches.upsampleBilinear[kernelKey] = DetectorKernel.upsampleBilinear(
+        targetImage.shape[0] as number,
+        targetImage.shape[1] as number
+      );
     }
 
     return tf.tidy(() => {
@@ -1077,7 +623,7 @@ class Detector {
     });
   }
 
-  _downsampleBilinear(image: tf.Tensor<tf.Rank>) {
+  private _downsampleBilinear(image: tf.Tensor<tf.Rank>) {
     const imageHeight = image.shape[0] as number;
     const imageWidth = image.shape[1] as number;
 
@@ -1085,25 +631,10 @@ class Detector {
     if (!this.kernelCaches.downsampleBilinear) this.kernelCaches.downsampleBilinear = {};
 
     if (!this.kernelCaches.downsampleBilinear[kernelKey]) {
-      const kernel = {
-        variableNames: ['p'],
-        outputShape: [Math.floor(imageHeight / 2), Math.floor(imageWidth / 2)],
-        userCode: `
-	  void main() {
-	    ivec2 coords = getOutputCoords();
-	    int y = coords[0] * 2;
-	    int x = coords[1] * 2;
-
-	    float sum = getP(y, x) * 0.25;
-	    sum += getP(y+1,x) * 0.25; 
-	    sum += getP(y, x+1) * 0.25; 
-	    sum += getP(y+1,x+1) * 0.25;
-	    setOutput(sum);
-	  }
-	`,
-      };
-
-      this.kernelCaches.downsampleBilinear[kernelKey] = kernel;
+      this.kernelCaches.downsampleBilinear[kernelKey] = DetectorKernel.downsampleBilinear(
+        imageHeight,
+        imageWidth
+      );
     }
 
     return tf.tidy(() => {
@@ -1112,13 +643,13 @@ class Detector {
     });
   }
 
-  _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
+  private _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
     const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
 
     return tf.engine().makeTensorFromDataId(outInfo.dataId, outInfo.shape, outInfo.dtype);
   }
 
-  _runWebGLProgram(
+  private _runWebGLProgram(
     program: GPGPUProgram,
     inputs: tf.TensorInfo[],
     outputType: keyof tf.DataTypeMap

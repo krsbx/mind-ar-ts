@@ -18,6 +18,7 @@ class Estimator {
       worldCoords,
       projectionTransform: this.projectionTransform,
     });
+
     return modelViewTransform;
   }
 

@@ -23,4 +23,23 @@ interface IAnchor {
   css: boolean;
 }
 
-export type { ThreeConstructor, IAnchor, EstimateResult, IOnUpdateArgs };
+type Matrix4Args = readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number
+];
+
+export type { ThreeConstructor, IAnchor, EstimateResult, IOnUpdateArgs, Matrix4Args };
