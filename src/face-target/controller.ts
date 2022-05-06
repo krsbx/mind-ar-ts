@@ -119,6 +119,11 @@ class Controller {
 
   async processFilters(input: InputImage) {
     const results = await this.faceMeshHelper.detect(input);
+
+    if (!results) return;
+
+    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+
     const landmarks: number[][] = results.multiFaceLandmarks[0].map((l) => [l.x, l.y, l.z]);
 
     const estimateResult = this.estimator.estimate(landmarks);
@@ -138,7 +143,8 @@ class Controller {
     return async () => {
       const results = await this.faceMeshHelper.detect(input);
 
-      if (results.multiFaceLandmarks.length === 0) this.resetFilters();
+      if (results && results.multiFaceLandmarks && results.multiFaceLandmarks.length === 0)
+        this.resetFilters();
       else this.processFilters(input);
 
       if (this.processingVideo) window.requestAnimationFrame(this.doVideoProcessing(input));

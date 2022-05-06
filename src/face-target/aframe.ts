@@ -31,16 +31,20 @@ AFRAME.registerSystem('mindar-face-system', {
     uiError,
     filterMinCF,
     filterBeta,
+    shouldFaceUser,
   }: {
     uiLoading: string;
     uiScanning: string;
     uiError: string;
     filterMinCF: number;
     filterBeta: number;
+    shouldFaceUser?: boolean;
   }) {
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
+
+    if (shouldFaceUser !== undefined) this.shouldFaceUser = shouldFaceUser;
   },
 
   registerFaceMesh: function (el: any) {
@@ -95,31 +99,6 @@ AFRAME.registerSystem('mindar-face-system', {
     this.controller.processVideo(this.video);
   },
 
-  // mock a video with an image
-  __startVideo: function () {
-    this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
-    this.video.onload = async () => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      this.video.videoWidth = this.video.width;
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      this.video.videoHeight = this.video.height;
-
-      await this._setupAR();
-      this._processVideo();
-      this.ui.hideLoading();
-    };
-
-    this.video.style.position = 'absolute';
-    this.video.style.top = '0px';
-    this.video.style.left = '0px';
-    this.video.style.zIndex = '-2';
-    this.video.src = './assets/face1.jpeg';
-
-    this.container.appendChild(this.video);
-  },
-
   _startVideo: async function () {
     this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
@@ -143,10 +122,17 @@ AFRAME.registerSystem('mindar-face-system', {
     }
 
     try {
+      const DEVICES = await navigator.mediaDevices.enumerateDevices();
+      const devices = DEVICES.filter((device) => device.kind === 'videoinput');
+
+      let facingMode: VideoFacingModeEnum = 'environment';
+
+      if (devices.length > 1) facingMode = this.shouldFaceUser ? 'user' : 'environment';
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: this.shouldFaceUser ? 'face' : 'environment',
+          facingMode,
         },
       });
 
@@ -283,6 +269,7 @@ AFRAME.registerComponent('mindar-face', {
     uiError: { type: 'string', default: 'yes' },
     filterMinCF: { type: 'number', default: -1 },
     filterBeta: { type: 'number', default: -1 },
+    shouldFaceUser: { type: 'boolean', default: true },
   },
 
   init: function () {
@@ -300,6 +287,7 @@ AFRAME.registerComponent('mindar-face', {
       uiError: this.data.uiError,
       filterMinCF: this.data.filterMinCF === -1 ? null : this.data.filterMinCF,
       filterBeta: this.data.filterBeta === -1 ? null : this.data.filterBeta,
+      shouldFaceUser: this.data.shouldFaceUser,
     });
 
     if (this.data.autoStart)

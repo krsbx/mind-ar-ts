@@ -1,5 +1,5 @@
 // TODO: delete opencv Mat
-import * as cv from '@techstark/opencv-js';
+import cv from '@techstark/opencv-js';
 import { positions as canonicalMetricLandmarks, landmarkBasis } from './face-data';
 
 const landmarkWeights: number[] = [];
