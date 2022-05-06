@@ -21,7 +21,10 @@ const config: webpack.Configuration = {
     rules: [
       {
         test: /\.worker\.ts$/,
-        use: 'worker-loader',
+        loader: 'worker-loader',
+        options: {
+          inline: 'no-fallback',
+        },
       },
       {
         test: /\.ts$/,
