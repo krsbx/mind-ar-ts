@@ -6,9 +6,9 @@ const config: webpack.Configuration = {
     'mindar-image': './src/image-target/index.ts',
     'mindar-image-aframe': './src/image-target/aframe.ts',
     'mindar-image-three': './src/image-target/three.ts',
-    // 'mindar-face': './src/face-target/index.ts',
-    // 'mindar-face-aframe': './src/face-target/aframe.ts',
-    // 'mindar-face-three': './src/face-target/three.ts',
+    'mindar-face': './src/face-target/index.ts',
+    'mindar-face-aframe': './src/face-target/aframe.ts',
+    'mindar-face-three': './src/face-target/three.ts',
   },
   mode: 'production',
   output: {

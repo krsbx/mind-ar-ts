@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
-import { AEntity } from 'aframe';
+import { AScene } from 'aframe';
 import { Matrix4 } from 'three';
 import { UI } from '../ui/ui';
 import { Controller } from './controller';
@@ -231,7 +231,7 @@ AFRAME.registerSystem('mindar-image-system', {
     const far = proj[14] / (proj[10] + 1.0);
 
     const newAspect = container.clientWidth / container.clientHeight;
-    const cameraEle = container.getElementsByTagName('a-camera')[0] as typeof AEntity;
+    const cameraEle = container.getElementsByTagName('a-camera')[0] as typeof AScene;
 
     const camera = cameraEle.getObject3D('camera') as any;
     camera.fov = fov;

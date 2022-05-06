@@ -1,24 +1,28 @@
 import * as tf from '@tensorflow/tfjs';
 import * as THREE from 'three';
-import { Controller } from './image-target/controller';
+import { Controller as ImageController } from './image-target/controller';
+import { Controller as FaceController } from './face-target/controller';
 import { Compiler } from './image-target/compiler';
 import { UI } from './ui/ui';
-import { MindARThree } from './image-target/three';
+import { MindARThree as ImageThree } from './image-target/three';
+import { MindARThree as FaceThree } from './face-target/three';
 
 declare global {
   interface Window {
     MINDAR: {
       IMAGE: {
-        Controller: typeof Controller;
+        Controller: typeof ImageController;
         Compiler: typeof Compiler;
         UI: typeof UI;
-        MindARThree: typeof MindARThree;
+        MindARThree: typeof ImageThree;
         THREE: THREE;
         tf: tf;
       };
       FACE: {
-        Controller: typeof Controller;
+        Controller: typeof FaceController;
         UI: typeof UI;
+        MindARThree: typeof FaceThree;
+        THREE: THREE;
       };
     };
   }
