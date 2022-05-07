@@ -139,7 +139,7 @@ class Controller {
     }
   }
 
-  doVideoProcessing(input: InputImage) {
+  private _doVideoProcessing(input: InputImage) {
     return async () => {
       const results = await this.faceMeshHelper.detect(input);
 
@@ -147,16 +147,16 @@ class Controller {
         this.resetFilters();
       else this.processFilters(input);
 
-      if (this.processingVideo) window.requestAnimationFrame(this.doVideoProcessing(input));
+      if (this.processingVideo) window.requestAnimationFrame(this._doVideoProcessing(input));
     };
   }
 
-  async processVideo(input: InputImage) {
+  processVideo(input: InputImage) {
     if (this.processingVideo) return;
 
     this.processingVideo = true;
 
-    window.requestAnimationFrame(this.doVideoProcessing(input));
+    window.requestAnimationFrame(this._doVideoProcessing(input));
   }
 
   stopProcessVideo() {

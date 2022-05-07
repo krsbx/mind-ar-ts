@@ -209,14 +209,8 @@ class Controller {
     return modelViewTransform;
   }
 
-  processVideo(input: CanvasImageSource) {
-    if (this.processingVideo) return;
-
-    this.processingVideo = true;
-
-    this.trackingStates = [];
-
-    for (let i = 0; i < this.markerDimensions.length; i++) {
+  private _populateTrackingStates() {
+    for (let i = 0; i < this.markerDimensions.length; i++)
       this.trackingStates.push({
         showing: false,
         isTracking: false,
@@ -225,123 +219,149 @@ class Controller {
         trackMiss: 0,
         filter: new OneEuroFilter({ minCutOff: this.filterMinCF, beta: this.filterBeta }),
       } as ITrackingState);
+  }
+
+  private async _matchImageTarget(nTracking: number, inputT: tf.Tensor<tf.Rank>) {
+    // detect and match only if less then maxTrack
+    if (nTracking > this.maxTrack) return;
+
+    const matchingIndexes = [];
+
+    for (let i = 0; i < this.trackingStates.length; i++) {
+      const trackingState = this.trackingStates[i];
+
+      if (trackingState.isTracking === true) continue;
+      if (this.interestedTargetIndex !== -1 && this.interestedTargetIndex !== i) continue;
+
+      matchingIndexes.push(i);
     }
 
-    const startProcessing = async () => {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        if (!this.processingVideo) break;
+    const { targetIndex: matchedTargetIndex, modelViewTransform } = await this._detectAndMatch(
+      inputT,
+      matchingIndexes
+    );
 
-        const inputT = this.inputLoader.loadInput(input);
+    if (matchedTargetIndex === -1) return;
 
-        const nTracking = this.trackingStates.reduce((acc, s) => {
-          return acc + (s.isTracking ? 1 : 0);
-        }, 0);
+    this.trackingStates[matchedTargetIndex].isTracking = true;
+    this.trackingStates[matchedTargetIndex].currentModelViewTransform = modelViewTransform;
+  }
 
-        // detect and match only if less then maxTrack
-        if (nTracking < this.maxTrack) {
-          const matchingIndexes = [];
-          for (let i = 0; i < this.trackingStates.length; i++) {
-            const trackingState = this.trackingStates[i];
+  private async _updateModelViewTransform1(targetIndex: number, inputT: tf.Tensor<tf.Rank>) {
+    const trackingState = this.trackingStates[targetIndex];
 
-            if (trackingState.isTracking === true) continue;
-            if (this.interestedTargetIndex !== -1 && this.interestedTargetIndex !== i) continue;
+    if (!trackingState.isTracking || !trackingState.currentModelViewTransform) return;
 
-            matchingIndexes.push(i);
-          }
+    const modelViewTransform = await this._trackAndUpdate(
+      inputT,
+      trackingState.currentModelViewTransform,
+      targetIndex
+    );
 
-          const { targetIndex: matchedTargetIndex, modelViewTransform } =
-            await this._detectAndMatch(inputT, matchingIndexes);
+    if (!modelViewTransform) trackingState.isTracking = false;
+    else trackingState.currentModelViewTransform = modelViewTransform;
+  }
 
-          if (matchedTargetIndex !== -1) {
-            this.trackingStates[matchedTargetIndex].isTracking = true;
-            this.trackingStates[matchedTargetIndex].currentModelViewTransform = modelViewTransform;
-          }
-        }
+  private _showAfterWarmup(targetIndex: number) {
+    const trackingState = this.trackingStates[targetIndex];
 
-        // tracking update
-        for (let i = 0; i < this.trackingStates.length; i++) {
-          const trackingState = this.trackingStates[i];
+    // if not showing, then show it once it reaches warmup number of frames
+    if (trackingState.showing || !trackingState.isTracking) return;
 
-          if (trackingState.isTracking) {
-            const modelViewTransform = await this._trackAndUpdate(
-              inputT,
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              trackingState.currentModelViewTransform!,
-              i
-            );
+    trackingState.trackMiss = 0;
+    trackingState.trackCount += 1;
 
-            if (!modelViewTransform) trackingState.isTracking = false;
-            else trackingState.currentModelViewTransform = modelViewTransform;
-          }
+    if (trackingState.trackCount <= this.warmupTolerance) return;
 
-          // if not showing, then show it once it reaches warmup number of frames
-          if (!trackingState.showing) {
-            if (trackingState.isTracking) {
-              trackingState.trackMiss = 0;
-              trackingState.trackCount += 1;
+    trackingState.showing = true;
+    trackingState.trackingMatrix = null;
+    trackingState.filter.reset();
+  }
 
-              if (trackingState.trackCount > this.warmupTolerance) {
-                trackingState.showing = true;
-                trackingState.trackingMatrix = null;
-                trackingState.filter.reset();
-              }
-            }
-          }
+  private _hideAfterMiss(targetIndex: number) {
+    const trackingState = this.trackingStates[targetIndex];
 
-          // if showing, then count miss, and hide it when reaches tolerance
-          if (trackingState.showing) {
-            if (!trackingState.isTracking) {
-              trackingState.trackCount = 0;
-              trackingState.trackMiss += 1;
+    // if showing, then count miss, and hide it when reaches tolerance
+    if (!trackingState.showing) return;
 
-              if (trackingState.trackMiss > this.missTolerance) {
-                trackingState.showing = false;
-                trackingState.trackingMatrix = null;
+    if (trackingState.isTracking) {
+      trackingState.trackMiss = 0;
+      return;
+    }
 
-                this.onUpdate &&
-                  this.onUpdate({
-                    type: ON_UPDATE_EVENT.UPDATE_MATRIX,
-                    targetIndex: i,
-                    worldMatrix: null,
-                  });
-              }
-            } else {
-              trackingState.trackMiss = 0;
-            }
-          }
+    trackingState.trackCount = 0;
+    trackingState.trackMiss += 1;
 
-          // if showing, then call onUpdate, with world matrix
-          if (trackingState.showing) {
-            const worldMatrix = this._glModelViewMatrix(
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              trackingState.currentModelViewTransform!,
-              i
-            );
-            trackingState.trackingMatrix = trackingState.filter.filter(Date.now(), worldMatrix);
+    if (trackingState.trackMiss < this.missTolerance) return;
 
-            const clone: number[] = [];
+    trackingState.showing = false;
+    trackingState.trackingMatrix = null;
 
-            for (let j = 0; j < trackingState.trackingMatrix.length; j++)
-              clone[j] = trackingState.trackingMatrix[j];
+    this.onUpdate?.({
+      type: ON_UPDATE_EVENT.UPDATE_MATRIX,
+      targetIndex,
+      worldMatrix: null,
+    });
+  }
 
-            this.onUpdate &&
-              this.onUpdate({
-                type: ON_UPDATE_EVENT.UPDATE_MATRIX,
-                targetIndex: i,
-                worldMatrix: clone,
-              });
-          }
-        }
+  private async _updateModelViewTransform2(targetIndex: number) {
+    const trackingState = this.trackingStates[targetIndex];
 
-        inputT.dispose();
+    if (!trackingState.showing || !trackingState.currentModelViewTransform) return;
 
-        this.onUpdate && this.onUpdate({ type: ON_UPDATE_EVENT.DONE });
+    // if showing, then call onUpdate, with world matrix
+    const worldMatrix = this._glModelViewMatrix(
+      trackingState.currentModelViewTransform,
+      targetIndex
+    );
+    trackingState.trackingMatrix = trackingState.filter.filter(Date.now(), worldMatrix);
 
-        await tf.nextFrame();
+    const clone: number[] = [];
+
+    for (let j = 0; j < trackingState.trackingMatrix.length; j++)
+      clone[j] = trackingState.trackingMatrix[j];
+
+    this.onUpdate?.({
+      type: ON_UPDATE_EVENT.UPDATE_MATRIX,
+      targetIndex,
+      worldMatrix: clone,
+    });
+  }
+
+  private async _doVideoProcessing(input: CanvasImageSource) {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (!this.processingVideo) break;
+
+      const nTracking = this.trackingStates.reduce((acc, s) => acc + (s.isTracking ? 1 : 0), 0);
+      const inputT = this.inputLoader.loadInput(input);
+
+      await this._matchImageTarget(nTracking, inputT);
+
+      for (let i = 0; i < this.trackingStates.length; i++) {
+        // const trackingState = this.trackingStates[i];
+
+        await this._updateModelViewTransform1(i, inputT);
+
+        this._showAfterWarmup(i);
+
+        this._hideAfterMiss(i);
+
+        await this._updateModelViewTransform2(i);
       }
-    };
-    startProcessing();
+    }
+  }
+
+  processVideo(input: CanvasImageSource) {
+    if (this.processingVideo) return;
+
+    this.processingVideo = true;
+
+    this.trackingStates = [];
+
+    this._populateTrackingStates();
+
+    this._doVideoProcessing(input);
   }
 
   stopProcessVideo() {
@@ -380,7 +400,7 @@ class Controller {
     return modelViewTransform2;
   }
 
-  _workerMatch(featurePoints: IMaximaMinimaPoint[], targetIndexes: number[]) {
+  private _workerMatch(featurePoints: IMaximaMinimaPoint[], targetIndexes: number[]) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<IControllerWorkerResult['MATCH']>(async (resolve) => {
       this.workerMatchDone = (data: IControllerWorkerResult['MATCH']) => {
@@ -395,7 +415,7 @@ class Controller {
     });
   }
 
-  _workerTrackUpdate(modelViewTransform: number[][], trackingFeatures: ITrackingCoords) {
+  private _workerTrackUpdate(modelViewTransform: number[][], trackingFeatures: ITrackingCoords) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<number[][]>(async (resolve) => {
       this.workerTrackDone = (data: IControllerWorkerResult['TRACK_UPDATE']) => {
@@ -413,7 +433,7 @@ class Controller {
     });
   }
 
-  _glModelViewMatrix(modelViewTransform: number[][], targetIndex: number) {
+  private _glModelViewMatrix(modelViewTransform: number[][], targetIndex: number) {
     const height = this.markerDimensions[targetIndex][1];
 
     // Question: can someone verify this interpreation is correct?
