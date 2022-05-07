@@ -1,4 +1,4 @@
-import { CumulativeSum } from '../../utils/image-target';
+import { CumulativeSum } from '../../utils/cumsum';
 
 interface IBaseOptions {
   image: ImageData;

@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Matrix4 } from 'three';
 import { Helper } from '../../libs';
+import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 
-AFRAME.registerComponent('mindar-image-target', {
-  dependencies: ['mindar-image-system'],
+AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
+  dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
   el: null as any,
   postMatrix: Helper.castTo<Matrix4>(null), // rescale the anchor to make width of 1 unit = physical width of card
 
@@ -12,7 +13,7 @@ AFRAME.registerComponent('mindar-image-target', {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems['mindar-image-system'];
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM];
     arSystem.registerAnchor(this, this.data.targetIndex);
 
     const root = this.el.object3D;
@@ -37,8 +38,8 @@ AFRAME.registerComponent('mindar-image-target', {
   },
 
   updateWorldMatrix(worldMatrix: number[] | null) {
-    if (!this.el.object3D.visible && worldMatrix) this.el.emit('targetFound');
-    else if (this.el.object3D.visible && !worldMatrix) this.el.emit('targetLost');
+    if (!this.el.object3D.visible && worldMatrix) this.el.emit(AR_EVENT_NAME.MARKER_FOUND);
+    else if (this.el.object3D.visible && !worldMatrix) this.el.emit(AR_EVENT_NAME.MARKER_LOST);
 
     this.el.object3D.visible = !!worldMatrix;
     if (!worldMatrix) return;
@@ -50,5 +51,3 @@ AFRAME.registerComponent('mindar-image-target', {
     this.el.object3D.matrix = m;
   },
 });
-
-export {};

@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BufferGeometry } from 'three';
+import { AR_COMPONENT_NAME } from '../utils/constant';
+import { AR_ELEMENT_TAG } from '../../utils/constant';
 
-AFRAME.registerComponent('mindar-face-default-face-occluder', {
+AFRAME.registerComponent(AR_COMPONENT_NAME.DEFAULT_OCCLUDER, {
   el: null as any,
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems['mindar-face-system'];
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.FACE_SYSTEM];
     arSystem.registerFaceMesh(this);
 
     const root = this.el.object3D;
@@ -23,12 +25,9 @@ AFRAME.registerComponent('mindar-face-default-face-occluder', {
 
   addFaceMesh(faceGeometry: BufferGeometry) {
     const material = new AFRAME.THREE.MeshBasicMaterial({ colorWrite: false });
-    //const material = new AFRAME.THREE.MeshBasicMaterial({colorWrite: '#CCCCCC'});
 
     const mesh = new AFRAME.THREE.Mesh(faceGeometry, material);
 
-    this.el.setObject3D('mesh', mesh);
+    this.el.setObject3D(AR_ELEMENT_TAG.MESH, mesh);
   },
 });
-
-export {};

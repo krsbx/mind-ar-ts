@@ -3,6 +3,7 @@ import loadingHTML from './loading.html?raw';
 import compatibilityHTML from './compatibility.html?raw';
 import scanningHTML from './scanning.html?raw';
 import { Helper } from '../libs';
+import { CONFIRMATION, HIDDEN_CLASS_NAME } from '../utils/constant';
 
 class UI {
   private loadingModal: HTMLElement;
@@ -18,13 +19,13 @@ class UI {
     uiScanning: string;
     uiError: string;
   }) {
-    if (uiLoading === 'yes') this.loadingModal = this._loadHTML(loadingHTML);
+    if (uiLoading === CONFIRMATION.YES) this.loadingModal = this._loadHTML(loadingHTML);
     else this.loadingModal = document.querySelector(uiLoading);
 
-    if (uiError === 'yes') this.compatibilityModal = this._loadHTML(compatibilityHTML);
+    if (uiError === CONFIRMATION.YES) this.compatibilityModal = this._loadHTML(compatibilityHTML);
     else this.compatibilityModal = document.querySelector(uiError);
 
-    if (uiScanning === 'yes') this.scanningMask = this._loadHTML(scanningHTML);
+    if (uiScanning === CONFIRMATION.YES) this.scanningMask = this._loadHTML(scanningHTML);
     else this.scanningMask = document.querySelector(uiScanning);
 
     this.hideLoading();
@@ -34,27 +35,32 @@ class UI {
 
   showLoading() {
     if (!this.loadingModal) return;
-    this.loadingModal.classList.remove('hidden');
+    this.loadingModal.classList.remove(HIDDEN_CLASS_NAME);
   }
+
   hideLoading() {
     if (!this.loadingModal) return;
-    this.loadingModal.classList.add('hidden');
+    this.loadingModal.classList.add(HIDDEN_CLASS_NAME);
   }
+
   showCompatibility() {
     if (!this.compatibilityModal) return;
-    this.compatibilityModal.classList.remove('hidden');
+    this.compatibilityModal.classList.remove(HIDDEN_CLASS_NAME);
   }
+
   hideCompatibility() {
     if (!this.compatibilityModal) return;
-    this.compatibilityModal.classList.add('hidden');
+    this.compatibilityModal.classList.add(HIDDEN_CLASS_NAME);
   }
+
   showScanning() {
     if (!this.scanningMask) return;
-    this.scanningMask.classList.remove('hidden');
+    this.scanningMask.classList.remove(HIDDEN_CLASS_NAME);
   }
+
   hideScanning() {
     if (!this.scanningMask) return;
-    this.scanningMask.classList.add('hidden');
+    this.scanningMask.classList.add(HIDDEN_CLASS_NAME);
   }
 
   _loadHTML(html: string) {

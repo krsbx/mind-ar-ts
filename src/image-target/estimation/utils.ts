@@ -88,7 +88,7 @@ const computeScreenCoordiate = (
     y: uy,
     z: uz,
   } = applyModelViewProjectionTransform(modelViewProjectionTransform, x, y, z);
-  //if( Math.abs(uz) < 0.000001 ) return null;
+
   return { x: ux / uz, y: uy / uz };
 };
 

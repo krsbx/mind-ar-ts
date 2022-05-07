@@ -1,10 +1,10 @@
+import { InputImage } from '@mediapipe/face_mesh';
 import { FaceMeshHelper } from './face-mesh-helper';
 import { OneEuroFilter } from '../libs';
 import { Estimator } from './face-geometry/estimator';
 import { _createThreeFaceGeometry } from './face-geometry/face-geometry';
 import { positions as canonicalMetricLandmarks } from './face-geometry/face-data';
 import { DEFAULT_FILTER_BETA, DEFAULT_FILTER_CUTOFF } from './utils/constant';
-import { InputImage } from '@mediapipe/face_mesh';
 import { EstimateResult, IOnUpdateArgs } from './utils/types/face-target';
 
 class Controller {

@@ -3,10 +3,12 @@ import { AScene } from 'aframe';
 import { UI } from '../../ui/ui';
 import { Controller } from '../controller';
 import { Helper } from '../../libs';
+import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
+import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.FACE;
 
-AFRAME.registerSystem('mindar-face-system', {
+AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
   anchorEntities: [] as any[],
@@ -16,8 +18,8 @@ AFRAME.registerSystem('mindar-face-system', {
   controller: Helper.castTo<Controller>(null),
   ui: Helper.castTo<UI>(null),
   el: null as any,
-  shouldFaceUser: <boolean>true,
-  lastHasFace: <boolean>false,
+  shouldFaceUser: true,
+  lastHasFace: false,
 
   init: function () {
     this.anchorEntities = [];
@@ -37,13 +39,12 @@ AFRAME.registerSystem('mindar-face-system', {
     uiError: string;
     filterMinCF: number;
     filterBeta: number;
-    shouldFaceUser?: boolean;
+    shouldFaceUser: boolean;
   }) {
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
-
-    if (shouldFaceUser !== undefined) this.shouldFaceUser = shouldFaceUser;
+    this.shouldFaceUser = shouldFaceUser;
   },
 
   registerFaceMesh: function (el: any) {
@@ -114,7 +115,7 @@ AFRAME.registerSystem('mindar-face-system', {
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       // TODO: show unsupported error
-      this.el.emit('arError', { error: 'VIDEO_FAIL' });
+      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
       this.ui.showCompatibility();
 
       return;
@@ -135,7 +136,7 @@ AFRAME.registerSystem('mindar-face-system', {
         },
       });
 
-      this.video.addEventListener('loadedmetadata', async () => {
+      this.video.addEventListener(GLOBAL_AR_EVENT_NAME.LOADED_METADATA, async () => {
         this.video.setAttribute('width', this.video.videoWidth.toString());
         this.video.setAttribute('height', this.video.videoHeight.toString());
 
@@ -148,17 +149,18 @@ AFRAME.registerSystem('mindar-face-system', {
       this.video.srcObject = stream;
     } catch (err) {
       console.log('getUserMedia error', err);
-      this.el.emit('arError', { error: 'VIDEO_FAIL' });
+      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
     }
   },
 
   _processVideo: function () {
     this.controller.onUpdate = ({ hasFace, estimateResult }) => {
       if (hasFace && !this.lastHasFace) {
-        this.el.emit('targetFound');
+        this.el.emit(AR_EVENT_NAME.TARGET_FOUND);
       }
+
       if (!hasFace && this.lastHasFace) {
-        this.el.emit('targetLost');
+        this.el.emit(AR_EVENT_NAME.TARGET_LOST);
       }
 
       this.lastHasFace = !!hasFace;
@@ -212,9 +214,9 @@ AFRAME.registerSystem('mindar-face-system', {
     camera.far = far;
     camera.updateProjectionMatrix();
 
-    const cameraEle = this.container.getElementsByTagName('a-camera')[0] as any;
-    cameraEle.setObject3D('camera', camera);
-    cameraEle.setAttribute('camera', 'active', true);
+    const cameraEle = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as any;
+    cameraEle.setObject3D(AR_ELEMENT_TAG.CAMERA, camera);
+    cameraEle.setAttribute(AR_ELEMENT_TAG.CAMERA, 'active', true);
 
     for (let i = 0; i < this.faceMeshEntities.length; i++)
       this.faceMeshEntities[i].el.addFaceMesh(
@@ -222,8 +224,8 @@ AFRAME.registerSystem('mindar-face-system', {
       );
 
     this._resize();
-    window.addEventListener('resize', this._resize.bind(this));
-    this.el.emit('arReady');
+    window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
+    this.el.emit(AR_STATE.AR_READY);
   },
 
   _resize: function () {
@@ -246,7 +248,7 @@ AFRAME.registerSystem('mindar-face-system', {
     this.video.style.width = vw + 'px';
     this.video.style.height = vh + 'px';
 
-    const sceneEl = container.getElementsByTagName('a-scene')[0] as typeof AScene;
+    const sceneEl = container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as typeof AScene;
 
     sceneEl.style.top = this.video.style.top;
     sceneEl.style.left = this.video.style.left;
@@ -254,5 +256,3 @@ AFRAME.registerSystem('mindar-face-system', {
     sceneEl.style.height = this.video.style.height;
   },
 });
-
-export {};

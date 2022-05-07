@@ -1,6 +1,9 @@
+import { AR_STATE } from '../../utils/constant';
+import { AR_COMPONENT_NAME } from '../utils/constant/aframe';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-AFRAME.registerComponent('mindar-image', {
-  dependencies: ['mindar-image-system'],
+AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
+  dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
 
   el: null as any,
 
@@ -16,10 +19,11 @@ AFRAME.registerComponent('mindar-image', {
     uiLoading: { type: 'string', default: 'yes' },
     uiScanning: { type: 'string', default: 'yes' },
     uiError: { type: 'string', default: 'yes' },
+    reshowScanning: { type: 'boolean', default: true },
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems['mindar-image-system'];
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM];
 
     arSystem.setup({
       imageTargetSrc: this.data.imageTargetSrc,
@@ -32,13 +36,12 @@ AFRAME.registerComponent('mindar-image', {
       uiLoading: this.data.uiLoading,
       uiScanning: this.data.uiScanning,
       uiError: this.data.uiError,
+      reshowScanning: this.data.reshowScanning,
     });
 
     if (this.data.autoStart)
-      this.el.sceneEl.addEventListener('renderstart', () => {
+      this.el.sceneEl.addEventListener(AR_STATE.RENDER_START, () => {
         arSystem.start();
       });
   },
 });
-
-export {};

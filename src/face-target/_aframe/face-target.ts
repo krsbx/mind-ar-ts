@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { AR_COMPONENT_NAME } from '../utils/constant';
 
-AFRAME.registerComponent('mindar-face-target', {
-  dependencies: ['mindar-face-system'],
+AFRAME.registerComponent(AR_COMPONENT_NAME.FACE_TARGET, {
+  dependencies: [AR_COMPONENT_NAME.FACE_SYSTEM],
 
   el: null as any,
 
@@ -10,7 +11,7 @@ AFRAME.registerComponent('mindar-face-target', {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems['mindar-face-system'];
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.FACE_SYSTEM];
     arSystem.registerAnchor(this, this.data.anchorIndex);
 
     const root = this.el.object3D;
@@ -27,5 +28,3 @@ AFRAME.registerComponent('mindar-face-target', {
     root.matrix.set(...matrix);
   },
 });
-
-export {};

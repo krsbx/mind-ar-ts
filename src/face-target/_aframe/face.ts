@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { AR_COMPONENT_NAME } from '../utils/constant';
+import { AR_STATE, AR_ELEMENT_TAG } from '../../utils/constant';
 
-AFRAME.registerComponent('mindar-face', {
-  dependencies: ['mindar-face-system'],
+AFRAME.registerComponent(AR_COMPONENT_NAME.FACE, {
+  dependencies: [AR_COMPONENT_NAME.FACE_SYSTEM],
 
   el: null as any,
 
@@ -17,11 +19,11 @@ AFRAME.registerComponent('mindar-face', {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems['mindar-face-system'];
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.FACE_SYSTEM];
 
     if (this.data.faceOccluder) {
-      const faceOccluderMeshEntity = document.createElement('a-entity');
-      faceOccluderMeshEntity.setAttribute('mindar-face-default-face-occluder', true);
+      const faceOccluderMeshEntity = document.createElement(AR_ELEMENT_TAG.A_ENTITY);
+      faceOccluderMeshEntity.setAttribute(AR_COMPONENT_NAME.DEFAULT_OCCLUDER, true);
       this.el.sceneEl.appendChild(faceOccluderMeshEntity);
     }
 
@@ -35,10 +37,8 @@ AFRAME.registerComponent('mindar-face', {
     });
 
     if (this.data.autoStart)
-      this.el.sceneEl.addEventListener('renderstart', () => {
+      this.el.sceneEl.addEventListener(AR_STATE.RENDER_START, () => {
         arSystem.start();
       });
   },
 });
-
-export {};

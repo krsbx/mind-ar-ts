@@ -17,15 +17,6 @@
     "skipLibCheck": true,
     "allowJs": true,
     "outDir": "out",
-    "baseUrl": "src",
-    "paths": {
-      "image-target/*": [
-        "./src/image-target/*"
-      ],
-      "utils/*": [
-        "./src/utils/*"
-      ]
-    },
   },
   "ts-node": {
     "compilerOptions": {
