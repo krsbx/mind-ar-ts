@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AR_STATE } from '../../utils/constant';
 import { AR_COMPONENT_NAME } from '../utils/constant/aframe';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
   dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
 
@@ -20,6 +20,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
     uiScanning: { type: 'string', default: 'yes' },
     uiError: { type: 'string', default: 'yes' },
     reshowScanning: { type: 'boolean', default: true },
+    shouldFaceUser: { type: 'boolean', default: false },
   },
 
   init: function () {
@@ -37,6 +38,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
       uiScanning: this.data.uiScanning,
       uiError: this.data.uiError,
       reshowScanning: this.data.reshowScanning,
+      shouldFaceUser: this.data.shouldFaceUser,
     });
 
     if (this.data.autoStart)

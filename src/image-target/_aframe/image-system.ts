@@ -8,13 +8,13 @@ import { IOnUpdate } from '../utils/types/controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
+import screenResizer from '../../utils/screen-resizer';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.IMAGE;
 
 AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
-  processingImage: false,
   anchorEntities: [] as any[],
   imageTargetSrc: '',
   maxTrack: -1,
@@ -28,6 +28,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   el: null as any,
   mainStats: Helper.castTo<Stats>(null),
   reshowScanning: true,
+  shouldFaceUser: false,
 
   init: function () {
     this.anchorEntities = [];
@@ -47,6 +48,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     filterMinCF,
     filterBeta,
     reshowScanning,
+    shouldFaceUser,
   }: {
     imageTargetSrc: string;
     maxTrack: number;
@@ -59,6 +61,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     filterMinCF: number;
     filterBeta: number;
     reshowScanning: boolean;
+    shouldFaceUser: boolean;
   }) {
     this.imageTargetSrc = imageTargetSrc;
     this.maxTrack = maxTrack;
@@ -68,6 +71,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.warmupTolerance = warmupTolerance;
     this.showStats = showStats;
     this.reshowScanning = reshowScanning;
+    this.shouldFaceUser = shouldFaceUser;
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
     this._registerEventListener();
@@ -127,6 +131,13 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.video.remove();
   },
 
+  switchCamera: function () {
+    this.shouldFaceUser = !this.shouldFaceUser;
+
+    this.stop();
+    this.start();
+  },
+
   pause: function (keepVideo = false) {
     if (!keepVideo) this.video.pause();
 
@@ -161,10 +172,17 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     }
 
     try {
+      const DEVICES = await navigator.mediaDevices.enumerateDevices();
+      const devices = DEVICES.filter((device) => device.kind === 'videoinput');
+
+      let facingMode: VideoFacingModeEnum = 'environment';
+
+      if (devices.length > 1) facingMode = this.shouldFaceUser ? 'user' : 'environment';
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: 'environment',
+          facingMode,
         },
       });
 
@@ -228,20 +246,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   },
 
   _resize: function () {
-    const video = this.video;
+    const { vh } = screenResizer(this.video, this.container);
+
     const container = this.container;
-
-    let vw, vh; // display css width, height
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const containerRatio = container.clientWidth / container.clientHeight;
-
-    if (videoRatio > containerRatio) {
-      vh = container.clientHeight;
-      vw = vh * videoRatio;
-    } else {
-      vw = container.clientWidth;
-      vh = vw / videoRatio;
-    }
 
     const proj = this.controller.getProjectionMatrix();
     const fov = (2 * Math.atan((1 / proj[5] / vh) * container.clientHeight) * 180) / Math.PI; // vertical fov
@@ -257,10 +264,5 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     camera.near = near;
     camera.far = far;
     camera.updateProjectionMatrix();
-
-    this.video.style.top = -(vh - container.clientHeight) / 2 + 'px';
-    this.video.style.left = -(vw - container.clientWidth) / 2 + 'px';
-    this.video.style.width = vw + 'px';
-    this.video.style.height = vh + 'px';
   },
 });

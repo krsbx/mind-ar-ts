@@ -5,6 +5,7 @@ import { Controller } from '../controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
+import screenResizer from '../../utils/screen-resizer';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.FACE;
 
@@ -229,26 +230,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   },
 
   _resize: function () {
-    const video = this.video;
-    const container = this.container;
-    let vw, vh; // display css width, height
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const containerRatio = container.clientWidth / container.clientHeight;
+    screenResizer(this.video, this.container);
 
-    if (videoRatio > containerRatio) {
-      vh = container.clientHeight;
-      vw = vh * videoRatio;
-    } else {
-      vw = container.clientWidth;
-      vh = vw / videoRatio;
-    }
-
-    this.video.style.top = -(vh - container.clientHeight) / 2 + 'px';
-    this.video.style.left = -(vw - container.clientWidth) / 2 + 'px';
-    this.video.style.width = vw + 'px';
-    this.video.style.height = vh + 'px';
-
-    const sceneEl = container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as typeof AScene;
+    const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as typeof AScene;
 
     sceneEl.style.top = this.video.style.top;
     sceneEl.style.left = this.video.style.left;

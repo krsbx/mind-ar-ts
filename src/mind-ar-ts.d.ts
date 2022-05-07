@@ -24,6 +24,9 @@ declare global {
         MindARThree: typeof FaceThree;
         THREE: THREE;
       };
+      LOCATION: {
+        UI: typeof UI;
+      };
     };
   }
 }
