@@ -13,6 +13,7 @@ import {
   ON_UPDATE_EVENT,
   WORKER_EVENT,
 } from './utils/constant/controller';
+import { DEFAULT_WORKER, IS_PRODUCTION } from './utils/constant';
 import {
   IControllerWorkerResult,
   IOnUpdate,
@@ -94,7 +95,7 @@ class Controller {
       far: far,
     });
 
-    this.worker = new ControllerWorker();
+    this.worker = IS_PRODUCTION ? new ControllerWorker() : DEFAULT_WORKER.CONTROLLER;
 
     this.workerMatchDone = null;
     this.workerTrackDone = null;
@@ -225,7 +226,7 @@ class Controller {
     // detect and match only if less then maxTrack
     if (nTracking > this.maxTrack) return;
 
-    const matchingIndexes = [];
+    const matchingIndexes: number[] = [];
 
     for (let i = 0; i < this.trackingStates.length; i++) {
       const trackingState = this.trackingStates[i];
@@ -247,23 +248,23 @@ class Controller {
     this.trackingStates[matchedTargetIndex].currentModelViewTransform = modelViewTransform;
   }
 
-  private async _updateModelViewTransform1(targetIndex: number, inputT: tf.Tensor<tf.Rank>) {
-    const trackingState = this.trackingStates[targetIndex];
+  private async _updateModelViewTransform1(iteration: number, inputT: tf.Tensor<tf.Rank>) {
+    const trackingState = this.trackingStates[iteration];
 
     if (!trackingState.isTracking || !trackingState.currentModelViewTransform) return;
 
     const modelViewTransform = await this._trackAndUpdate(
       inputT,
       trackingState.currentModelViewTransform,
-      targetIndex
+      iteration
     );
 
     if (!modelViewTransform) trackingState.isTracking = false;
     else trackingState.currentModelViewTransform = modelViewTransform;
   }
 
-  private _showAfterWarmup(targetIndex: number) {
-    const trackingState = this.trackingStates[targetIndex];
+  private _showAfterWarmup(iteration: number) {
+    const trackingState = this.trackingStates[iteration];
 
     // if not showing, then show it once it reaches warmup number of frames
     if (trackingState.showing || !trackingState.isTracking) return;
@@ -278,8 +279,8 @@ class Controller {
     trackingState.filter.reset();
   }
 
-  private _hideAfterMiss(targetIndex: number) {
-    const trackingState = this.trackingStates[targetIndex];
+  private _hideAfterMiss(iteration: number) {
+    const trackingState = this.trackingStates[iteration];
 
     // if showing, then count miss, and hide it when reaches tolerance
     if (!trackingState.showing) return;
@@ -299,21 +300,18 @@ class Controller {
 
     this.onUpdate?.({
       type: ON_UPDATE_EVENT.UPDATE_MATRIX,
-      targetIndex,
+      targetIndex: iteration,
       worldMatrix: null,
     });
   }
 
-  private async _updateModelViewTransform2(targetIndex: number) {
-    const trackingState = this.trackingStates[targetIndex];
+  private async _updateModelViewTransform2(iteration: number) {
+    const trackingState = this.trackingStates[iteration];
 
     if (!trackingState.showing || !trackingState.currentModelViewTransform) return;
 
     // if showing, then call onUpdate, with world matrix
-    const worldMatrix = this._glModelViewMatrix(
-      trackingState.currentModelViewTransform,
-      targetIndex
-    );
+    const worldMatrix = this._glModelViewMatrix(trackingState.currentModelViewTransform, iteration);
     trackingState.trackingMatrix = trackingState.filter.filter(Date.now(), worldMatrix);
 
     const clone: number[] = [];
@@ -323,7 +321,7 @@ class Controller {
 
     this.onUpdate?.({
       type: ON_UPDATE_EVENT.UPDATE_MATRIX,
-      targetIndex,
+      targetIndex: iteration,
       worldMatrix: clone,
     });
   }
@@ -338,16 +336,14 @@ class Controller {
 
       await this._matchImageTarget(nTracking, inputT);
 
-      for (let i = 0; i < this.trackingStates.length; i++) {
-        // const trackingState = this.trackingStates[i];
+      for (let iteration = 0; iteration < this.trackingStates.length; iteration++) {
+        await this._updateModelViewTransform1(iteration, inputT);
 
-        await this._updateModelViewTransform1(i, inputT);
+        this._showAfterWarmup(iteration);
 
-        this._showAfterWarmup(i);
+        this._hideAfterMiss(iteration);
 
-        this._hideAfterMiss(i);
-
-        await this._updateModelViewTransform2(i);
+        await this._updateModelViewTransform2(iteration);
       }
     }
   }

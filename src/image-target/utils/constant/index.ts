@@ -6,4 +6,23 @@ import * as freak from './freak';
 import * as matching from './matching';
 import * as tracker from './tracker';
 
-export { controller, detector, estimation, freak, matching, tracker };
+const DEFAULT_WORKER = {
+  CONTROLLER: new Worker('/src/image-target/controller.worker.ts', { type: 'module' }),
+  COMPILER: new Worker('/src/image-target/compiler.worker.ts', { type: 'module' }),
+};
+
+const PRODUCTION = 'production';
+
+const IS_PRODUCTION =
+  import.meta.env?.VITE_ENV === PRODUCTION ?? process.env?.NODE_ENV === PRODUCTION;
+
+export {
+  controller,
+  detector,
+  estimation,
+  freak,
+  matching,
+  tracker,
+  DEFAULT_WORKER,
+  IS_PRODUCTION,
+};

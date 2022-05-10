@@ -12,6 +12,7 @@ import {
   ITrackingFeature,
 } from './utils/types/compiler';
 import { WORKER_EVENT } from './utils/constant/compiler';
+import { DEFAULT_WORKER, IS_PRODUCTION } from './utils/constant';
 import { Helper } from '../libs';
 
 // TODO: better compression method. now grey image saved in pixels, which could be larger than original image
@@ -95,7 +96,7 @@ class Compiler {
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
         return new Promise<ITrackingFeature[][]>((resolve) => {
-          const worker = new CompilerWorker();
+          const worker = IS_PRODUCTION ? new CompilerWorker() : DEFAULT_WORKER.COMPILER;
 
           worker.onmessage = (e) => {
             switch (e.data.type) {
