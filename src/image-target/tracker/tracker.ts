@@ -279,7 +279,7 @@ class Tracker {
   private _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
     const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
 
-    return tf.engine().makeTensorFromDataId(outInfo.dataId, outInfo.shape, outInfo.dtype);
+    return tf.engine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

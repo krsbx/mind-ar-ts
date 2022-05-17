@@ -646,7 +646,7 @@ class Detector {
   private _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
     const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
 
-    return tf.engine().makeTensorFromDataId(outInfo.dataId, outInfo.shape, outInfo.dtype);
+    return tf.engine().makeTensorFromTensorInfo(outInfo);
   }
 
   private _runWebGLProgram(
@@ -656,7 +656,7 @@ class Detector {
   ) {
     const outInfo = (tf.backend() as MathBackendWebGL).runWebGLProgram(program, inputs, outputType);
 
-    return tf.engine().makeTensorFromDataId(outInfo.dataId, outInfo.shape, outInfo.dtype);
+    return tf.engine().makeTensorFromTensorInfo(outInfo);
   }
 }
 
