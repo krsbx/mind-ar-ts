@@ -26,6 +26,11 @@ const CONFIRMATION = {
 
 const HIDDEN_CLASS_NAME = 'hidden';
 
+const PRODUCTION = 'production';
+
+const IS_PRODUCTION =
+  import.meta.env?.VITE_ENV === PRODUCTION ?? process.env?.NODE_ENV === PRODUCTION;
+
 export {
   STATS_STYLE,
   GLOBAL_AR_EVENT_NAME,
@@ -33,4 +38,5 @@ export {
   AR_STATE,
   CONFIRMATION,
   HIDDEN_CLASS_NAME,
+  IS_PRODUCTION,
 };
