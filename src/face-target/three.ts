@@ -38,7 +38,6 @@ class MindARThree {
       filterMinCF: filterMinCF,
       filterBeta: filterBeta,
     });
-    console.log('G');
 
     this.scene = new THREE.Scene();
     this.cssScene = new THREE.Scene();
