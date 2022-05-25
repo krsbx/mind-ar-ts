@@ -1,5 +1,3 @@
-import { Vector2, Vector3 } from 'three';
-
 export interface IRefineEstimations {
   initialModelViewTransform: number[][];
   projectionTransform: number[][];

@@ -1,5 +1,4 @@
 import { Matrix, inverse } from 'ml-matrix';
-import { Vector3 } from 'three';
 import {
   ICP_BREAK_LOOP_ERROR_RATIO_THRESH,
   ICP_BREAK_LOOP_ERROR_THRESH,
@@ -40,6 +39,7 @@ const refineEstimate = ({
   dy /= worldCoords.length;
 
   const normalizedWorldCoords: Vector3[] = [];
+
   for (let i = 0; i < worldCoords.length; i++) {
     normalizedWorldCoords.push({
       x: worldCoords[i].x - dx,

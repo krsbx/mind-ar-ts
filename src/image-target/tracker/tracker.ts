@@ -1,5 +1,4 @@
 import * as tf from '@tensorflow/tfjs';
-import { Vector2, Vector3 } from 'three';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   PRECISION_ADJUST,

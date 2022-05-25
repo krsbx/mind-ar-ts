@@ -1,4 +1,3 @@
-import { Vector2, Vector3 } from 'three';
 import { Matcher } from './matching/matcher';
 import { Estimator } from './estimation/estimator';
 import { IControllerWorker, WorkerEvent } from './utils/types/controller';

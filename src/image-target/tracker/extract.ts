@@ -1,4 +1,3 @@
-import { Vector2 } from 'three';
 import { CumulativeSum } from '../utils';
 import {
   MAX_SIM_THRESH,
