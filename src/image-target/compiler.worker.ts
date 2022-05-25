@@ -21,7 +21,7 @@ const _extractTrackingFeatures = (
       points,
     };
 
-    featureSets.push(featureSet);
+    featureSets.push(<ITrackingFeature>featureSet);
 
     doneCallback(i);
   }
@@ -45,7 +45,7 @@ onmessage = (msg) => {
           const imageList = buildTrackingImageList(targetImage);
           const percentPerAction = percentPerImage / imageList.length;
 
-          const trackingData = _extractTrackingFeatures(imageList, () => {
+          const trackingData = _extractTrackingFeatures(<ImageDataWithScale[]>imageList, () => {
             percent += percentPerAction;
             postMessage({ type: WORKER_EVENT.PROGRESS, percent });
           });
