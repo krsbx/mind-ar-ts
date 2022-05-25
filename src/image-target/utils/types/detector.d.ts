@@ -1,4 +1,3 @@
-import { Vector2 } from 'three';
 import { IMaximaMinimaPoint } from './compiler';
 
 interface IMatches {

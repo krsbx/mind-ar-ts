@@ -1,4 +1,3 @@
-import { Vector2, Vector3 } from 'three';
 import { OneEuroFilter } from '../../../libs/one-euro-filter';
 import { ON_UPDATE_EVENT, WORKER_EVENT } from '../constant/controller';
 import { IKeyFrame, IMaximaMinimaPoint } from './compiler';

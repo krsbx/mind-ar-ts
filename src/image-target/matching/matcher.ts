@@ -1,4 +1,3 @@
-import { Vector2, Vector3 } from 'three';
 import { match } from './matching';
 import { IKeyFrame, IMaximaMinimaPoint } from '../utils/types/compiler';
 

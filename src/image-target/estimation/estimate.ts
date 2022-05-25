@@ -1,5 +1,4 @@
 import { Matrix, inverse } from 'ml-matrix';
-import { Vector2, Vector3 } from 'three';
 import { Homography } from '../utils';
 
 // build world matrix with list of matching worldCoords|screenCoords

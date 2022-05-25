@@ -1,4 +1,3 @@
-import { Vector2, Vector3 } from 'three';
 import { estimate } from './estimate';
 import { IRefineEstimations } from '../utils/types/estimation';
 import { refineEstimate } from './refine-estimate';
