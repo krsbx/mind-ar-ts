@@ -62,7 +62,7 @@ class Compiler {
           width: img.width,
         };
 
-        targetImages.push(targetImage);
+        targetImages.push(<ImageData>targetImage);
       }
 
       // compute matching data: 50% progress
@@ -76,7 +76,7 @@ class Compiler {
         const imageList = buildImageList(targetImage);
         const percentPerAction = percentPerImage / imageList.length;
 
-        const matchingData = await _extractMatchingFeatures(imageList, () => {
+        const matchingData = await _extractMatchingFeatures(<ImageDataWithScale[]>imageList, () => {
           percent += percentPerAction;
           progressCallback(percent);
         });
@@ -90,7 +90,7 @@ class Compiler {
 
       for (let i = 0; i < targetImages.length; i++) {
         const trackingImageList = buildTrackingImageList(targetImages[i]);
-        this.data[i].trackingImageList = trackingImageList;
+        this.data[i].trackingImageList = <ImageDataWithScale[]>trackingImageList;
       }
 
       // compute tracking data with worker: 50% progress
