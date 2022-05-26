@@ -1,4 +1,3 @@
-import { InputImage } from '@mediapipe/face_mesh';
 import { FaceMeshHelper } from './face-mesh-helper';
 import { OneEuroFilter } from '../libs';
 import { Estimator } from './face-geometry/estimator';
@@ -70,7 +69,7 @@ class Controller {
   }
 
   // Dummy run for warming up
-  async dummyRun(input: InputImage) {
+  async dummyRun(input: HTMLVideoElement) {
     await this.faceMeshHelper.detect(input);
   }
 
@@ -117,7 +116,7 @@ class Controller {
     };
   }
 
-  async processFilters(input: InputImage) {
+  async processFilters(input: HTMLVideoElement) {
     const results = await this.faceMeshHelper.detect(input);
 
     if (!results) return;
@@ -139,7 +138,7 @@ class Controller {
     }
   }
 
-  private _doVideoProcessing(input: InputImage) {
+  private _doVideoProcessing(input: HTMLVideoElement) {
     return async () => {
       const results = await this.faceMeshHelper.detect(input);
 
@@ -151,7 +150,7 @@ class Controller {
     };
   }
 
-  processVideo(input: InputImage) {
+  processVideo(input: HTMLVideoElement) {
     if (this.processingVideo) return;
 
     this.processingVideo = true;

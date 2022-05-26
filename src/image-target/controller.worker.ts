@@ -89,5 +89,4 @@ onmessage = (msg) => {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default null as any;
+export default {} as typeof Worker & (new () => Worker);
