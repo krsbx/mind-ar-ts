@@ -191,44 +191,47 @@ class MindARThree {
         missTolerance: this.missTolerance,
         maxTrack: this.maxTrack,
         onUpdate: (data: IOnUpdate) => {
-          if (data.type === ON_UPDATE_EVENT.UPDATE_MATRIX) {
-            const { targetIndex, worldMatrix } = data;
+          switch (data.type) {
+            case ON_UPDATE_EVENT.UPDATE_MATRIX:
+              // eslint-disable-next-line no-case-declarations
+              const { targetIndex, worldMatrix } = data;
 
-            for (let i = 0; i < this.anchors.length; i++) {
-              if (this.anchors[i].targetIndex === targetIndex) {
-                if (this.anchors[i].css)
-                  this.anchors[i].group.children.forEach((obj) => {
-                    (
-                      obj as THREE.Object3D<THREE.Event> & { element: HTMLElement }
-                    ).element.style.visibility = !worldMatrix ? 'hidden' : 'visible';
-                  });
-                else this.anchors[i].group.visible = !!worldMatrix;
+              for (let i = 0; i < this.anchors.length; i++) {
+                if (this.anchors[i].targetIndex === targetIndex) {
+                  if (this.anchors[i].css)
+                    this.anchors[i].group.children.forEach((obj) => {
+                      (
+                        obj as THREE.Object3D<THREE.Event> & { element: HTMLElement }
+                      ).element.style.visibility = !worldMatrix ? 'hidden' : 'visible';
+                    });
+                  else this.anchors[i].group.visible = !!worldMatrix;
 
-                if (worldMatrix) {
-                  const m = new THREE.Matrix4();
-                  m.elements = [...worldMatrix];
-                  m.multiply(this.postMatrixs[targetIndex]);
+                  if (worldMatrix) {
+                    const m = new THREE.Matrix4();
+                    m.elements = [...worldMatrix];
+                    m.multiply(this.postMatrixs[targetIndex]);
 
-                  if (this.anchors[i].css) m.multiply(cssScaleDownMatrix);
+                    if (this.anchors[i].css) m.multiply(cssScaleDownMatrix);
 
-                  this.anchors[i].group.matrix = m;
+                    this.anchors[i].group.matrix = m;
+                  }
+
+                  if (this.anchors[i].visible && !worldMatrix) {
+                    this.anchors[i].visible = false;
+
+                    this.anchors[i].onTargetLost?.();
+                  }
+
+                  if (!this.anchors[i].visible && worldMatrix) {
+                    this.anchors[i].visible = true;
+
+                    this.anchors[i].onTargetFound?.();
+                  }
+
+                  if (worldMatrix) this.ui.hideScanning();
                 }
-
-                if (this.anchors[i].visible && !worldMatrix) {
-                  this.anchors[i].visible = false;
-
-                  this.anchors[i].onTargetLost?.();
-                }
-
-                if (!this.anchors[i].visible && worldMatrix) {
-                  this.anchors[i].visible = true;
-
-                  this.anchors[i].onTargetFound?.();
-                }
-
-                if (worldMatrix) this.ui.hideScanning();
               }
-            }
+              break;
           }
         },
       });

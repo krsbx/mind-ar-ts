@@ -209,16 +209,20 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
       missTolerance: this.missTolerance,
       warmupTolerance: this.warmupTolerance,
       onUpdate: (data: IOnUpdate) => {
-        if (data.type === ON_UPDATE_EVENT.DONE) {
-          if (this.mainStats) this.mainStats.update();
-        } else if (data.type === ON_UPDATE_EVENT.UPDATE_MATRIX) {
-          const { targetIndex, worldMatrix } = data;
+        switch (data.type) {
+          case ON_UPDATE_EVENT.DONE:
+            if (this.mainStats) this.mainStats.update();
+            break;
+          case ON_UPDATE_EVENT.UPDATE_MATRIX:
+            // eslint-disable-next-line no-case-declarations
+            const { targetIndex, worldMatrix } = data;
 
-          for (let i = 0; i < this.anchorEntities.length; i++) {
-            if (this.anchorEntities[i].targetIndex === targetIndex) {
-              this.anchorEntities[i].el.updateWorldMatrix(worldMatrix);
+            for (let i = 0; i < this.anchorEntities.length; i++) {
+              if (this.anchorEntities[i].targetIndex === targetIndex)
+                this.anchorEntities[i].el.updateWorldMatrix(worldMatrix);
             }
-          }
+
+            break;
         }
       },
     });
