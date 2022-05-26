@@ -1,4 +1,4 @@
-import { FaceMesh, InputImage, Results } from '@mediapipe/face_mesh';
+import { FaceMesh, Results } from '@mediapipe/face_mesh';
 
 class FaceMeshHelper {
   private detectResolve: ((value: Results | PromiseLike<Results>) => void) | null;
@@ -26,7 +26,7 @@ class FaceMeshHelper {
     });
   }
 
-  async detect(input: InputImage) {
+  async detect(input: HTMLVideoElement) {
     const results = await new Promise<Results>((resolve) => {
       this.detectResolve = resolve;
       this.faceMesh.send({ image: input });
