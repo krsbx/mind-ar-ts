@@ -14,7 +14,8 @@
     "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" NODE_ENV=\"production\" webpack --watch --config webpack.config.dev.ts",
     "lint": "eslint --cache --fix src/*",
     "preview": "vite preview",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "postinstall": "npx patch-package" 
   },
   "devDependencies": {
     "@commitlint/cli": "^17.0.0",
