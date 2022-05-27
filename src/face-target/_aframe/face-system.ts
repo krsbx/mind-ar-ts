@@ -170,7 +170,6 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
         const { faceMatrix } = estimateResult;
         for (let i = 0; i < this.anchorEntities.length; i++) {
           const landmarkMatrix = this.controller.getLandmarkMatrix(
-            // this.anchorEntities[i].anchorIndex
             this.anchorEntities[i].targetIndex
           );
 
