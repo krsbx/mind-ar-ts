@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
+import { AScene } from 'aframe';
 import { UI } from '../../ui/ui';
+import { Controller } from '../controller';
 import { Helper } from '../../libs';
 import { AR_ELEMENT_TAG, AR_STATE, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import { AR_COMPONENT_NAME, SYSTEM_STATE } from '../utils/constant';
-import { AScene } from 'aframe';
 import screenResizer from '../../utils/screen-resizer';
 
-const { UI: UIClass } = window.MINDAR.LOCATION;
+const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.LOCATION;
 
 AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
@@ -15,12 +16,21 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   anchorEntities: [] as any[],
   el: null as any,
   showStats: false,
+  controller: Helper.castTo<Controller>(null),
   location: Helper.castTo<GeolocationPosition>(null),
   mainStats: Helper.castTo<Stats>(null),
   ui: Helper.castTo<UI>(null),
   sytemState: SYSTEM_STATE.LOCATION_INITIALIZING,
   watchId: Helper.castTo<number>(null),
   shouldFaceUser: false,
+  simulateLatitude: 0,
+  simulateLongitude: 0,
+  simulateAltitude: 0,
+  positionMinAccuracy: 0,
+  minDistance: 0,
+  maxDistance: 0,
+  gpsMinDistance: 0,
+  gpsTimeInterval: 0,
 
   init: function () {
     this.anchorEntities = [];
@@ -36,15 +46,39 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     uiScanning,
     uiError,
     shouldFaceUser,
+    simulateLatitude,
+    simulateLongitude,
+    simulateAltitude,
+    positionMinAccuracy,
+    minDistance,
+    maxDistance,
+    gpsMinDistance,
+    gpsTimeInterval,
   }: {
-    showStats: boolean;
     uiLoading: string;
     uiScanning: string;
     uiError: string;
+    showStats: boolean;
     shouldFaceUser: boolean;
+    simulateLatitude: number;
+    simulateLongitude: number;
+    simulateAltitude: number;
+    positionMinAccuracy: number;
+    minDistance: number;
+    maxDistance: number;
+    gpsMinDistance: number;
+    gpsTimeInterval: number;
   }) {
     this.showStats = showStats;
     this.shouldFaceUser = shouldFaceUser;
+    this.simulateAltitude = simulateAltitude;
+    this.simulateLatitude = simulateLatitude;
+    this.simulateLongitude = simulateLongitude;
+    this.positionMinAccuracy = positionMinAccuracy;
+    this.minDistance = minDistance;
+    this.maxDistance = maxDistance;
+    this.gpsMinDistance = gpsMinDistance;
+    this.gpsTimeInterval = gpsTimeInterval;
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
   },
@@ -64,103 +98,21 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     }
 
     this.ui.showLoading();
-    this._startVideo();
-  },
-
-  _startVideo: async function () {
-    this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
-
-    this.video.setAttribute('autoplay', '');
-    this.video.setAttribute('muted', '');
-    this.video.setAttribute('playsinline', '');
-
-    this.video.style.position = 'absolute';
-    this.video.style.top = '0px';
-    this.video.style.left = '0px';
-    this.video.style.zIndex = '-2';
-
-    this.container.appendChild(this.video);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      // TODO: show unsupported error
-      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
-      this.ui.showCompatibility();
-
-      return;
-    }
-
-    try {
-      const DEVICES = await navigator.mediaDevices.enumerateDevices();
-      const devices = DEVICES.filter((device) => device.kind === 'videoinput');
-
-      let facingMode: VideoFacingModeEnum = 'environment';
-
-      if (devices.length > 1) facingMode = this.shouldFaceUser ? 'user' : 'environment';
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode,
-        },
-      });
-
-      this.video.addEventListener(GLOBAL_AR_EVENT_NAME.LOADED_METADATA, () => {
-        this.video.setAttribute('width', this.video.videoWidth.toString());
-        this.video.setAttribute('height', this.video.videoHeight.toString());
-
-        this._startLocationTracking();
-      });
-
-      this.video.srcObject = stream;
-    } catch (err) {
-      console.log('getUserMedia error', err);
-      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
-    }
-  },
-
-  _watchPositionSuccess: function (system: any) {
-    return function (position: GeolocationPosition) {
-      if (system.sytemState === SYSTEM_STATE.LOCATION_INITIALIZING)
-        system.sytemState = SYSTEM_STATE.LOCATION_READY;
-
-      system.location = position;
-    };
-  },
-
-  _watchPositionError: function (system: any) {
-    return function () {
-      if (system.sytemState === SYSTEM_STATE.LOCATION_INITIALIZING)
-        system.sytemState = SYSTEM_STATE.LOCATION_ERROR;
-
-      if (system.sytemState !== SYSTEM_STATE.LOCATION_ERROR) return;
-
-      system.el.emit(AR_STATE.AR_ERROR, { error: 'LOCATION_FAIL' });
-      navigator.geolocation.clearWatch(system.watchId);
-    };
-  },
-
-  _startLocationTracking: function () {
-    if (
-      !navigator.geolocation ||
-      !navigator.geolocation.getCurrentPosition ||
-      !navigator.geolocation.watchPosition
-    ) {
-      // TODO: show unsupported error
-      this.el.emit(AR_STATE.AR_ERROR, { error: 'LOCATION_FAIL' });
-      this.ui.showCompatibility();
-
-      return;
-    }
-
-    this.watchId = navigator.geolocation.watchPosition(
-      this._watchPositionSuccess(this),
-      this._watchPositionError(this)
-    );
-
     this._startAR();
   },
 
   _startAR: function () {
+    this.controller = new ControllerClass({
+      simulateAltitude: this.simulateAltitude,
+      simulateLatitude: this.simulateLatitude,
+      simulateLongitude: this.simulateLongitude,
+      positionMinAccuracy: this.positionMinAccuracy,
+      minDistance: this.minDistance,
+      maxDistance: this.maxDistance,
+      gpsMinDistance: this.gpsMinDistance,
+      gpsTimeInterval: this.gpsTimeInterval,
+    });
+
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
 
