@@ -17,21 +17,10 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   el: null as any,
   showStats: false,
   controller: Helper.castTo<Controller>(null),
-  location: Helper.castTo<GeolocationPosition>(null),
   mainStats: Helper.castTo<Stats>(null),
   ui: Helper.castTo<UI>(null),
   sytemState: SYSTEM_STATE.LOCATION_INITIALIZING,
-  watchId: Helper.castTo<number>(null),
   shouldFaceUser: false,
-  simulateLatitude: 0,
-  simulateLongitude: 0,
-  simulateAltitude: 0,
-  positionMinAccuracy: 0,
-  minDistance: 0,
-  maxDistance: 0,
-  gpsMinDistance: 0,
-  gpsTimeInterval: 0,
-  camera: Helper.castTo<typeof AScene>(null),
   isEmulated: false,
 
   setup: function ({
@@ -49,6 +38,8 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
     this.controller = new ControllerClass();
+
+    this.el.emit(SYSTEM_STATE.LOCATION_INITIALIZED);
   },
 
   setupCamera: function (props: Omit<CameraTrackerConstructor, 'controller'>) {
@@ -79,7 +70,58 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     }
 
     this.ui.showLoading();
-    // this._startAR();
+    this._startVideo();
+  },
+
+  _startVideo: async function () {
+    this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
+
+    this.video.setAttribute('autoplay', '');
+    this.video.setAttribute('muted', '');
+    this.video.setAttribute('playsinline', '');
+
+    this.video.style.position = 'absolute';
+    this.video.style.top = '0px';
+    this.video.style.left = '0px';
+    this.video.style.zIndex = '-2';
+
+    this.container.appendChild(this.video);
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      // TODO: show unsupported error
+      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
+      this.ui.showCompatibility();
+
+      return;
+    }
+
+    try {
+      const DEVICES = await navigator.mediaDevices.enumerateDevices();
+      const devices = DEVICES.filter((device) => device.kind === 'videoinput');
+
+      let facingMode: VideoFacingModeEnum = 'environment';
+
+      if (devices.length > 1) facingMode = this.shouldFaceUser ? 'user' : 'environment';
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode,
+        },
+      });
+
+      this.video.addEventListener(GLOBAL_AR_EVENT_NAME.LOADED_METADATA, () => {
+        this.video.setAttribute('width', this.video.videoWidth.toString());
+        this.video.setAttribute('height', this.video.videoHeight.toString());
+
+        this._startAR();
+      });
+
+      this.video.srcObject = stream;
+    } catch (err) {
+      console.log('getUserMedia error', err);
+      this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
+    }
   },
 
   _startAR: function () {
@@ -87,6 +129,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
 
     this.el.emit(AR_STATE.AR_READY);
+    this.controller.startAR();
     this.ui.hideLoading();
   },
 

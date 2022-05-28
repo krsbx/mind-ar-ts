@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AR_COMPONENT_NAME } from '../utils/constant';
+import { AR_COMPONENT_NAME, SYSTEM_STATE } from '../utils/constant';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
   dependencies: [AR_COMPONENT_NAME.LOCATION_SYSTEM],
 
-  arSystem: null as any,
   el: null as any,
-
-  initialized: false,
-  isAdded: false,
 
   schema: {
     longitude: { type: 'number', default: 0 },
@@ -16,21 +12,20 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
-    this.arSystem = arSystem;
-  },
-
-  // Delay the setup to avoid the place to be set up before the location system registered
-  tock: function () {
-    if (!this.isAdded && this.initialized) this.setup();
+    this.el.sceneEl.addEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, () => {
+      this.setup();
+    });
   },
 
   setup: function () {
-    this.arSystem.addLocation({
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
+    arSystem.addLocation({
       ...this.data,
       location: this.el,
     });
 
-    this.isAdded = true;
+    console.log('Location place added');
+
+    this.el.sceneEl.removeEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, this.setup);
   },
 });

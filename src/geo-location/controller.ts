@@ -49,7 +49,9 @@ class Controller {
     return distance;
   }
 
-  startAR() {}
+  startAR() {
+    this.camera.startAR();
+  }
 }
 
 export { Controller };

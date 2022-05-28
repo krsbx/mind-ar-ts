@@ -27,7 +27,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION, {
 
     if (this.data.autoStart)
       this.el.sceneEl.addEventListener(AR_STATE.RENDER_START, () => {
-        // arSystem.start();
+        arSystem.start();
       });
   },
 });
