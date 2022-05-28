@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { Controller as ImageController } from './image-target/controller';
 import { Controller as FaceController } from './face-target/controller';
 import { Controller as LocationController } from './geo-location/controller';
-import { Tracker as LocationTracker } from './geo-location/tracker';
 import { Compiler } from './image-target/compiler';
 import { UI } from './ui/ui';
 import { MindARThree as ImageThree } from './image-target/three';
@@ -28,7 +27,6 @@ declare global {
       };
       LOCATION: {
         Controller: typeof LocationController;
-        Tracker: typeof LocationTracker;
         UI: typeof UI;
       };
     };

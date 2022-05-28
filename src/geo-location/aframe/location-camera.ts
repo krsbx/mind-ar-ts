@@ -8,11 +8,14 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   arSystem: null as any,
   el: null as any,
 
+  initialized: false,
+  isAdded: false,
+
   schema: {
     shouldFaceUser: { type: 'boolean', default: false },
+    simulateAltitude: { type: 'number', default: 0 },
     simulateLatitude: { type: 'number', default: 0 },
     simulateLongitude: { type: 'number', default: 0 },
-    simulateAltitude: { type: 'number', default: 0 },
     positionMinAccuracy: { type: 'int', default: 100 },
     minDistance: { type: 'int', default: 10 },
     maxDistance: { type: 'int', default: 30 },
@@ -23,21 +26,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   init: function () {
     const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
     this.arSystem = arSystem;
-
-    if (!arSystem) return;
-
-    arSystem.setupCamera({
-      shouldFaceUser: this.data.shouldFaceUser,
-      simulateAltitude: this.data.simulateAltitude,
-      simulateLatitude: this.data.simulateLatitude,
-      simulateLongitude: this.data.simulateLongitude,
-      positionMinAccuracy: this.data.positionMinAccuracy,
-      minDistance: this.data.minDistance,
-      maxDistance: this.data.maxDistance,
-      gpsMinDistance: this.data.gpsMinDistance,
-      gpsTimeInterval: this.data.gpsTimeInterval,
-      camera: this.el,
-    });
   },
 
   tick: function () {
@@ -46,5 +34,19 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
     if (Helper.isNil(this.arSystem.controller.heading)) return;
 
     this.arSystem.controller.updateRotation();
+  },
+
+  // Delay the setup to avoid the camera to be set up before the location system registered
+  tock: function () {
+    if (!this.isAdded && this.initialized) this.setup();
+  },
+
+  setup: function () {
+    this.arSystem.setupCamera({
+      ...this.data,
+      camera: this.el,
+    });
+
+    this.isAdded = true;
   },
 });

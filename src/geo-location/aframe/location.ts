@@ -18,25 +18,16 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION, {
   init: function () {
     const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
 
-    arSystem.setupSystem({
+    arSystem.setup({
       uiLoading: this.data.uiLoading,
       uiScanning: this.data.uiScanning,
       uiError: this.data.uiError,
       showStats: this.data.showStats,
-      shouldFaceUser: this.data.shouldFaceUser,
-      simulateLatitude: this.data.simulateLatitude,
-      simulateLongitude: this.data.simulateLongitude,
-      simulateAltitude: this.data.simulateAltitude,
-      positionMinAccuracy: this.data.positionMinAccuracy,
-      minDistance: this.data.minDistance,
-      maxDistance: this.data.maxDistance,
-      gpsMinDistance: this.data.gpsMinDistance,
-      gpsTimeInterval: this.data.gpsTimeInterval,
     });
 
     if (this.data.autoStart)
       this.el.sceneEl.addEventListener(AR_STATE.RENDER_START, () => {
-        arSystem.start();
+        // arSystem.start();
       });
   },
 });

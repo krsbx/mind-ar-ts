@@ -6,11 +6,10 @@ const AR_COMPONENT_NAME = {
 };
 
 const AR_EVENT_NAME = {
-  LOCATION_FOUND: 'location-objectFound',
-  LOCATION_LOST: 'location-objectLost',
   LOCATION_UPDATED: 'location-updated',
   CAMERA_ORIGIN_SET: 'location-camera-origin-set',
   LOCATION_UPDATE_POSITION: 'location-location-update-position',
+  LOCATION_PLACE_ADDED: 'location-location-place-added',
 };
 
 const SYSTEM_STATE = {

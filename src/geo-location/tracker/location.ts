@@ -1,28 +1,22 @@
-import { AComponent, AScene } from 'aframe';
-import { Controller } from './controller';
-import { AR_COMPONENT_NAME, AR_EVENT_NAME, AR_POSITION_MULTIPLIER } from './utils/constant';
-import { formatDistance, getPositionMultiplier } from './utils/distance';
-import { HaversineParams } from './utils/types/geo-location';
+// * We split the tracker into 2 parts:
+// * 1. The camera
+// * 2. The location/place
 
-class Tracker {
-  private camera!: typeof AComponent;
+import { AScene } from 'aframe';
+import { Controller } from '../controller';
+import { AR_EVENT_NAME, AR_POSITION_MULTIPLIER } from '../utils/constant';
+import { formatDistance, getPositionMultiplier } from '../utils/distance';
+import { HaversineParams, LocationTrackerConstructor } from '../utils/types/geo-location';
+
+class LocationTracker {
+  private controller: Controller;
+  private camera!: typeof AScene;
   private location: typeof AScene;
   private latitude: number;
   private longitude: number;
-  private controller: Controller;
   private position: HaversineParams;
 
-  constructor({
-    location,
-    latitude,
-    longitude,
-    controller,
-  }: {
-    location: typeof AScene;
-    latitude: number;
-    longitude: number;
-    controller: Controller;
-  }) {
+  constructor({ location, latitude, longitude, controller }: LocationTrackerConstructor) {
     this.location = location;
     this.latitude = latitude;
     this.longitude = longitude;
@@ -34,13 +28,20 @@ class Tracker {
 
     window.addEventListener(AR_EVENT_NAME.CAMERA_ORIGIN_SET, this._onPositionSet);
     window.addEventListener(AR_EVENT_NAME.LOCATION_UPDATED, this._onPositionUpdate);
+    window.dispatchEvent(
+      new CustomEvent(AR_EVENT_NAME.LOCATION_PLACE_ADDED, {
+        detail: {
+          location,
+        },
+      })
+    );
   }
 
   private _getCamera() {
-    const camera = document.querySelector(`[${AR_COMPONENT_NAME.LOCATION_CAMERA}]`);
+    const camera = this.controller.camera;
     if (!camera) return 'Location camera not found';
 
-    this.camera = (camera as typeof AScene).components[AR_COMPONENT_NAME.LOCATION_CAMERA];
+    this.camera = camera.camera;
     return;
   }
 
@@ -85,7 +86,10 @@ class Tracker {
   }
 
   private _updatePosition() {
-    const { computeDistance, originPosition } = this.controller;
+    const {
+      computeDistance,
+      camera: { originPosition },
+    } = this.controller;
 
     if (!originPosition) return;
 
@@ -119,4 +123,4 @@ class Tracker {
   }
 }
 
-export { Tracker };
+export { LocationTracker };

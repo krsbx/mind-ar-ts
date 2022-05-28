@@ -7,6 +7,7 @@ import { Helper } from '../../libs';
 import { AR_ELEMENT_TAG, AR_STATE, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import { AR_COMPONENT_NAME, SYSTEM_STATE } from '../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
+import { CameraTrackerConstructor, LocationTrackerConstructor } from '../utils/types/geo-location';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.LOCATION;
 
@@ -33,7 +34,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   camera: Helper.castTo<typeof AScene>(null),
   isEmulated: false,
 
-  setupSystem: function ({
+  setup: function ({
     showStats,
     uiLoading,
     uiScanning,
@@ -47,46 +48,24 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     this.showStats = showStats;
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+    this.controller = new ControllerClass();
   },
 
-  setupCamera: function ({
-    shouldFaceUser,
-    simulateLatitude,
-    simulateLongitude,
-    simulateAltitude,
-    positionMinAccuracy,
-    minDistance,
-    maxDistance,
-    gpsMinDistance,
-    gpsTimeInterval,
-    camera,
-  }: {
-    shouldFaceUser: boolean;
-    simulateLatitude: number;
-    simulateLongitude: number;
-    simulateAltitude: number;
-    positionMinAccuracy: number;
-    minDistance: number;
-    maxDistance: number;
-    gpsMinDistance: number;
-    gpsTimeInterval: number;
-    camera: typeof AScene;
-  }) {
+  setupCamera: function (props: Omit<CameraTrackerConstructor, 'controller'>) {
+    if (!this.controller) return;
+
     // Prevent to register multiple cameras
-    if (this.camera) return;
+    if (this.controller.camera) return;
 
-    this.shouldFaceUser = shouldFaceUser;
-    this.simulateAltitude = simulateAltitude;
-    this.simulateLatitude = simulateLatitude;
-    this.simulateLongitude = simulateLongitude;
-    this.positionMinAccuracy = positionMinAccuracy;
-    this.minDistance = minDistance;
-    this.maxDistance = maxDistance;
-    this.gpsMinDistance = gpsMinDistance;
-    this.gpsTimeInterval = gpsTimeInterval;
-    this.camera = camera;
+    this.controller.setupCamera(props);
 
-    this.isEmulated = simulateLatitude !== 0 && simulateLongitude !== 0;
+    this.isEmulated = props.simulateLatitude !== 0 && props.simulateLongitude !== 0;
+  },
+
+  addLocation: function (props: Omit<LocationTrackerConstructor, 'controller'>) {
+    if (!this.controller) return;
+
+    this.controller.addLocation(props);
   },
 
   start: function () {
@@ -100,22 +79,10 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     }
 
     this.ui.showLoading();
-    this._startAR();
+    // this._startAR();
   },
 
   _startAR: function () {
-    this.controller = new ControllerClass({
-      simulateAltitude: this.simulateAltitude,
-      simulateLatitude: this.simulateLatitude,
-      simulateLongitude: this.simulateLongitude,
-      positionMinAccuracy: this.positionMinAccuracy,
-      minDistance: this.minDistance,
-      maxDistance: this.maxDistance,
-      gpsMinDistance: this.gpsMinDistance,
-      gpsTimeInterval: this.gpsTimeInterval,
-      camera: this.camera,
-    });
-
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
 
@@ -137,6 +104,6 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   update: function () {
     if (!this.isEmulated) return;
 
-    this.controller.getEmulatedPosition();
+    this.controller.camera.getEmulatedPosition();
   },
 });
