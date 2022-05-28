@@ -16,18 +16,19 @@ class LocationTracker {
   private longitude: number;
   private position: HaversineParams;
 
-  constructor({ location, latitude, longitude, controller }: LocationTrackerConstructor) {
+  constructor({ location, latitude, longitude, controller, camera }: LocationTrackerConstructor) {
     this.location = location;
     this.latitude = latitude;
     this.longitude = longitude;
     this.controller = controller;
+    this.camera = camera;
     this.position = {
       latitude,
       longitude,
     };
 
-    window.addEventListener(AR_EVENT_NAME.CAMERA_ORIGIN_SET, this._onPositionSet);
-    window.addEventListener(AR_EVENT_NAME.LOCATION_UPDATED, this._onPositionUpdate);
+    window.addEventListener(AR_EVENT_NAME.CAMERA_ORIGIN_SET, this._onPositionSet.bind(this));
+    window.addEventListener(AR_EVENT_NAME.LOCATION_UPDATED, this._onPositionUpdate.bind(this));
     window.dispatchEvent(
       new CustomEvent(AR_EVENT_NAME.LOCATION_PLACE_ADDED, {
         detail: {
@@ -38,6 +39,8 @@ class LocationTracker {
   }
 
   private _getCamera() {
+    if (!this.controller) return;
+
     const camera = this.controller.camera;
     if (!camera) return 'Location camera not found';
 
@@ -61,14 +64,12 @@ class LocationTracker {
   private _onPositionUpdate(ev: Event) {
     if (!this.camera || !this.controller) return;
 
-    const { computeDistance } = this.controller;
-
     const dstCoords = {
       longitude: this.longitude,
       latitude: this.latitude,
     };
 
-    const distanceMsg = computeDistance(ev.detail.position, dstCoords);
+    const distanceMsg = this.controller.computeDistance(ev.detail.position, dstCoords);
 
     this.location.setAttribute('distance', distanceMsg);
     this.location.setAttribute('distanceMsg', formatDistance(distanceMsg));
@@ -80,18 +81,17 @@ class LocationTracker {
       })
     );
 
-    const distance = computeDistance(ev.detail.position, dstCoords, true);
+    const distance = this.controller.computeDistance(ev.detail.position, dstCoords, true);
 
     this.hideForMinDistance(distance === Number.MAX_SAFE_INTEGER);
   }
 
   private _updatePosition() {
-    const {
-      computeDistance,
-      camera: { originPosition },
-    } = this.controller;
+    if (!this.controller || !this.controller.camera) return;
 
-    if (!originPosition) return;
+    if (!this.controller.camera.originPosition) return;
+
+    const originPosition = this.controller.camera.originPosition;
 
     const position = {
       x: 0,
@@ -109,10 +109,10 @@ class LocationTracker {
       latitude: this.latitude,
     };
 
-    position.x = computeDistance(originPosition, dstCoordsX);
+    position.x = this.controller.computeDistance(originPosition, dstCoordsX);
     position.x *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.X);
 
-    position.z = computeDistance(originPosition, dstCoordsZ);
+    position.z = this.controller.computeDistance(originPosition, dstCoordsZ);
     position.z *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.Z);
 
     this.location.setAttribute('position', position);

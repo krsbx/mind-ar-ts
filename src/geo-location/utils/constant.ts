@@ -15,6 +15,8 @@ const AR_EVENT_NAME = {
 const SYSTEM_STATE = {
   LOCATION_INITIALIZING: 'location-initializing',
   LOCATION_INITIALIZED: 'location-initialized',
+  CAMERA_INITIALIZING: 'location-camera-initializing',
+  CAMERA_INITIALIZED: 'location-camera-initialized',
   LOCATION_READY: 'location-ready',
   LOCATION_ERROR: 'location-error',
 };

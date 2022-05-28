@@ -12,9 +12,8 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
   },
 
   init: function () {
-    this.el.sceneEl.addEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, () => {
-      this.setup();
-    });
+    // Trigger the event only after the camera is initialized
+    this.el.sceneEl.addEventListener(SYSTEM_STATE.CAMERA_INITIALIZED, this.setup.bind(this));
   },
 
   setup: function () {
@@ -26,6 +25,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
 
     console.log('Location place added');
 
-    this.el.sceneEl.removeEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, this.setup);
+    this.el.sceneEl.removeEventListener(SYSTEM_STATE.CAMERA_INITIALIZED, this.setup);
   },
 });

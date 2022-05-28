@@ -13,9 +13,9 @@ const SCENE = `
       <a-asset-item id="avatarModel" src="https://arjs-cors-proxy.herokuapp.com/https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/scene.gltf" />
     </a-assets>
 
-    <a-camera mindar-location-camera="" ></a-camera>
+    <a-camera mindar-location-camera="simulateLatitude: -0.2647; simulateLongitude: 100.5614; minDistance: 0" ></a-camera>
 
-    <a-entity mindar-location-place="latitude: 0;longitude:0;">
+    <a-entity mindar-location-place="latitude: -0.2647; longitude: 100.5614;">
       <a-plane src="#card" position="0 0 0" height="0.552" width="1" rotation="0 0 0" />
 
       <a-gltf-model rotation="0 0 0 " position="0 0 0.1" scale="0.01 0.01 0.01" src="#avatarModel"

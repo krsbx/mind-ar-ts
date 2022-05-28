@@ -31,6 +31,7 @@ interface LocationTrackerConstructor {
   longitude: number;
   controller: Controller;
   location: typeof AScene;
+  camera: typeof AScene;
 }
 
 type Coordinates = {

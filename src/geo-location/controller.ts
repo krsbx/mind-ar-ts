@@ -15,8 +15,8 @@ import {
 class Controller {
   public camera!: CameraTracker;
   public location: LocationTracker[];
-  private minDistance!: number;
-  private maxDistance!: number;
+  public minDistance!: number;
+  public maxDistance!: number;
 
   constructor() {
     this.location = [];
@@ -29,7 +29,11 @@ class Controller {
   }
 
   addLocation(locationParams: Omit<LocationTrackerConstructor, 'controller'>) {
-    const location = new LocationTracker({ ...locationParams, controller: this });
+    const location = new LocationTracker({
+      ...locationParams,
+      controller: this,
+      camera: this.camera.camera,
+    });
     this.location.push(location);
   }
 

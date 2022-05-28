@@ -27,9 +27,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
     const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
     this.arSystem = arSystem;
 
-    this.el.sceneEl.addEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, () => {
-      this.setup();
-    });
+    this.el.sceneEl.addEventListener(SYSTEM_STATE.LOCATION_INITIALIZED, this.setup.bind(this));
   },
 
   tick: function () {

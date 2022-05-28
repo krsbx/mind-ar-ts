@@ -28,7 +28,7 @@ class CameraTracker {
   public gpsMinDistance: number;
   public gpsTimeInterval: number;
   public watchPositionId!: number;
-  public lastPosition!: Coordinates;
+  public lastPosition: HaversineParams;
   public currentPosition!: Coordinates;
   public heading!: number;
   public originPosition: Coordinates | null;
@@ -64,6 +64,11 @@ class CameraTracker {
 
     this.isEmulated = simulateLatitude !== 0 && simulateLongitude !== 0;
     this.orientationEventName = getDeviceOrientationEventName();
+
+    this.lastPosition = {
+      longitude: 0,
+      latitude: 0,
+    };
 
     if (this.orientationEventName === '') console.error('Compass is not supported');
     window.addEventListener(this.orientationEventName, this._onDeviceOrientation);
@@ -114,7 +119,7 @@ class CameraTracker {
       this._onPositionError.bind(this),
       {
         enableHighAccuracy: true,
-        maximumAge: this.gpsTimeInterval,
+        maximumAge: this.gpsTimeInterval * SEC2MS,
         timeout: 30 * SEC2MS, // Will timeout after 30 seconds
       }
     );
@@ -122,11 +127,7 @@ class CameraTracker {
 
   private _onPositionUpdate({ coords }: GeolocationPosition) {
     const localPosition: Coordinates = {
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      altitude: coords.altitude,
-      accuracy: coords.accuracy,
-      altitudeAccuracy: coords.altitudeAccuracy,
+      ...coords,
     };
 
     // If user specified an altitude, we'll use it
@@ -139,7 +140,7 @@ class CameraTracker {
     // If the user has moved more than the min distance, we'll update the position
     if (distanceMoved >= this.gpsMinDistance || !this.originPosition) {
       this._updatePosition();
-      this.lastPosition = this.currentPosition;
+      this.lastPosition = Helper.deepClone(this.currentPosition);
     }
   }
 

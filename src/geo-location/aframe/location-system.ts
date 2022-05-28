@@ -48,9 +48,13 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     // Prevent to register multiple cameras
     if (this.controller.camera) return;
 
+    this.el.emit(SYSTEM_STATE.CAMERA_INITIALIZING);
+
     this.controller.setupCamera(props);
 
     this.isEmulated = props.simulateLatitude !== 0 && props.simulateLongitude !== 0;
+
+    this.el.emit(SYSTEM_STATE.CAMERA_INITIALIZED);
   },
 
   addLocation: function (props: Omit<LocationTrackerConstructor, 'controller'>) {
