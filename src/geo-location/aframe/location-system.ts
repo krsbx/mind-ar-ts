@@ -13,7 +13,6 @@ const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.LOCATION;
 AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
   el: null as any,
   showStats: false,
   controller: Helper.castTo<Controller>(null),
@@ -31,20 +30,26 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   maxDistance: 0,
   gpsMinDistance: 0,
   gpsTimeInterval: 0,
+  camera: Helper.castTo<typeof AScene>(null),
+  isEmulated: false,
 
-  init: function () {
-    this.anchorEntities = [];
-  },
-
-  tick: function () {
-    console.log(this.location);
-  },
-
-  setup: function ({
+  setupSystem: function ({
     showStats,
     uiLoading,
     uiScanning,
     uiError,
+  }: {
+    uiLoading: string;
+    uiScanning: string;
+    uiError: string;
+    showStats: boolean;
+  }) {
+    this.showStats = showStats;
+
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+  },
+
+  setupCamera: function ({
     shouldFaceUser,
     simulateLatitude,
     simulateLongitude,
@@ -54,11 +59,8 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     maxDistance,
     gpsMinDistance,
     gpsTimeInterval,
+    camera,
   }: {
-    uiLoading: string;
-    uiScanning: string;
-    uiError: string;
-    showStats: boolean;
     shouldFaceUser: boolean;
     simulateLatitude: number;
     simulateLongitude: number;
@@ -68,8 +70,11 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     maxDistance: number;
     gpsMinDistance: number;
     gpsTimeInterval: number;
+    camera: typeof AScene;
   }) {
-    this.showStats = showStats;
+    // Prevent to register multiple cameras
+    if (this.camera) return;
+
     this.shouldFaceUser = shouldFaceUser;
     this.simulateAltitude = simulateAltitude;
     this.simulateLatitude = simulateLatitude;
@@ -79,12 +84,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     this.maxDistance = maxDistance;
     this.gpsMinDistance = gpsMinDistance;
     this.gpsTimeInterval = gpsTimeInterval;
+    this.camera = camera;
 
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError });
-  },
-
-  registerAnchor: function (el: any, targetIndex: number) {
-    this.anchorEntities.push({ el, targetIndex });
+    this.isEmulated = simulateLatitude !== 0 && simulateLongitude !== 0;
   },
 
   start: function () {
@@ -111,6 +113,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
       maxDistance: this.maxDistance,
       gpsMinDistance: this.gpsMinDistance,
       gpsTimeInterval: this.gpsTimeInterval,
+      camera: this.camera,
     });
 
     this._resize();
@@ -129,5 +132,11 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     sceneEl.style.left = this.video.style.left;
     sceneEl.style.width = this.video.style.width;
     sceneEl.style.height = this.video.style.height;
+  },
+
+  update: function () {
+    if (!this.isEmulated) return;
+
+    this.controller.getEmulatedPosition();
   },
 });

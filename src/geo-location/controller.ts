@@ -1,10 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ! Control the geo location
 // ! We're not using the webworker for geolocation
 // ! because might run to an issue while updating the position
 
-import { SEC2MS } from './utils/constant';
-import { haversineDist } from './utils/distance';
-import { ControllerConstructor, Coordinates } from './utils/types/geo-location';
+import { AScene } from 'aframe';
+import { degToRad, getDeviceOrientationEventName, radToDeg } from './utils/common';
+import { AR_EVENT_NAME, AR_POSITION_MULTIPLIER, FULL_CIRCLE_DEG, SEC2MS } from './utils/constant';
+import { getPositionMultiplier, haversineDist } from './utils/distance';
+import { computeCompassHeading, getHeading } from './utils/compass';
+import { ControllerConstructor, Coordinates, HaversineParams } from './utils/types/geo-location';
+import { Helper } from '../libs';
 
 class Controller {
   private simulateLatitude: number;
@@ -18,8 +23,12 @@ class Controller {
   private watchPositionId!: number;
   private lastPosition!: Coordinates;
   private currentPosition!: Coordinates;
-  private originPosition: Coordinates | null;
+  public heading!: number;
+  public originPosition: Coordinates | null;
   private isEmulated: boolean;
+  public camera: typeof AScene;
+  private lookControls: any;
+  private orientationEventName: string;
 
   constructor({
     simulateAltitude = 0,
@@ -30,6 +39,7 @@ class Controller {
     maxDistance = 30,
     gpsMinDistance = 10,
     gpsTimeInterval = 3,
+    camera,
   }: ControllerConstructor) {
     this.simulateAltitude = simulateAltitude;
     this.simulateLatitude = simulateLatitude;
@@ -40,8 +50,14 @@ class Controller {
     this.gpsMinDistance = gpsMinDistance;
     this.gpsTimeInterval = gpsTimeInterval;
     this.originPosition = null;
+    this.camera = camera;
+    this.lookControls = camera.components['look-controls'];
 
     this.isEmulated = simulateLatitude !== 0 && simulateLongitude !== 0;
+    this.orientationEventName = getDeviceOrientationEventName();
+
+    if (this.orientationEventName === '') console.error('Compass is not supported');
+    window.addEventListener(this.orientationEventName, this._onDeviceOrientation);
   }
 
   startAR() {
@@ -50,14 +66,14 @@ class Controller {
 
   private _initWatchPosition() {
     if (this.isEmulated) {
-      this._getEmulatedPosition();
+      this.getEmulatedPosition();
       return;
     }
 
     this.watchPositionId = this._watchPosition();
   }
 
-  private _getEmulatedPosition() {
+  getEmulatedPosition() {
     const localPosition = this.currentPosition || ({} as Coordinates);
 
     localPosition.latitude = this.simulateLatitude;
@@ -118,14 +134,65 @@ class Controller {
     if (this.currentPosition.accuracy > this.positionMinAccuracy) return;
 
     // Set the origin position on initialization
-    if (!this.originPosition) this.originPosition = this.currentPosition;
+    if (!this.originPosition) {
+      this.originPosition = this.currentPosition;
+
+      // Invoke any callback that subscribes to the CAMERA_ORIGIN_SET
+      window.dispatchEvent(new Event(AR_EVENT_NAME.CAMERA_ORIGIN_SET));
+    }
 
     this._setPosition();
   }
 
-  private _setPosition() {}
+  // Need to trigger manually from the camera
+  updateRotation() {
+    const heading = FULL_CIRCLE_DEG - this.heading;
+    const rotation = this.camera.getAttribute('rotation');
+    const yawRotation = radToDeg(this.lookControls.yawObject.rotation.y);
 
-  computeDistance(src: Coordinates, dest: Coordinates, isPlace = false) {
+    const offset = (heading - (rotation - yawRotation)) % FULL_CIRCLE_DEG;
+    this.lookControls.yawObject.rotation.y = degToRad(offset);
+  }
+
+  private _setPosition() {
+    if (!this.originPosition) return;
+
+    const position = this.camera.getAttribute('position');
+
+    const dstCoords: HaversineParams = {
+      longitude: this.currentPosition.longitude,
+      latitude: this.originPosition.latitude,
+    };
+
+    const distance = this.computeDistance(this.originPosition, dstCoords);
+
+    position.x = distance;
+    position.z = distance;
+
+    position.x *= getPositionMultiplier(
+      this.originPosition,
+      this.currentPosition,
+      AR_POSITION_MULTIPLIER.X
+    );
+    position.z *= getPositionMultiplier(
+      this.originPosition,
+      this.currentPosition,
+      AR_POSITION_MULTIPLIER.Z
+    );
+
+    this.camera.setAttribute('position', position);
+
+    window.dispatchEvent(
+      new CustomEvent(AR_EVENT_NAME.LOCATION_UPDATED, {
+        detail: {
+          position,
+          message: 'Location updated',
+        },
+      })
+    );
+  }
+
+  computeDistance(src: HaversineParams, dest: HaversineParams, isPlace = false) {
     const distance = haversineDist(src, dest);
 
     // If its a place and the distance is too near to the user,
@@ -139,6 +206,34 @@ class Controller {
       return Number.MAX_SAFE_INTEGER;
 
     return distance;
+  }
+
+  private _onDeviceOrientation(ev: Event) {
+    const event = ev as DeviceOrientationEvent;
+
+    const hasCompassHeading = !!event.webkitCompassHeading;
+    const hasWebKitAccuracy = !!event.webkitCompassAccuracy;
+
+    if (hasCompassHeading && hasWebKitAccuracy) {
+      const heading = getHeading(event);
+
+      if (Helper.isNil(heading)) return;
+
+      this.heading = heading;
+      return;
+    }
+
+    if (event.alpha === null) {
+      console.warn('event.alpha is null');
+      return;
+    }
+
+    if (event.absolute === false) {
+      console.warn('event.absolute is false');
+      return;
+    }
+
+    this.heading = computeCompassHeading(event.alpha, event.beta, event.gamma);
   }
 }
 

@@ -1,3 +1,5 @@
+import { AScene } from 'aframe';
+
 interface ControllerConstructor {
   simulateLatitude: number;
   simulateLongitude: number;
@@ -7,6 +9,7 @@ interface ControllerConstructor {
   maxDistance: number;
   gpsMinDistance: number;
   gpsTimeInterval: number;
+  camera: typeof AScene;
 }
 
 type Coordinates = {
@@ -17,4 +20,6 @@ type Coordinates = {
   longitude: number;
 };
 
-export type { ControllerConstructor, Coordinates };
+type HaversineParams = Pick<Coordinates, 'latitude' | 'longitude'>;
+
+export type { ControllerConstructor, Coordinates, HaversineParams };

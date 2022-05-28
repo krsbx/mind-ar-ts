@@ -1,6 +1,6 @@
 import { degToRad } from './common';
-import { EARTH_RADIUS } from './constant';
-import { Coordinates } from './types/geo-location';
+import { AR_POSITION_MULTIPLIER, EARTH_RADIUS } from './constant';
+import { HaversineParams } from './types/geo-location';
 
 const formatDistance = (distance: number) => {
   const dist = parseInt(distance.toFixed(0), 10);
@@ -13,7 +13,7 @@ const formatDistance = (distance: number) => {
  * Haversine formula to calculate the distance between two points
  * http://www.movable-type.co.uk/scripts/latlong.html#distance
  */
-const haversineDist = (src: Coordinates, dest: Coordinates) => {
+const haversineDist = (src: HaversineParams, dest: HaversineParams) => {
   const deltaLon = degToRad(dest.longitude - src.longitude);
   const deltaLat = degToRad(dest.latitude - src.latitude);
 
@@ -33,4 +33,18 @@ const haversineDist = (src: Coordinates, dest: Coordinates) => {
   return angle * EARTH_RADIUS; // Resulting in metric units (meters)
 };
 
-export { formatDistance, haversineDist };
+const getPositionMultiplier = (
+  src: HaversineParams,
+  dest: HaversineParams,
+  type: typeof AR_POSITION_MULTIPLIER[keyof typeof AR_POSITION_MULTIPLIER]
+) => {
+  switch (type) {
+    case AR_POSITION_MULTIPLIER.X:
+      return dest.longitude > src.longitude ? -1 : 1;
+
+    case AR_POSITION_MULTIPLIER.Z:
+      return dest.latitude > src.latitude ? -1 : 1;
+  }
+};
+
+export { formatDistance, haversineDist, getPositionMultiplier };
