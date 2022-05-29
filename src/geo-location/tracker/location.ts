@@ -15,8 +15,17 @@ class LocationTracker {
   private latitude: number;
   private longitude: number;
   private position: HaversineParams;
+  private wasFound: boolean;
+  private placeIndex: number;
 
-  constructor({ location, latitude, longitude, controller, camera }: LocationTrackerConstructor) {
+  constructor({
+    location,
+    latitude,
+    longitude,
+    controller,
+    camera,
+    placeIndex,
+  }: LocationTrackerConstructor) {
     this.location = location;
     this.latitude = latitude;
     this.longitude = longitude;
@@ -26,6 +35,9 @@ class LocationTracker {
       latitude,
       longitude,
     };
+    this.placeIndex = placeIndex;
+
+    this.wasFound = false;
 
     window.addEventListener(AR_EVENT_NAME.CAMERA_ORIGIN_SET, this._onPositionSet.bind(this));
     window.addEventListener(AR_EVENT_NAME.LOCATION_UPDATED, this._onPositionUpdate.bind(this));
@@ -119,7 +131,28 @@ class LocationTracker {
   }
 
   hideForMinDistance(value: boolean) {
+    this._triggerLostFoundEvent(!value);
     this.location.setAttribute('visible', !value);
+  }
+
+  private _triggerLostFoundEvent(isVisible: boolean) {
+    if (isVisible && !this.wasFound) {
+      this.location.emit(AR_EVENT_NAME.LOCATION_FOUND, {
+        distance: this.location.getAttribute('distance'),
+        distanceMsg: this.location.getAttribute('distanceMsg'),
+        placeIndex: this.placeIndex,
+        time: new Date().getTime(),
+      });
+      this.wasFound = true;
+    }
+
+    if (!isVisible && this.wasFound) {
+      this.location.emit(AR_EVENT_NAME.LOCATION_LOST, {
+        placeIndex: this.placeIndex,
+        time: new Date().getTime(),
+      });
+      this.wasFound = false;
+    }
   }
 }
 

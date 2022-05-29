@@ -42,9 +42,9 @@ class CameraTracker {
     simulateLatitude = 0,
     simulateLongitude = 0,
     positionMinAccuracy = 100,
-    minDistance = 10,
-    maxDistance = 30,
-    gpsMinDistance = 10,
+    minDistance = 0,
+    maxDistance = 0,
+    gpsMinDistance = 3,
     gpsTimeInterval = 3,
     controller,
     camera,
@@ -119,7 +119,7 @@ class CameraTracker {
       this._onPositionError.bind(this),
       {
         enableHighAccuracy: true,
-        maximumAge: this.gpsTimeInterval * SEC2MS,
+        maximumAge: this.gpsTimeInterval,
         timeout: 30 * SEC2MS, // Will timeout after 30 seconds
       }
     );
@@ -195,7 +195,8 @@ class CameraTracker {
     window.dispatchEvent(
       new CustomEvent(AR_EVENT_NAME.LOCATION_UPDATED, {
         detail: {
-          position,
+          position: this.currentPosition,
+          origin: this.originPosition,
           message: 'Location updated',
         },
       })

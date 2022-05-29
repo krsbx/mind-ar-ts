@@ -22,4 +22,24 @@ const deepClone = <T>(obj: T): T => {
   return clone as T;
 };
 
-export { isNil, castTo, hasOwnProperty, deepClone };
+const omit = <T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> => {
+  const clone = deepClone(obj);
+
+  for (const key of keys) {
+    delete clone[key];
+  }
+
+  return clone;
+};
+
+const pick = <T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
+  const clone = Array.isArray(obj) ? castTo<T>([]) : ({} as T);
+
+  for (const key of keys) {
+    clone[key] = obj[key];
+  }
+
+  return clone;
+};
+
+export { isNil, castTo, hasOwnProperty, deepClone, omit, pick };

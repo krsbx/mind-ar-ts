@@ -30,6 +30,7 @@ interface LocationTrackerConstructor {
   latitude: number;
   longitude: number;
   controller: Controller;
+  placeIndex: number;
   location: typeof AScene;
   camera: typeof AScene;
 }

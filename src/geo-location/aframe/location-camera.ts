@@ -17,9 +17,9 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
     simulateLatitude: { type: 'number', default: 0 },
     simulateLongitude: { type: 'number', default: 0 },
     positionMinAccuracy: { type: 'int', default: 100 },
-    minDistance: { type: 'int', default: 10 },
-    maxDistance: { type: 'int', default: 30 },
-    gpsMinDistance: { type: 'number', default: 10 },
+    minDistance: { type: 'int', default: 0 },
+    maxDistance: { type: 'int', default: 0 },
+    gpsMinDistance: { type: 'number', default: 3 },
     gpsTimeInterval: { type: 'number', default: 3 },
   },
 
