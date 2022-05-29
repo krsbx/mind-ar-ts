@@ -9,6 +9,8 @@ const config: webpack.Configuration = {
     'mindar-face': './src/face-target/index.ts',
     'mindar-face-aframe': './src/face-target/aframe.ts',
     'mindar-face-three': './src/face-target/three.ts',
+    'mindar-location': './src/geo-location/index.ts',
+    'mindar-location-aframe': './src/geo-location/aframe.ts',
   },
   mode: 'development',
   devtool: 'inline-source-map',

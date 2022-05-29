@@ -1,0 +1,3 @@
+class MindARThree {}
+
+export { MindARThree };

@@ -1,56 +1,66 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
+import { AScene } from 'aframe';
 import { UI } from '../../ui/ui';
+import { Controller } from '../controller';
 import { Helper } from '../../libs';
 import { AR_ELEMENT_TAG, AR_STATE, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import { AR_COMPONENT_NAME, SYSTEM_STATE } from '../utils/constant';
-import { AScene } from 'aframe';
 import screenResizer from '../../utils/screen-resizer';
+import { CameraTrackerConstructor, LocationTrackerConstructor } from '../utils/types/geo-location';
 
-const { UI: UIClass } = window.MINDAR.LOCATION;
+const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.LOCATION;
 
 AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
   el: null as any,
   showStats: false,
-  location: Helper.castTo<GeolocationPosition>(null),
+  controller: Helper.castTo<Controller>(null),
   mainStats: Helper.castTo<Stats>(null),
   ui: Helper.castTo<UI>(null),
   sytemState: SYSTEM_STATE.LOCATION_INITIALIZING,
-  watchId: Helper.castTo<number>(null),
   shouldFaceUser: false,
-
-  init: function () {
-    this.anchorEntities = [];
-  },
-
-  tick: function () {
-    console.log(this.location);
-  },
+  isEmulated: false,
 
   setup: function ({
     showStats,
     uiLoading,
     uiScanning,
     uiError,
-    shouldFaceUser,
   }: {
-    showStats: boolean;
     uiLoading: string;
     uiScanning: string;
     uiError: string;
-    shouldFaceUser: boolean;
+    showStats: boolean;
   }) {
     this.showStats = showStats;
-    this.shouldFaceUser = shouldFaceUser;
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+    this.controller = new ControllerClass();
+
+    this.el.emit(SYSTEM_STATE.LOCATION_INITIALIZED);
   },
 
-  registerAnchor: function (el: any, targetIndex: number) {
-    this.anchorEntities.push({ el, targetIndex });
+  setupCamera: function (props: Omit<CameraTrackerConstructor, 'controller'>) {
+    if (!this.controller) return;
+
+    // Prevent to register multiple cameras
+    if (this.controller.camera) return;
+
+    this.el.emit(SYSTEM_STATE.CAMERA_INITIALIZING);
+
+    this.controller.setupCamera(props);
+
+    this.isEmulated = props.simulateLatitude !== 0 && props.simulateLongitude !== 0;
+
+    this.el.emit(SYSTEM_STATE.CAMERA_INITIALIZED);
+  },
+
+  addLocation: function (props: Omit<LocationTrackerConstructor, 'controller'>) {
+    if (!this.controller) return;
+
+    this.controller.addLocation(props);
   },
 
   start: function () {
@@ -108,7 +118,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
         this.video.setAttribute('width', this.video.videoWidth.toString());
         this.video.setAttribute('height', this.video.videoHeight.toString());
 
-        this._startLocationTracking();
+        this._startAR();
       });
 
       this.video.srcObject = stream;
@@ -118,53 +128,12 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     }
   },
 
-  _watchPositionSuccess: function (system: any) {
-    return function (position: GeolocationPosition) {
-      if (system.sytemState === SYSTEM_STATE.LOCATION_INITIALIZING)
-        system.sytemState = SYSTEM_STATE.LOCATION_READY;
-
-      system.location = position;
-    };
-  },
-
-  _watchPositionError: function (system: any) {
-    return function () {
-      if (system.sytemState === SYSTEM_STATE.LOCATION_INITIALIZING)
-        system.sytemState = SYSTEM_STATE.LOCATION_ERROR;
-
-      if (system.sytemState !== SYSTEM_STATE.LOCATION_ERROR) return;
-
-      system.el.emit(AR_STATE.AR_ERROR, { error: 'LOCATION_FAIL' });
-      navigator.geolocation.clearWatch(system.watchId);
-    };
-  },
-
-  _startLocationTracking: function () {
-    if (
-      !navigator.geolocation ||
-      !navigator.geolocation.getCurrentPosition ||
-      !navigator.geolocation.watchPosition
-    ) {
-      // TODO: show unsupported error
-      this.el.emit(AR_STATE.AR_ERROR, { error: 'LOCATION_FAIL' });
-      this.ui.showCompatibility();
-
-      return;
-    }
-
-    this.watchId = navigator.geolocation.watchPosition(
-      this._watchPositionSuccess(this),
-      this._watchPositionError(this)
-    );
-
-    this._startAR();
-  },
-
   _startAR: function () {
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
 
     this.el.emit(AR_STATE.AR_READY);
+    this.controller.startAR();
     this.ui.hideLoading();
   },
 
@@ -177,5 +146,11 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
     sceneEl.style.left = this.video.style.left;
     sceneEl.style.width = this.video.style.width;
     sceneEl.style.height = this.video.style.height;
+  },
+
+  update: function () {
+    if (!this.isEmulated) return;
+
+    this.controller.camera.getEmulatedPosition();
   },
 });

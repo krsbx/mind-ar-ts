@@ -1,30 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
+import { AR_COMPONENT_NAME, AR_EVENT_NAME, SYSTEM_STATE } from '../utils/constant';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
   dependencies: [AR_COMPONENT_NAME.LOCATION_SYSTEM],
+
   el: null as any,
 
   schema: {
-    latitude: { type: 'number' },
-    longitude: { type: 'number' },
+    longitude: { type: 'number', default: 0 },
+    latitude: { type: 'number', default: 0 },
+    placeIndex: { type: 'number' },
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
-    arSystem.registerAnchor(this, {
-      latitude: this.data.latitude,
-      longitude: this.data.longitude,
-    });
-
-    const root = this.el.object3D;
-    root.visible = false;
+    // Trigger the event only after the camera is initialized
+    this.el.sceneEl.addEventListener(SYSTEM_STATE.CAMERA_INITIALIZED, this.setup.bind(this));
+    this.el.sceneEl.addEventListener(AR_EVENT_NAME.LOCATION_FOUND, this.onLocationFound.bind(this));
+    this.el.sceneEl.addEventListener(AR_EVENT_NAME.LOCATION_LOST, this.onLocationLost.bind(this));
   },
 
-  updateWorldMatrix: function (inVisibleRange?: boolean) {
-    if (!this.el.object3D.visible) this.el.emit(AR_EVENT_NAME.LOCATION_FOUND);
-    else this.el.emit(AR_EVENT_NAME.LOCATION_LOST);
+  setup: function () {
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.LOCATION_SYSTEM];
+    arSystem.addLocation({
+      ...this.data,
+      location: this.el,
+    });
 
-    this.el.object3D.visible = !!inVisibleRange;
+    console.log('Location place added');
+
+    this.el.sceneEl.removeEventListener(SYSTEM_STATE.CAMERA_INITIALIZED, this.setup);
+  },
+
+  onLocationFound: function (event: Event) {
+    if (event.detail.placeIndex !== this.data.placeIndex) return;
+    console.log(event.detail);
+  },
+
+  onLocationLost: function (event: Event) {
+    if (event.detail.placeIndex !== this.data.placeIndex) return;
+    console.log(event.detail);
   },
 });

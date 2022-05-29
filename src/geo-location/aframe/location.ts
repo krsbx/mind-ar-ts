@@ -13,7 +13,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION, {
     uiLoading: { type: 'string', default: 'yes' },
     uiScanning: { type: 'string', default: 'yes' },
     uiError: { type: 'string', default: 'yes' },
-    shouldFaceUser: { type: 'boolean', default: false },
   },
 
   init: function () {
@@ -24,7 +23,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION, {
       uiScanning: this.data.uiScanning,
       uiError: this.data.uiError,
       showStats: this.data.showStats,
-      shouldFaceUser: this.data.shouldFaceUser,
     });
 
     if (this.data.autoStart)
