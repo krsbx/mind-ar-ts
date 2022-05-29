@@ -1,3 +1,3 @@
-import './_aframe/location';
-import './_aframe/location-place';
-import './_aframe/location-system';
+import './aframe/location';
+import './aframe/location-place';
+import './aframe/location-system';
