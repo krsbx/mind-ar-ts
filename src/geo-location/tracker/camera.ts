@@ -127,7 +127,11 @@ class CameraTracker {
 
   private _onPositionUpdate({ coords }: GeolocationPosition) {
     const localPosition: Coordinates = {
-      ...coords,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      altitude: coords.altitude,
+      accuracy: coords.accuracy,
+      altitudeAccuracy: coords.altitudeAccuracy,
     };
 
     // If user specified an altitude, we'll use it
@@ -174,7 +178,10 @@ class CameraTracker {
       latitude: this.originPosition.latitude,
     };
 
-    const distance = this.controller.computeDistance(this.originPosition, dstCoords);
+    const distance = this.controller.computeDistance({
+      src: this.originPosition,
+      dest: dstCoords,
+    });
 
     position.x = distance;
     position.z = distance;

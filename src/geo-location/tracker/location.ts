@@ -17,6 +17,11 @@ class LocationTracker {
   private position: HaversineParams;
   private wasFound: boolean;
   private placeIndex: number;
+  // * We add a custom distance for specific location
+  // * by doing this, user can have a better experience
+  // * since multiple location can be visible at different distance
+  private minDistance: number;
+  private maxDistance: number;
 
   constructor({
     location,
@@ -25,6 +30,8 @@ class LocationTracker {
     controller,
     camera,
     placeIndex,
+    minDistance = -1,
+    maxDistance = -1,
   }: LocationTrackerConstructor) {
     this.location = location;
     this.latitude = latitude;
@@ -35,6 +42,8 @@ class LocationTracker {
       latitude,
       longitude,
     };
+    this.minDistance = minDistance;
+    this.maxDistance = maxDistance;
     this.placeIndex = placeIndex;
 
     this.wasFound = false;
@@ -50,24 +59,10 @@ class LocationTracker {
     );
   }
 
-  private _getCamera() {
-    if (!this.controller) return;
-
-    const camera = this.controller.camera;
-    if (!camera) return 'Location camera not found';
-
-    this.camera = camera.camera;
-    return;
-  }
-
   private _onPositionSet() {
     if (!this.camera) {
-      const res = this._getCamera();
-
-      if (res) {
-        console.error(res);
-        return;
-      }
+      console.error('Location camera not found');
+      return;
     }
 
     this._updatePosition();
@@ -81,7 +76,12 @@ class LocationTracker {
       latitude: this.latitude,
     };
 
-    const distanceMsg = this.controller.computeDistance(ev.detail.position, dstCoords);
+    const distanceToCompute = {
+      src: ev.detail.position,
+      dest: dstCoords,
+    };
+
+    const distanceMsg = this.controller.computeDistance(distanceToCompute);
 
     this.location.setAttribute('distance', distanceMsg);
     this.location.setAttribute('distanceMsg', formatDistance(distanceMsg));
@@ -93,13 +93,18 @@ class LocationTracker {
       })
     );
 
-    const distance = this.controller.computeDistance(ev.detail.position, dstCoords, true);
+    const distance = this.controller.computeDistance({
+      ...distanceToCompute,
+      minDistance: this.minDistance,
+      maxDistance: this.maxDistance,
+      isPlace: true,
+    });
 
     this.hideForMinDistance(distance === Number.MAX_SAFE_INTEGER);
   }
 
   private _updatePosition() {
-    if (!this.controller || !this.controller.camera) return;
+    if (!this.controller || !this.camera) return;
 
     if (!this.controller.camera.originPosition) return;
 
@@ -121,10 +126,16 @@ class LocationTracker {
       latitude: this.latitude,
     };
 
-    position.x = this.controller.computeDistance(originPosition, dstCoordsX);
+    position.x = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsX,
+    });
     position.x *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.X);
 
-    position.z = this.controller.computeDistance(originPosition, dstCoordsZ);
+    position.z = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsZ,
+    });
     position.z *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.Z);
 
     this.location.setAttribute('position', position);

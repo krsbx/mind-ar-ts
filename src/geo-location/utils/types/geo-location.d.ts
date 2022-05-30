@@ -15,14 +15,14 @@ interface ControllerConstructor {
 
 interface CameraTrackerConstructor {
   controller: Controller;
-  simulateLatitude: number;
-  simulateLongitude: number;
-  simulateAltitude: number;
-  positionMinAccuracy: number;
-  minDistance: number;
-  maxDistance: number;
-  gpsMinDistance: number;
-  gpsTimeInterval: number;
+  simulateLatitude?: number;
+  simulateLongitude?: number;
+  simulateAltitude?: number;
+  positionMinAccuracy?: number;
+  minDistance?: number;
+  maxDistance?: number;
+  gpsMinDistance?: number;
+  gpsTimeInterval?: number;
   camera: Scene;
 }
 
@@ -33,6 +33,8 @@ interface LocationTrackerConstructor {
   placeIndex: number;
   location: Scene;
   camera: Scene;
+  minDistance?: number;
+  maxDistance?: number;
 }
 
 type Coordinates = {
