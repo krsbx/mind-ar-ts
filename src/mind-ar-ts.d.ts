@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import * as THREE from 'three';
+import { Scene } from 'aframe';
 import { Controller as ImageController } from './image-target/controller';
 import { Controller as FaceController } from './face-target/controller';
 import { Controller as LocationController } from './geo-location/controller';
@@ -7,6 +8,7 @@ import { Compiler } from './image-target/compiler';
 import { UI } from './ui/ui';
 import { MindARThree as ImageThree } from './image-target/three';
 import { MindARThree as FaceThree } from './face-target/three';
+import { Coordinates } from './geo-location/utils/types/geo-location';
 
 declare global {
   interface Window {
@@ -47,6 +49,13 @@ declare global {
   }
 
   interface Event {
-    detail: any;
+    detail: {
+      distance?: number;
+      location?: Scene;
+      position?: Coordinates;
+      origin?: Coordinates;
+      message?: string;
+      placeIndex?: number;
+    };
   }
 }
