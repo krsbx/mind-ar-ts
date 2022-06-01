@@ -2,7 +2,7 @@
 // * 1. The camera
 // * 2. The location/place
 
-import { AScene } from 'aframe';
+import { Scene } from 'aframe';
 import { Controller } from '../controller';
 import { AR_EVENT_NAME, AR_POSITION_MULTIPLIER } from '../utils/constant';
 import { formatDistance, getPositionMultiplier } from '../utils/distance';
@@ -10,8 +10,8 @@ import { HaversineParams, LocationTrackerConstructor } from '../utils/types/geo-
 
 class LocationTracker {
   private controller: Controller;
-  private camera!: typeof AScene;
-  private location: typeof AScene;
+  private camera!: Scene;
+  private location: Scene;
   private latitude: number;
   private longitude: number;
   private position: HaversineParams;

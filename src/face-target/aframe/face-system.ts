@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AScene } from 'aframe';
+import { Scene } from 'aframe';
 import { UI } from '../../ui/ui';
 import { Controller } from '../controller';
 import { Helper } from '../../libs';
@@ -232,7 +232,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   _resize: function () {
     screenResizer(this.video, this.container);
 
-    const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as typeof AScene;
+    const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as Scene;
 
     sceneEl.style.top = this.video.style.top;
     sceneEl.style.left = this.video.style.left;
