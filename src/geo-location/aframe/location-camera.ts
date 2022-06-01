@@ -8,9 +8,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   arSystem: null as any,
   el: null as any,
 
-  initialized: false,
-  isAdded: false,
-
   schema: {
     shouldFaceUser: { type: 'boolean', default: false },
     simulateAltitude: { type: 'number', default: 0 },

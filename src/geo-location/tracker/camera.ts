@@ -81,7 +81,7 @@ class CameraTracker {
   // Need to trigger manually from the camera
   updateRotation() {
     const heading = FULL_CIRCLE_DEG - this.heading;
-    const rotation = this.camera.getAttribute('rotation');
+    const rotation = this.camera.getAttribute('rotation').y;
     const yawRotation = radToDeg(this.lookControls.yawObject.rotation.y);
 
     const offset = (heading - (rotation - yawRotation)) % FULL_CIRCLE_DEG;
@@ -89,7 +89,7 @@ class CameraTracker {
   }
 
   getEmulatedPosition() {
-    const localPosition = this.currentPosition || ({} as Coordinates);
+    const localPosition = Helper.deepClone(this.currentPosition);
 
     localPosition.latitude = this.simulateLatitude;
     localPosition.longitude = this.simulateLongitude;
@@ -155,11 +155,11 @@ class CameraTracker {
   // Update user position after move
   private _updatePosition() {
     // TODO: show a notification for the user when the accuracy is too low
-    if (this.currentPosition.accuracy > this.positionMinAccuracy) return;
+    if (this.currentPosition.accuracy < this.positionMinAccuracy) return;
 
     // Set the origin position on initialization
     if (!this.originPosition) {
-      this.originPosition = this.currentPosition;
+      this.originPosition = Helper.deepClone(this.currentPosition);
 
       // Invoke any callback that subscribes to the CAMERA_ORIGIN_SET
       window.dispatchEvent(new Event(AR_EVENT_NAME.CAMERA_ORIGIN_SET));
@@ -173,37 +173,46 @@ class CameraTracker {
 
     const position = this.camera.getAttribute('position');
 
-    const dstCoords: HaversineParams = {
-      longitude: this.currentPosition.longitude,
-      latitude: this.originPosition.latitude,
+    const originPosition = Helper.deepClone(this.originPosition);
+    const currentPosition = Helper.deepClone(this.currentPosition);
+
+    // Compute X Axis
+    const dstCoordsX: HaversineParams = {
+      longitude: currentPosition.longitude,
+      latitude: originPosition.latitude,
     };
 
-    const distance = this.controller.computeDistance({
-      src: this.originPosition,
-      dest: dstCoords,
+    const distanceX = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsX,
     });
 
-    position.x = distance;
-    position.z = distance;
+    position.x = distanceX;
 
-    position.x *= getPositionMultiplier(
-      this.originPosition,
-      this.currentPosition,
-      AR_POSITION_MULTIPLIER.X
-    );
-    position.z *= getPositionMultiplier(
-      this.originPosition,
-      this.currentPosition,
-      AR_POSITION_MULTIPLIER.Z
-    );
+    position.x *= getPositionMultiplier(originPosition, currentPosition, AR_POSITION_MULTIPLIER.X);
+
+    // Compute Z Axis
+    const dstCoordsZ: HaversineParams = {
+      longitude: originPosition.longitude,
+      latitude: currentPosition.latitude,
+    };
+
+    const distanceZ = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsZ,
+    });
+
+    position.z = distanceZ;
+
+    position.z *= getPositionMultiplier(originPosition, currentPosition, AR_POSITION_MULTIPLIER.Z);
 
     this.camera.setAttribute('position', position);
 
     window.dispatchEvent(
       new CustomEvent(AR_EVENT_NAME.LOCATION_UPDATED, {
         detail: {
-          position: this.currentPosition,
-          origin: this.originPosition,
+          position: currentPosition,
+          origin: originPosition,
           message: 'Location updated',
         },
       })
