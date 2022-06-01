@@ -1,7 +1,5 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
-
 const downsampleBilinear = (imageHeight: number, imageWidth: number) => {
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: ['p'],
     outputShape: [Math.floor(imageHeight / 2), Math.floor(imageWidth / 2)],
     userCode: `

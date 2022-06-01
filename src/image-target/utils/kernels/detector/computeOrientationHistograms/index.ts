@@ -1,11 +1,11 @@
-import * as tf from '@tensorflow/tfjs';
+import { Tensor } from '@tensorflow/tfjs';
 import kernel1 from './kernel1';
 import kernel2 from './kernel2';
 
 const computeOrientationHistograms = (
-  pyramidImagesT: tf.Tensor<tf.Rank>[][],
-  prunedExtremasT: tf.Tensor<tf.Rank>,
-  radialPropertiesT: tf.Tensor<tf.Rank>,
+  pyramidImagesT: Tensor[][],
+  prunedExtremasT: Tensor,
+  radialPropertiesT: Tensor,
   oneOver2PI: number
 ) => {
   const KERNEL1 = kernel1(pyramidImagesT, prunedExtremasT, radialPropertiesT, oneOver2PI);

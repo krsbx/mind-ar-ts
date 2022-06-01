@@ -1,6 +1,6 @@
-import * as tf from '@tensorflow/tfjs';
+import { Tensor } from '@tensorflow/tfjs';
 
-const generateVariableName = (pyramidImagesT: tf.Tensor<tf.Rank>[] | tf.Tensor<tf.Rank>[][]) => {
+const generateVariableName = (pyramidImagesT: Tensor[] | Tensor[][]) => {
   const imageVariableNames: string[] = [];
 
   for (let i = 1; i < pyramidImagesT.length; i++) {
@@ -10,7 +10,7 @@ const generateVariableName = (pyramidImagesT: tf.Tensor<tf.Rank>[] | tf.Tensor<t
   return imageVariableNames;
 };
 
-const generateSubCodes = (pyramidImagesT: tf.Tensor<tf.Rank>[] | tf.Tensor<tf.Rank>[][]) => {
+const generateSubCodes = (pyramidImagesT: Tensor[] | Tensor[][]) => {
   let pixelsSubCodes = `float getPixel(int octave, int y, int x) {`;
 
   for (let i = 1; i < pyramidImagesT.length; i++)

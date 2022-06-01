@@ -1,15 +1,11 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 import { generateSubCodes, generateVariableName } from './helper';
 
-const computeLocalization = (
-  dogPyramidImagesT: tf.Tensor<tf.Rank>[],
-  prunedExtremasList: number[][]
-) => {
+const computeLocalization = (dogPyramidImagesT: Tensor[], prunedExtremasList: number[][]) => {
   const dogVariableNames: string[] = generateVariableName(dogPyramidImagesT);
   const dogSubCodes: string = generateSubCodes(dogPyramidImagesT);
 
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: [...dogVariableNames, 'extrema'],
     outputShape: [prunedExtremasList.length, 3, 3], // 3x3 pixels around the extrema
     userCode: `

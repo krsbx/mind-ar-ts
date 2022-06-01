@@ -1,12 +1,11 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 
 const computeFreakDescriptors = (
-  extremaFreaks: tf.Tensor<tf.Rank>,
+  extremaFreaks: Tensor,
   descriptorCount: number,
   FREAK_CONPARISON_COUNT: number
 ) => {
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: ['freak', 'p'],
     outputShape: [extremaFreaks.shape[0], descriptorCount],
     userCode: `

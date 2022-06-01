@@ -1,7 +1,5 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
-
 const computeMatching = (featureCount: number) => {
-  const kernel3: GPGPUProgram = {
+  const kernel3 = {
     variableNames: ['sims', 'maxIndex'],
     outputShape: [featureCount],
     userCode: `

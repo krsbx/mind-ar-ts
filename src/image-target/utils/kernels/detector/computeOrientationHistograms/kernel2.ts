@@ -1,12 +1,8 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 import { ORIENTATION_NUM_BINS } from '../../../constant/detector';
 
-const computeOrientationHistograms = (
-  prunedExtremasT: tf.Tensor<tf.Rank>,
-  radialPropertiesT: tf.Tensor<tf.Rank>
-) => {
-  const kernel: GPGPUProgram = {
+const computeOrientationHistograms = (prunedExtremasT: Tensor, radialPropertiesT: Tensor) => {
+  const kernel = {
     variableNames: ['fbinMag'],
     outputShape: [prunedExtremasT.shape[0], ORIENTATION_NUM_BINS],
     userCode: `

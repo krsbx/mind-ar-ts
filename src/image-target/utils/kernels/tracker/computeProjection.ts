@@ -1,8 +1,7 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
 import { PRECISION_ADJUST } from '../../constant/tracker';
 
 const computeProjection = (markerHeight: number, markerWidth: number, markerScale: number) => {
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: ['M', 'pixel'],
     outputShape: [markerHeight, markerWidth],
     userCode: `
