@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs';
+import { Tensor } from '@tensorflow/tfjs';
 import { Detector } from './detector';
 
 class CropDetector {
@@ -25,7 +25,7 @@ class CropDetector {
     this.lastRandomIndex = 4;
   }
 
-  detect(inputImageT: tf.Tensor<tf.Rank>) {
+  detect(inputImageT: Tensor) {
     // crop center
     const startY = Math.floor(this.height / 2 - this.cropSize / 2);
     const startX = Math.floor(this.width / 2 - this.cropSize / 2);
@@ -41,7 +41,7 @@ class CropDetector {
     return result;
   }
 
-  detectMoving(inputImageT: tf.Tensor<tf.Rank>) {
+  detectMoving(inputImageT: Tensor) {
     // loop a few locations around center
     const dx = this.lastRandomIndex % 3;
     const dy = Math.floor(this.lastRandomIndex / 3);
@@ -61,7 +61,7 @@ class CropDetector {
     return result;
   }
 
-  _detect(inputImageT: tf.Tensor<tf.Rank>, startX: number, startY: number) {
+  _detect(inputImageT: Tensor, startX: number, startY: number) {
     const cropInputImageT = inputImageT.slice([startY, startX], [this.cropSize, this.cropSize]);
 
     const { featurePoints, debugExtra } = this.detector.detect(cropInputImageT);

@@ -1,5 +1,11 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
+import {
+  tensor as tfTensor,
+  tidy as tfTidy,
+  backend as tfBackend,
+  engine as tfEngine,
+  Tensor,
+  TensorInfo,
+} from '@tensorflow/tfjs';
 import {
   PRECISION_ADJUST,
   AR2_DEFAULT_TS,
@@ -20,9 +26,9 @@ class Tracker {
   private debugMode: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private kernelCaches: Record<any, any>;
-  private featurePointsListT: tf.Tensor<tf.Rank>[];
-  private imagePixelsListT: tf.Tensor<tf.Rank>[];
-  private imagePropertiesListT: tf.Tensor<tf.Rank>[];
+  private featurePointsListT: Tensor[];
+  private imagePixelsListT: Tensor[];
+  private imagePropertiesListT: Tensor[];
 
   constructor(
     _markerDimensions: number[][],
@@ -42,6 +48,7 @@ class Tracker {
 
     // prebuild feature and marker pixel tensors
     let maxCount = 0;
+
     for (let i = 0; i < this.trackingKeyframeList.length; i++)
       maxCount = Math.max(maxCount, this.trackingKeyframeList[i].points.length);
 
@@ -63,7 +70,7 @@ class Tracker {
     this.kernelCaches = {};
   }
 
-  dummyRun(inputT: tf.Tensor<tf.Rank>) {
+  dummyRun(inputT: Tensor) {
     const transform: number[][] = [
       [1, 1, 1, 1],
       [1, 1, 1, 1],
@@ -74,7 +81,7 @@ class Tracker {
       this.track(inputT, transform, targetIndex);
   }
 
-  track(inputImageT: tf.Tensor<tf.Rank>, lastModelViewTransform: number[][], targetIndex: number) {
+  track(inputImageT: Tensor, lastModelViewTransform: number[][], targetIndex: number) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const modelViewProjectionTransform = buildModelViewProjectionTransform(
@@ -147,10 +154,10 @@ class Tracker {
   }
 
   private _computeMatching(
-    featurePointsT: tf.Tensor<tf.Rank>,
-    imagePixelsT: tf.Tensor<tf.Rank>,
-    imagePropertiesT: tf.Tensor<tf.Rank>,
-    projectedImageT: tf.Tensor<tf.Rank>
+    featurePointsT: Tensor,
+    imagePixelsT: Tensor,
+    imagePropertiesT: Tensor,
+    projectedImageT: Tensor
   ) {
     const templateOneSize = AR2_DEFAULT_TS;
     const templateSize = templateOneSize * 2 + 1;
@@ -175,8 +182,8 @@ class Tracker {
       );
     }
 
-    return tf.tidy(() => {
-      const programs = this.kernelCaches.computeMatching as GPGPUProgram[];
+    return tfTidy(() => {
+      const programs = this.kernelCaches.computeMatching as any[];
 
       const allSims = this._compileAndRun(programs[0], [
         featurePointsT,
@@ -200,8 +207,8 @@ class Tracker {
   }
 
   private _computeProjection(
-    modelViewProjectionTransformT: tf.Tensor<tf.Rank>,
-    inputImageT: tf.Tensor<tf.Rank>,
+    modelViewProjectionTransformT: Tensor,
+    inputImageT: Tensor,
     targetIndex: number
   ) {
     const {
@@ -222,7 +229,7 @@ class Tracker {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.computeProjection[kernelKey];
       const result = this._compileAndRun(program, [modelViewProjectionTransformT, inputImageT]);
 
@@ -231,7 +238,7 @@ class Tracker {
   }
 
   private _buildAdjustedModelViewTransform(modelViewProjectionTransform: number[][]) {
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const modelViewProjectionTransformAdjusted: number[][] = [];
 
       for (let i = 0; i < modelViewProjectionTransform.length; i++) {
@@ -243,14 +250,14 @@ class Tracker {
           );
       }
 
-      const t = tf.tensor(modelViewProjectionTransformAdjusted, [3, 4]);
+      const t = tfTensor(modelViewProjectionTransformAdjusted, [3, 4]);
 
       return t;
     });
   }
 
   private _prebuild(trackingFrame: ITrackingFeature, maxCount: number) {
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const { data, height, width, scale } = trackingFrame;
 
       const p: number[][] = [];
@@ -261,11 +268,11 @@ class Tracker {
         else p.push([-1, -1]);
       }
 
-      const imagePixels = tf.tensor(data, [width * height]);
+      const imagePixels = tfTensor(data, [width * height]);
 
-      const imageProperties = tf.tensor([width, height, scale], [3]);
+      const imageProperties = tfTensor([width, height, scale], [3]);
 
-      const featurePoints = tf.tensor(p, [p.length, 2], 'float32');
+      const featurePoints = tfTensor(p, [p.length, 2], 'float32');
 
       return {
         featurePoints,
@@ -275,10 +282,10 @@ class Tracker {
     });
   }
 
-  private _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
-    const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
+  private _compileAndRun(program: any, inputs: TensorInfo[]) {
+    const outInfo = (tfBackend() as any).compileAndRun(program, inputs);
 
-    return tf.engine().makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

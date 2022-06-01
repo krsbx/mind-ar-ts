@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as tf from '@tensorflow/tfjs';
 import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
 import { Controller } from './controller';
 import { UI } from '../ui/ui';
@@ -322,6 +321,5 @@ class MindARThree {
 
 if (!window.MINDAR.IMAGE.MindARThree) window.MINDAR.IMAGE.MindARThree = MindARThree;
 if (!window.MINDAR.IMAGE.THREE) window.MINDAR.IMAGE.THREE = THREE;
-if (!window.MINDAR.IMAGE.tf) window.MINDAR.IMAGE.tf = tf;
 
 export { MindARThree };

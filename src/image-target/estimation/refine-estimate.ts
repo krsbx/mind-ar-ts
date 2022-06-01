@@ -144,12 +144,14 @@ const _doICP = ({
         worldCoords[n].y,
         worldCoords[n].z
       );
+
       const dx = screenCoords[n].x - u.x;
       const dy = screenCoords[n].y - u.y;
 
       dxs[n] = dx;
       dys[n] = dy;
-      E[n] = dx * dx + dy * dy;
+
+      E[n] = dx ** 2 + dy ** 2;
     }
 
     let K2 = 0; // robust mode only
@@ -165,6 +167,7 @@ const _doICP = ({
       E2.sort((a, b) => a - b);
 
       K2 = Math.max(E2[inlierNum] * K2_FACTOR, 16.0);
+
       for (let n = 0; n < worldCoords.length; n++) {
         if (E2[n] > K2) err1 += K2 / 6;
         else
@@ -375,6 +378,7 @@ const _getJ_U_S = ({
   for (let j = 0; j < 2; j++) {
     for (let i = 0; i < 6; i++) {
       J_U_S[j][i] = 0.0;
+
       for (let k = 0; k < 3; k++) {
         J_U_S[j][i] += J_U_Xc[j][k] * J_Xc_S[k][i];
       }

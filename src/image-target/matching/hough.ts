@@ -31,6 +31,7 @@ const computeHoughMatches = (options: {
 
   // compute numXBins and numYBins based on matches
   const projectedDims = [];
+
   for (let i = 0; i < matches.length; i++) {
     const queryscale = matches[i].querypoint.scale;
     const keyscale = matches[i].keypoint.scale;
@@ -172,6 +173,7 @@ const computeHoughMatches = (options: {
   );
 
   const houghMatches = [];
+
   for (let i = 0; i < matches.length; i++) {
     if (!querypointValids[i]) continue;
 

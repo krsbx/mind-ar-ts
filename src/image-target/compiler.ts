@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs';
+import { tensor as tfTensor, tidy as tfTidy, nextFrame as tfNextFrame } from '@tensorflow/tfjs';
 import * as msgpack from '@msgpack/msgpack';
 import CompilerWorker from './compiler.worker.ts';
 import { Detector } from './detector/detector';
@@ -115,7 +115,9 @@ class Compiler {
 
       const trackingDataList = await compileTrack();
 
-      for (let i = 0; i < targetImages.length; i++) this.data[i].trackingData = trackingDataList[i];
+      for (let i = 0; i < targetImages.length; i++) {
+        this.data[i].trackingData = trackingDataList[i];
+      }
 
       resolve(this.data);
     });
@@ -183,12 +185,13 @@ const _extractMatchingFeatures = async (
     // TODO: can improve performance greatly if reuse the same detector. just need to handle resizing the kernel outputs
     const detector = new Detector(image.width, image.height);
 
-    await tf.nextFrame();
+    await tfNextFrame();
 
-    tf.tidy(() => {
-      const inputT = tf
-        .tensor(image.data, [image.data.length], 'float32')
-        .reshape([image.height, image.width]);
+    tfTidy(() => {
+      const inputT = tfTensor(image.data, [image.data.length], 'float32').reshape([
+        image.height,
+        image.width,
+      ]);
 
       const { featurePoints: ps } = detector.detect(inputT);
 
