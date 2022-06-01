@@ -3,6 +3,7 @@
 // ! We're not using the webworker for geolocation
 // ! because might run to an issue while updating the position
 
+import { Helper } from '../libs';
 import { CameraTracker } from './tracker/camera';
 import { LocationTracker } from './tracker/location';
 import { haversineDist } from './utils/distance';
@@ -24,8 +25,8 @@ class Controller {
 
   setupCamera(cameraParams: Omit<CameraTrackerConstructor, 'controller'>) {
     this.camera = new CameraTracker({ ...cameraParams, controller: this });
-    this.minDistance = cameraParams.minDistance || 0;
-    this.maxDistance = cameraParams.maxDistance || 0;
+    this.minDistance = cameraParams.minDistance ?? 0;
+    this.maxDistance = cameraParams.maxDistance ?? 0;
   }
 
   addLocation(locationParams: Omit<LocationTrackerConstructor, 'controller'>) {
@@ -68,6 +69,12 @@ class Controller {
 
   startAR() {
     this.camera.startAR();
+  }
+
+  updateRotation() {
+    if (Helper.isNil(this.camera)) return;
+
+    this.camera.updateRotation();
   }
 }
 

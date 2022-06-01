@@ -6,7 +6,7 @@
 import { Scene } from 'aframe';
 import { Helper } from '../../libs';
 import { Controller } from '../controller';
-import { degToRad, getDeviceOrientationEventName, radToDeg } from '../utils/common';
+import { degToRad, radToDeg } from '../utils/common';
 import { computeCompassHeading, getHeading } from '../utils/compass';
 import { AR_EVENT_NAME, AR_POSITION_MULTIPLIER, FULL_CIRCLE_DEG, SEC2MS } from '../utils/constant';
 import { getPositionMultiplier, haversineDist } from '../utils/distance';
@@ -30,7 +30,7 @@ class CameraTracker {
   public watchPositionId!: number;
   public lastPosition: HaversineParams;
   public currentPosition!: Coordinates;
-  public heading!: number;
+  public heading: number | null;
   public originPosition: Coordinates | null;
   public isEmulated: boolean;
   public camera: Scene;
@@ -62,8 +62,10 @@ class CameraTracker {
     this.lookControls = camera.components['look-controls'];
     this.controller = controller;
 
+    this.heading = null;
+
     this.isEmulated = simulateLatitude !== 0 && simulateLongitude !== 0;
-    this.orientationEventName = getDeviceOrientationEventName();
+    this.orientationEventName = this._getDeviceOrientationEventName();
 
     this.lastPosition = {
       longitude: 0,
@@ -71,7 +73,8 @@ class CameraTracker {
     };
 
     if (this.orientationEventName === '') console.error('Compass is not supported');
-    window.addEventListener(this.orientationEventName, this._onDeviceOrientation);
+
+    window.addEventListener(this.orientationEventName, this._onDeviceOrientation.bind(this), false);
   }
 
   startAR() {
@@ -80,6 +83,8 @@ class CameraTracker {
 
   // Need to trigger manually from the camera
   updateRotation() {
+    if (this.heading === null) return;
+
     const heading = FULL_CIRCLE_DEG - this.heading;
     const rotation = this.camera.getAttribute('rotation').y;
     const yawRotation = radToDeg(this.lookControls.yawObject.rotation.y);
@@ -245,6 +250,15 @@ class CameraTracker {
     }
 
     this.heading = computeCompassHeading(event.alpha, event.beta, event.gamma);
+  }
+
+  private _getDeviceOrientationEventName() {
+    let eventName = '';
+
+    if ('ondeviceorientationabsolute' in window) eventName = 'deviceorientationabsolute';
+    else if ('ondeviceorientation' in window) eventName = 'deviceorientation';
+
+    return eventName;
   }
 }
 

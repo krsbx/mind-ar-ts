@@ -30,7 +30,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   tick: function () {
     if (!this.arSystem || !this.arSystem.controller) return;
 
-    if (Helper.isNil(this.arSystem.controller.heading)) return;
+    if (Helper.isNil(this.arSystem.controller.camera.heading === null)) return;
 
     this.arSystem.controller.updateRotation();
   },
