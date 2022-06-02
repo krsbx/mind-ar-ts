@@ -57,7 +57,7 @@ const applyModelViewProjectionTransform = (
   modelViewProjectionTransform: number[][],
   x: number,
   y: number,
-  _z: number
+  _z = 0
 ) => {
   // assume z is zero
   const ux =

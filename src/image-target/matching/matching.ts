@@ -35,9 +35,11 @@ const match = ({
   const debugExtra: IDebugExtra = {} as IDebugExtra;
 
   const matches = [];
+
   for (let j = 0; j < querypoints.length; j++) {
     const querypoint = querypoints[j];
     const keypoints = querypoint.maxima ? keyframe.maximaPoints : keyframe.minimaPoints;
+
     if (keypoints.length === 0) continue;
 
     const rootNode = querypoint.maxima
@@ -111,9 +113,9 @@ const match = ({
   // do another loop of match using the homography
   const HInv = matrixInverse33(H, 0.00001);
 
-  if (!HInv) return;
+  if (!HInv) return { debugExtra };
 
-  const dThreshold2 = 10 * 10;
+  const dThreshold2 = 10 ** 2;
   const matches2 = [];
 
   for (let j = 0; j < querypoints.length; j++) {
@@ -136,6 +138,7 @@ const match = ({
       if (d2 > dThreshold2) continue;
 
       const d = hammingCompute({ v1: keypoint.descriptors, v2: querypoint.descriptors });
+
       if (d < bestD1) {
         bestD2 = bestD1;
         bestD1 = d;
@@ -255,13 +258,12 @@ const _query = ({
 const _findInlierMatches = (options: { H: number[]; matches: IMatches[]; threshold: number }) => {
   const { H, matches, threshold } = options;
 
-  const threshold2 = threshold * threshold;
+  const threshold2 = threshold ** 2;
 
   const goodMatches: IMatches[] = [];
 
   for (let i = 0; i < matches.length; i++) {
-    const querypoint = matches[i].querypoint;
-    const keypoint = matches[i].keypoint;
+    const { querypoint, keypoint } = matches[i];
 
     const mp = multiplyPointHomographyInhomogenous([keypoint.x, keypoint.y], H);
     const d2 =

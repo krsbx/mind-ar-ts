@@ -1,10 +1,10 @@
-import * as tf from '@tensorflow/tfjs';
+import { Tensor, memory as tfMemory, nextFrame as tfNextFrame } from '@tensorflow/tfjs';
 import ControllerWorker from './controller.worker.ts';
 import { Tracker } from './tracker/tracker';
 import { CropDetector } from './detector/crop-detector';
 import { Compiler } from './compiler';
 import { InputLoader } from './input-loader';
-import { OneEuroFilter } from '../libs';
+import { Helper, OneEuroFilter } from '../libs';
 import {
   DEFAULT_FILTER_BETA,
   DEFAULT_FILTER_CUTOFF,
@@ -60,10 +60,12 @@ class Controller {
     this.inputWidth = inputWidth;
     this.inputHeight = inputHeight;
     this.maxTrack = maxTrack;
-    this.filterMinCF = !filterMinCF ? DEFAULT_FILTER_CUTOFF : filterMinCF;
-    this.filterBeta = !filterBeta ? DEFAULT_FILTER_BETA : filterBeta;
-    this.warmupTolerance = !warmupTolerance ? DEFAULT_WARMUP_TOLERANCE : warmupTolerance;
-    this.missTolerance = !missTolerance ? DEFAULT_MISS_TOLERANCE : missTolerance;
+    this.filterMinCF = Helper.isNil(filterMinCF) ? DEFAULT_FILTER_CUTOFF : filterMinCF;
+    this.filterBeta = Helper.isNil(filterBeta) ? DEFAULT_FILTER_BETA : filterBeta;
+    this.warmupTolerance = Helper.isNil(warmupTolerance)
+      ? DEFAULT_WARMUP_TOLERANCE
+      : warmupTolerance;
+    this.missTolerance = Helper.isNil(missTolerance) ? DEFAULT_MISS_TOLERANCE : missTolerance;
     this.cropDetector = new CropDetector(this.inputWidth, this.inputHeight, debugMode);
     this.inputLoader = new InputLoader(this.inputWidth, this.inputHeight);
     this.markerDimensions = [];
@@ -91,8 +93,8 @@ class Controller {
       projectionTransform: this.projectionTransform,
       width: this.inputWidth,
       height: this.inputHeight,
-      near: near,
-      far: far,
+      near,
+      far,
     });
 
     this.worker = IS_PRODUCTION ? new ControllerWorker() : DEFAULT_WORKER.CONTROLLER;
@@ -113,8 +115,8 @@ class Controller {
   }
 
   showTFStats() {
-    console.log(tf.memory().numTensors);
-    console.table(tf.memory());
+    console.log(tfMemory().numTensors);
+    console.table(tfMemory());
   }
 
   addImageTargets(fileURL: string) {
@@ -182,7 +184,7 @@ class Controller {
     return this._glModelViewMatrix(modelViewTransform, targetIndex);
   }
 
-  async _detectAndMatch(inputT: tf.Tensor<tf.Rank>, targetIndexes: number[]) {
+  async _detectAndMatch(inputT: Tensor, targetIndexes: number[]) {
     const { featurePoints } = this.cropDetector.detectMoving(inputT);
     const { targetIndex: matchedTargetIndex, modelViewTransform } = await this._workerMatch(
       featurePoints,
@@ -222,7 +224,7 @@ class Controller {
       } as ITrackingState);
   }
 
-  private async _matchImageTarget(nTracking: number, inputT: tf.Tensor<tf.Rank>) {
+  private async _matchImageTarget(nTracking: number, inputT: Tensor) {
     // detect and match only if less then maxTrack
     if (nTracking > this.maxTrack) return;
 
@@ -248,7 +250,7 @@ class Controller {
     this.trackingStates[matchedTargetIndex].currentModelViewTransform = modelViewTransform;
   }
 
-  private async _updateModelViewTransform1(iteration: number, inputT: tf.Tensor<tf.Rank>) {
+  private async _updateModelViewTransform1(iteration: number, inputT: Tensor) {
     const trackingState = this.trackingStates[iteration];
 
     if (!trackingState.isTracking || !trackingState.currentModelViewTransform) return;
@@ -345,6 +347,10 @@ class Controller {
 
         await this._updateModelViewTransform2(iteration);
       }
+
+      inputT.dispose();
+      this.onUpdate && this.onUpdate({ type: 'processDone' });
+      await tfNextFrame();
     }
   }
 

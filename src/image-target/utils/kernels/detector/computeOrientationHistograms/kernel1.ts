@@ -1,18 +1,17 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 import { ORIENTATION_NUM_BINS } from '../../../constant/detector';
 import { generateSubCodes, generateVariableName } from '../helper';
 
 const computeOrientationHistograms = (
-  pyramidImagesT: tf.Tensor<tf.Rank>[][],
-  prunedExtremasT: tf.Tensor<tf.Rank>,
-  radialPropertiesT: tf.Tensor<tf.Rank>,
+  pyramidImagesT: Tensor[][],
+  prunedExtremasT: Tensor,
+  radialPropertiesT: Tensor,
   oneOver2PI: number
 ) => {
   const imageVariableNames: string[] = generateVariableName(pyramidImagesT);
   const pixelsSubCodes: string = generateSubCodes(pyramidImagesT);
 
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: [...imageVariableNames, 'extrema', 'radial'],
     outputShape: [prunedExtremasT.shape[0], radialPropertiesT.shape[0], 2], // last dimension: [fbin, magnitude]
     userCode: `

@@ -1,4 +1,4 @@
-import { AScene } from 'aframe';
+import { Scene } from 'aframe';
 import { Controller } from '../../controller';
 
 interface ControllerConstructor {
@@ -10,7 +10,7 @@ interface ControllerConstructor {
   maxDistance: number;
   gpsMinDistance: number;
   gpsTimeInterval: number;
-  camera: typeof AScene;
+  camera: Scene;
 }
 
 interface CameraTrackerConstructor {
@@ -23,7 +23,7 @@ interface CameraTrackerConstructor {
   maxDistance: number;
   gpsMinDistance: number;
   gpsTimeInterval: number;
-  camera: typeof AScene;
+  camera: Scene;
 }
 
 interface LocationTrackerConstructor {
@@ -31,8 +31,8 @@ interface LocationTrackerConstructor {
   longitude: number;
   controller: Controller;
   placeIndex: number;
-  location: typeof AScene;
-  camera: typeof AScene;
+  location: Scene;
+  camera: Scene;
 }
 
 type Coordinates = {

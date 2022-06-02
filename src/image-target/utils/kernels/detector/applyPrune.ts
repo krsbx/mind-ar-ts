@@ -1,7 +1,5 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
-
 const applyPrune = (extremaHeight: number, extremaWidth: number) => {
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: ['extrema'],
     outputShape: [Math.floor(extremaHeight / 2), Math.floor(extremaWidth / 2)],
     userCode: `

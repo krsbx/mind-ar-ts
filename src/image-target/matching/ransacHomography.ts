@@ -216,6 +216,7 @@ const _checkHomographyPointsGeometricallyConsistent = ({
     const i1 = i;
     const i2 = (i + 1) % testPoints.length;
     const i3 = (i + 2) % testPoints.length;
+
     if (
       !checkThreePointsConsistent(
         testPoints[i1],

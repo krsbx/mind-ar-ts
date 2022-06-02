@@ -1,9 +1,8 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 import { ORIENTATION_NUM_BINS } from '../../constant/detector';
 
-const computeExtremaAngles = (histograms: tf.Tensor<tf.Rank>) => {
-  const kernel: GPGPUProgram = {
+const computeExtremaAngles = (histograms: Tensor) => {
+  const kernel = {
     variableNames: ['histogram'],
     outputShape: [histograms.shape[0]],
     userCode: `

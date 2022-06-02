@@ -1,4 +1,3 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
 import {
   EDGE_HESSIAN_THRESHOLD,
   FREAK_EXPANSION_FACTOR,
@@ -6,7 +5,7 @@ import {
 } from '../../constant/detector';
 
 const buildExtremas = (imageHeight: number, imageWidth: number) => {
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: ['image0', 'image1', 'image2'],
     outputShape: [imageHeight, imageWidth],
     userCode: `

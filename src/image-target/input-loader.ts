@@ -1,5 +1,11 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
+import {
+  TensorInfo,
+  backend as tfBackend,
+  browser as tfBrowser,
+  tidy as tfTidy,
+  env as tfEnv,
+  engine as tfEngine,
+} from '@tensorflow/tfjs';
 import { Helper } from '../libs';
 
 // More efficient implementation for tf.browser.fromPixels
@@ -11,8 +17,8 @@ class InputLoader {
   private height: number;
   private textShape: number[];
   private context: CanvasRenderingContext2D;
-  private tempPixelHandle: tf.TensorInfo;
-  private program: GPGPUProgram;
+  private tempPixelHandle: TensorInfo;
+  private program: any;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -28,7 +34,7 @@ class InputLoader {
 
     this.program = this.buildProgram(width, height);
 
-    const backend = tf.backend() as MathBackendWebGL;
+    const backend = tfBackend() as any;
 
     this.tempPixelHandle = backend.makeTensorInfo(this.textShape, 'float32');
     // warning!!!
@@ -39,8 +45,8 @@ class InputLoader {
 
   // old method
   _loadInput(input: ImageData) {
-    return tf.tidy(() => {
-      const inputImage = tf.browser.fromPixels(input).mean(2);
+    return tfTidy(() => {
+      const inputImage = tfBrowser.fromPixels(input).mean(2);
 
       return inputImage;
     });
@@ -50,7 +56,7 @@ class InputLoader {
   loadInput(input: CanvasImageSource) {
     this.context.drawImage(input, 0, 0, this.width, this.height);
 
-    const backend = tf.backend() as MathBackendWebGL;
+    const backend = tfBackend() as any;
 
     backend.gpgpu.uploadPixelDataToTexture(
       backend.getTexture(this.tempPixelHandle.dataId),
@@ -63,7 +69,7 @@ class InputLoader {
   }
 
   buildProgram(width: number, height: number) {
-    const textureMethod = tf.env().getNumber('WEBGL_VERSION') === 2 ? 'texture' : 'texture2D';
+    const textureMethod = tfEnv().getNumber('WEBGL_VERSION') === 2 ? 'texture' : 'texture2D';
 
     const program = {
       variableNames: ['A'],
@@ -84,10 +90,10 @@ class InputLoader {
     return program;
   }
 
-  _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
-    const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
+  _compileAndRun(program: any, inputs: TensorInfo[]) {
+    const outInfo = (tfBackend() as any).compileAndRun(program, inputs);
 
-    return tf.engine().makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

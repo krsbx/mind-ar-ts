@@ -3,7 +3,7 @@
 // * 1. The camera
 // * 2. The location/place
 
-import { AScene } from 'aframe';
+import { Scene } from 'aframe';
 import { Helper } from '../../libs';
 import { Controller } from '../controller';
 import { degToRad, getDeviceOrientationEventName, radToDeg } from '../utils/common';
@@ -33,7 +33,7 @@ class CameraTracker {
   public heading!: number;
   public originPosition: Coordinates | null;
   public isEmulated: boolean;
-  public camera: typeof AScene;
+  public camera: Scene;
   public lookControls: any;
   public orientationEventName: string;
 

@@ -1,17 +1,13 @@
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
+import { Tensor } from '@tensorflow/tfjs';
 import { FREAKPOINTS } from '../../constant/freak';
 import { FREAK_EXPANSION_FACTOR } from '../../constant/detector';
 import { generateSubCodes, generateVariableName } from './helper';
 
-const computeExtremaFreak = (
-  pyramidImagesT: tf.Tensor<tf.Rank>[][],
-  prunedExtremas: tf.Tensor<tf.Rank>
-) => {
+const computeExtremaFreak = (pyramidImagesT: Tensor[][], prunedExtremas: Tensor) => {
   const imageVariableNames: string[] = generateVariableName(pyramidImagesT);
   const pixelsSubCodes: string = generateSubCodes(pyramidImagesT);
 
-  const kernel: GPGPUProgram = {
+  const kernel = {
     variableNames: [...imageVariableNames, 'extrema', 'angles', 'freakPoints'],
     outputShape: [prunedExtremas.shape[0], FREAKPOINTS.length],
     userCode: `

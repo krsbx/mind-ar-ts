@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
-import { AScene } from 'aframe';
+import { Scene } from 'aframe';
 import { UI } from '../../ui/ui';
 import { Controller } from '../controller';
 import { ON_UPDATE_EVENT } from '../utils/constant/controller';
@@ -260,7 +260,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     const far = proj[14] / (proj[10] + 1.0);
 
     const newAspect = container.clientWidth / container.clientHeight;
-    const cameraEle = container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as typeof AScene;
+    const cameraEle = container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Scene;
 
     const camera = cameraEle.getObject3D(AR_ELEMENT_TAG.CAMERA) as any;
     camera.fov = fov;

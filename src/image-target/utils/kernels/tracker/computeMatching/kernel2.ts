@@ -1,12 +1,10 @@
-import { GPGPUProgram } from '@tensorflow/tfjs-backend-webgl';
-
 const computeMatching = (
   searchOneSize: number,
   searchGap: number,
   searchSize: number,
   featureCount: number
 ) => {
-  const kernel2: GPGPUProgram = {
+  const kernel2 = {
     variableNames: ['featurePoints', 'markerProperties', 'maxIndex'],
     outputShape: [featureCount, 2], // [x, y]
     userCode: `

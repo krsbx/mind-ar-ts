@@ -1,7 +1,16 @@
 // result should be similar to previous
 // improve freka descriptors computation
-import * as tf from '@tensorflow/tfjs';
-import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
+import {
+  tensor as tfTensor,
+  tidy as tfTidy,
+  backend as tfBackend,
+  engine as tfEngine,
+  keep as tfKeep,
+  stack as tfStack,
+  Tensor,
+  TensorInfo,
+  DataTypeMap,
+} from '@tensorflow/tfjs';
 import {
   FREAK_CONPARISON_COUNT,
   MAX_FEATURES_PER_BUCKET,
@@ -60,19 +69,19 @@ class Detector {
       arr[4 * i + 3] = 255;
     }
 
-    const img = Helper.castTo<tf.Tensor<tf.Rank>>(new ImageData(arr, this.width, this.height));
+    const img = Helper.castTo<Tensor>(new ImageData(arr, this.width, this.height));
 
     return this.detect(img);
   }
 
-  detect(inputImageT: tf.Tensor<tf.Rank>) {
+  detect(inputImageT: Tensor) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     // Build gaussian pyramid images, two images per octave
-    const pyramidImagesT: tf.Tensor<tf.Rank>[][] = [];
+    const pyramidImagesT: Tensor[][] = [];
 
     for (let i = 0; i < this.numOctaves; i++) {
-      let image1T: tf.Tensor<tf.Rank>;
+      let image1T: Tensor;
 
       if (i === 0) image1T = this._applyFilter(inputImageT);
       else
@@ -84,7 +93,7 @@ class Detector {
     }
 
     // Build difference-of-gaussian (dog) pyramid
-    const dogPyramidImagesT: tf.Tensor<tf.Rank>[] = [];
+    const dogPyramidImagesT: Tensor[] = [];
 
     for (let i = 0; i < this.numOctaves; i++) {
       const dogImageT = this._differenceImageBinomial(pyramidImagesT[i][0], pyramidImagesT[i][1]);
@@ -93,7 +102,7 @@ class Detector {
     }
 
     // find local maximum/minimum
-    const extremasResultsT: tf.Tensor<tf.Rank>[] = [];
+    const extremasResultsT: Tensor[] = [];
 
     for (let i = 1; i < this.numOctaves - 1; i++) {
       const extremasResultT = this._buildExtremas(
@@ -185,14 +194,14 @@ class Detector {
         y: originalY,
         scale,
         angle: extremaAnglesArr[i],
-        descriptors: descriptors,
+        descriptors,
       });
     }
 
     return { featurePoints, debugExtra };
   }
 
-  private _computeFreakDescriptors(extremaFreaks: tf.Tensor<tf.Rank>) {
+  private _computeFreakDescriptors(extremaFreaks: Tensor) {
     if (!this.tensorCaches.computeFreakDescriptors) {
       const in1Arr: number[] = [];
       const in2Arr: number[] = [];
@@ -206,11 +215,11 @@ class Detector {
         }
       }
 
-      const in1 = tf.tensor(in1Arr, [in1Arr.length]).cast('int32');
-      const in2 = tf.tensor(in2Arr, [in2Arr.length]).cast('int32');
+      const in1 = tfTensor(in1Arr, [in1Arr.length]).cast('int32');
+      const in2 = tfTensor(in2Arr, [in2Arr.length]).cast('int32');
 
       this.tensorCaches.computeFreakDescriptors = {
-        positionT: tf.keep(tf.stack([in1, in2], 1)),
+        positionT: tfKeep(tfStack([in1, in2], 1)),
       };
     }
 
@@ -228,7 +237,7 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const [program] = this.kernelCaches.computeFreakDescriptors;
 
       return this._runWebGLProgram(program, [extremaFreaks, positionT], 'int32');
@@ -236,23 +245,25 @@ class Detector {
   }
 
   private _computeExtremaFreak(
-    pyramidImagesT: tf.Tensor<tf.Rank>[][],
-    prunedExtremas: tf.Tensor<tf.Rank>,
-    prunedExtremasAngles: tf.Tensor<tf.Rank>
+    pyramidImagesT: Tensor[][],
+    prunedExtremas: Tensor,
+    prunedExtremasAngles: Tensor
   ) {
     if (!this.tensorCaches._computeExtremaFreak)
-      tf.tidy(() => {
-        const freakPoints = tf.tensor(FREAKPOINTS);
+      tfTidy(() => {
+        const freakPoints = tfTensor(FREAKPOINTS);
         this.tensorCaches._computeExtremaFreak = {
-          freakPointsT: tf.keep(freakPoints),
+          freakPointsT: tfKeep(freakPoints),
         };
       });
 
     const { freakPointsT } = this.tensorCaches._computeExtremaFreak;
 
-    const gaussianImagesT: tf.Tensor<tf.Rank>[] = [];
+    const gaussianImagesT: Tensor[] = [];
 
-    for (let i = 1; i < pyramidImagesT.length; i++) gaussianImagesT.push(pyramidImagesT[i][1]); // better
+    for (let i = 1; i < pyramidImagesT.length; i++) {
+      gaussianImagesT.push(pyramidImagesT[i][1]); // better
+    }
 
     if (!this.kernelCaches._computeExtremaFreak) {
       this.kernelCaches._computeExtremaFreak = DetectorKernel.computeExtremaFreak(
@@ -261,7 +272,7 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const [program] = this.kernelCaches._computeExtremaFreak;
       const result = this._compileAndRun(program, [
         ...gaussianImagesT,
@@ -274,12 +285,12 @@ class Detector {
     });
   }
 
-  private _computeExtremaAngles(histograms: tf.Tensor<tf.Rank>) {
+  private _computeExtremaAngles(histograms: Tensor) {
     if (!this.kernelCaches.computeExtremaAngles) {
       this.kernelCaches.computeExtremaAngles = DetectorKernel.computeExtremaAngles(histograms);
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.computeExtremaAngles;
 
       return this._compileAndRun(program, [histograms]);
@@ -287,44 +298,42 @@ class Detector {
   }
 
   // TODO: maybe can try just using average momentum, instead of histogram method. histogram might be overcomplicated
-  private _computeOrientationHistograms(
-    prunedExtremasT: tf.Tensor<tf.Rank>,
-    pyramidImagesT: tf.Tensor<tf.Rank>[][]
-  ) {
+  private _computeOrientationHistograms(prunedExtremasT: Tensor, pyramidImagesT: Tensor[][]) {
     const oneOver2PI = 0.159154943091895;
 
-    const gaussianImagesT: tf.Tensor<tf.Rank>[] = [];
+    const gaussianImagesT: Tensor[] = [];
 
-    for (let i = 1; i < pyramidImagesT.length; i++) gaussianImagesT.push(pyramidImagesT[i][1]);
+    for (let i = 1; i < pyramidImagesT.length; i++) {
+      gaussianImagesT.push(pyramidImagesT[i][1]);
+    }
 
     if (!this.tensorCaches.orientationHistograms) {
-      tf.tidy(() => {
-        const gwScale =
-          -1.0 /
-          (2 * ORIENTATION_GAUSSIAN_EXPANSION_FACTOR * ORIENTATION_GAUSSIAN_EXPANSION_FACTOR);
+      tfTidy(() => {
+        const gwScale = -1.0 / (2 * ORIENTATION_GAUSSIAN_EXPANSION_FACTOR ** 2);
         const radius = ORIENTATION_GAUSSIAN_EXPANSION_FACTOR * ORIENTATION_REGION_EXPANSION_FACTOR;
         const radiusCeil = Math.ceil(radius);
 
         const radialProperties = [];
+
         for (let y = -radiusCeil; y <= radiusCeil; y++) {
           for (let x = -radiusCeil; x <= radiusCeil; x++) {
-            const distanceSquare = x * x + y * y;
+            const distanceSquare = x ** 2 + y ** 2;
+
+            if (distanceSquare > radius ** 2) continue;
 
             // may just assign w = 1 will do, this could be over complicated.
-            if (distanceSquare <= radius * radius) {
-              const _x = distanceSquare * gwScale;
-              // fast expontenial approx
-              const w =
-                (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
-                0.0013888888;
+            const _x = distanceSquare * gwScale;
+            // fast expontenial approx
+            const w =
+              (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
+              0.0013888888;
 
-              radialProperties.push([y, x, w]);
-            }
+            radialProperties.push([y, x, w]);
           }
         }
 
         this.tensorCaches.orientationHistograms = {
-          radialPropertiesT: tf.keep(tf.tensor(radialProperties, [radialProperties.length, 3])),
+          radialPropertiesT: tfKeep(tfTensor(radialProperties, [radialProperties.length, 3])),
         };
       });
     }
@@ -340,7 +349,7 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const [program1, program2] = this.kernelCaches.computeOrientationHistograms;
 
       const result1 = this._compileAndRun(program1, [
@@ -356,12 +365,12 @@ class Detector {
   }
 
   // The histogram is smoothed with a Gaussian, with sigma = 1
-  private _smoothHistograms(histograms: tf.Tensor<tf.Rank>) {
+  private _smoothHistograms(histograms: Tensor) {
     if (!this.kernelCaches.smoothHistograms) {
       this.kernelCaches.smoothHistograms = DetectorKernel.smoothHistograms(histograms);
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.smoothHistograms;
 
       for (let i = 0; i < ORIENTATION_SMOOTHING_ITERATIONS; i++)
@@ -371,10 +380,7 @@ class Detector {
     });
   }
 
-  private _computeLocalization(
-    prunedExtremasList: number[][],
-    dogPyramidImagesT: tf.Tensor<tf.Rank>[]
-  ) {
+  private _computeLocalization(prunedExtremasList: number[][], dogPyramidImagesT: Tensor[]) {
     if (!this.kernelCaches.computeLocalization) {
       this.kernelCaches.computeLocalization = DetectorKernel.computeLocalization(
         dogPyramidImagesT,
@@ -382,9 +388,9 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.computeLocalization[0];
-      const prunedExtremasT = tf.tensor(
+      const prunedExtremasT = tfTensor(
         prunedExtremasList,
         [prunedExtremasList.length, prunedExtremasList[0].length],
         'int32'
@@ -437,7 +443,8 @@ class Detector {
         localizedExtremas[i][2] = newY;
         localizedExtremas[i][3] = newX;
       }
-      return tf.tensor(
+
+      return tfTensor(
         localizedExtremas,
         [localizedExtremas.length, localizedExtremas[0].length],
         'float32'
@@ -448,12 +455,12 @@ class Detector {
   // faster to do it in CPU
   // if we do in gpu, we probably need to use tf.topk(), which seems to be run in CPU anyway (no gpu operation for that)
   //  TODO: research adapative maximum supression method
-  private _applyPrune(extremasResultsT: tf.Tensor<tf.Rank>[]) {
-    const nBuckets = NUM_BUCKETS_PER_DIMENSION * NUM_BUCKETS_PER_DIMENSION;
+  private _applyPrune(extremasResultsT: Tensor[]) {
+    const nBuckets = NUM_BUCKETS_PER_DIMENSION ** 2;
     const nFeatures = MAX_FEATURES_PER_BUCKET;
 
     if (!this.kernelCaches.applyPrune) {
-      const reductionKernels: GPGPUProgram[] = [];
+      const reductionKernels: any[] = [];
 
       // to reduce to amount of data that need to sync back to CPU by 4 times, we apply this trick:
       // the fact that there is not possible to have consecutive maximum/minimum, we can safe combine 4 pixels into 1
@@ -482,7 +489,7 @@ class Detector {
       }
     }
 
-    tf.tidy(() => {
+    tfTidy(() => {
       const { reductionKernels } = this.kernelCaches.applyPrune;
 
       for (let k = 0; k < extremasResultsT.length; k++) {
@@ -501,6 +508,7 @@ class Detector {
         for (let j = 0; j < height; j++) {
           for (let i = 0; i < width; i++) {
             const encoded = reduced[j][i];
+
             if (encoded == 0) continue;
 
             const score = encoded % 1000;
@@ -539,18 +547,17 @@ class Detector {
 
     // combine all buckets into a single list
     const list: number[][] = [];
+
     for (let i = 0; i < nBuckets; i++) {
-      for (let j = 0; j < nFeatures; j++) list.push(result[i][j]);
+      for (let j = 0; j < nFeatures; j++) {
+        list.push(result[i][j]);
+      }
     }
 
     return list;
   }
 
-  private _buildExtremas(
-    image0: tf.Tensor<tf.Rank>,
-    image1: tf.Tensor<tf.Rank>,
-    image2: tf.Tensor<tf.Rank>
-  ) {
+  private _buildExtremas(image0: Tensor, image1: Tensor, image2: Tensor) {
     const imageHeight = image1.shape[0] as number;
     const imageWidth = image1.shape[1] as number;
 
@@ -565,7 +572,7 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.buildExtremas[kernelKey];
       image0 = this._downsampleBilinear(image0);
       image2 = this._upsampleBilinear(image2, image1);
@@ -574,14 +581,14 @@ class Detector {
     });
   }
 
-  private _differenceImageBinomial(image1: tf.Tensor<tf.Rank>, image2: tf.Tensor<tf.Rank>) {
-    return tf.tidy(() => {
+  private _differenceImageBinomial(image1: Tensor, image2: Tensor) {
+    return tfTidy(() => {
       return image1.sub(image2);
     });
   }
 
   // 4th order binomail filter [1,4,6,4,1] X [1,4,6,4,1]
-  private _applyFilter(image: tf.Tensor<tf.Rank>) {
+  private _applyFilter(image: Tensor) {
     const imageHeight = image.shape[0] as number;
     const imageWidth = image.shape[1] as number;
 
@@ -595,7 +602,7 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const [program1, program2] = this.kernelCaches.applyFilter[kernelKey];
 
       const result1 = this._compileAndRun(program1, [image]);
@@ -604,7 +611,7 @@ class Detector {
     });
   }
 
-  private _upsampleBilinear(image: tf.Tensor<tf.Rank>, targetImage: tf.Tensor<tf.Rank>) {
+  private _upsampleBilinear(image: Tensor, targetImage: Tensor) {
     const imageWidth = image.shape[1] as number;
 
     const kernelKey = 'w' + imageWidth;
@@ -617,13 +624,13 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.upsampleBilinear[kernelKey];
       return this._compileAndRun(program, [image]);
     });
   }
 
-  private _downsampleBilinear(image: tf.Tensor<tf.Rank>) {
+  private _downsampleBilinear(image: Tensor) {
     const imageHeight = image.shape[0] as number;
     const imageWidth = image.shape[1] as number;
 
@@ -637,26 +644,22 @@ class Detector {
       );
     }
 
-    return tf.tidy(() => {
+    return tfTidy(() => {
       const program = this.kernelCaches.downsampleBilinear[kernelKey];
       return this._compileAndRun(program, [image]);
     });
   }
 
-  private _compileAndRun(program: GPGPUProgram, inputs: tf.TensorInfo[]) {
-    const outInfo = (tf.backend() as MathBackendWebGL).compileAndRun(program, inputs);
+  private _compileAndRun(program: any, inputs: TensorInfo[]) {
+    const outInfo = (tfBackend() as any).compileAndRun(program, inputs);
 
-    return tf.engine().makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 
-  private _runWebGLProgram(
-    program: GPGPUProgram,
-    inputs: tf.TensorInfo[],
-    outputType: keyof tf.DataTypeMap
-  ) {
-    const outInfo = (tf.backend() as MathBackendWebGL).runWebGLProgram(program, inputs, outputType);
+  private _runWebGLProgram(program: any, inputs: TensorInfo[], outputType: keyof DataTypeMap) {
+    const outInfo = (tfBackend() as any).runWebGLProgram(program, inputs, outputType);
 
-    return tf.engine().makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

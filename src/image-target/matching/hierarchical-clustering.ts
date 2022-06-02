@@ -17,6 +17,7 @@ const _computeKMedoids = (options: {
   const { points, pointIndexes, randomizer } = options;
 
   const randomPointIndexes = [];
+
   for (let i = 0; i < pointIndexes.length; i++) {
     randomPointIndexes.push(i);
   }
@@ -25,13 +26,16 @@ const _computeKMedoids = (options: {
   let bestAssignmentIndex = -1;
 
   const assignments = [];
+
   for (let i = 0; i < NUM_ASSIGNMENT_HYPOTHESES; i++) {
     randomizer.arrayShuffle({ arr: randomPointIndexes, sampleSize: NUM_CENTERS });
 
     let sumD = 0;
     const assignment = [];
+
     for (let j = 0; j < pointIndexes.length; j++) {
       let bestD = MAX_SAFE_INTEGER;
+
       for (let k = 0; k < NUM_CENTERS; k++) {
         const centerIndex = pointIndexes[randomPointIndexes[k]];
 
@@ -136,7 +140,7 @@ const _build = (options: {
   node.children = [];
 
   Object.keys(clusters).forEach((id) => {
-    const centerIndex = Number(id);
+    const centerIndex = +id;
 
     node.children.push(
       _build({
