@@ -1,3 +1,6 @@
+# :warning: Support for Image Target will be drop for the time being, Image Target will be re-work in the experimental folder
+
+
 # MindAR
 
 ---
