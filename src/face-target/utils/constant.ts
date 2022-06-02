@@ -11,6 +11,7 @@ const AR_COMPONENT_NAME = {
 
 const AR_EVENT_NAME = {
   MODEL_LOADED: 'model-loaded',
+  MODEL_ERROR: 'model-error',
   TARGET_FOUND: 'face-targetFound',
   TARGET_LOST: 'face-targetLost',
 };
