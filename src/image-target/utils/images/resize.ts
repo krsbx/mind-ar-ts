@@ -2,8 +2,8 @@ const resize = ({ image, ratio }: { image: ImageData; ratio: number }) => {
   const width = Math.round(image.width * ratio);
   const height = Math.round(image.height * ratio);
 
-  //const imageData = new Float32Array(width * height);
-  const imageData = new Uint8ClampedArray(width * height);
+  const imageData = new Uint8Array(width * height);
+
   for (let i = 0; i < width; i++) {
     const si1 = Math.round((1.0 * i) / ratio);
     let si2 = Math.round((1.0 * (i + 1)) / ratio) - 1;
@@ -18,12 +18,14 @@ const resize = ({ image, ratio }: { image: ImageData; ratio: number }) => {
 
       let sum = 0;
       let count = 0;
+
       for (let ii = si1; ii <= si2; ii++) {
         for (let jj = sj1; jj <= sj2; jj++) {
           sum += 1.0 * image.data[jj * image.width + ii];
           count += 1;
         }
       }
+
       imageData[j * width + i] = Math.floor(sum / count);
     }
   }

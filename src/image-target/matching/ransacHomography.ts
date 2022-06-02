@@ -84,7 +84,7 @@ const computeHomography = (options: {
       [dstPoints[perm[0]], dstPoints[perm[1]], dstPoints[perm[2]], dstPoints[perm[3]]]
     );
 
-    if (!H) continue;
+    if (H === null) continue;
 
     if (!_checkHomographyPointsGeometricallyConsistent({ H, testPoints })) continue;
 

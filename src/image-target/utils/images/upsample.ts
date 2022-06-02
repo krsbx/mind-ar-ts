@@ -10,14 +10,15 @@ const _upsampleBilinear = ({ image, padOneWidth, padOneHeight }: IBiliear) => {
   for (let i = 0; i < width; i++) {
     for (let j = 0; j < height; j++) {
       const v = 0.25 * data[j * width + i];
-
       const pos = Math.floor(j / 2) * dstWidth + Math.floor(i / 2);
+
       temp[pos] += v;
       temp[pos + 1] += v;
       temp[pos + dstWidth] += v;
       temp[pos + dstWidth + 1] += v;
     }
   }
+
   return { data: temp, width: dstWidth, height: dstHeight };
 };
 

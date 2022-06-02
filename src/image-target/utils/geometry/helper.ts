@@ -6,7 +6,7 @@ const vector2DDistance = (vecA: number[], vecB: number[]): number[] => [
 const areaOfTriangle = (u: number[], v: number[]) => {
   const a = u[0] * v[1] - u[1] * v[0];
 
-  return Math.abs(a) / 0.5;
+  return Math.abs(a) * 0.5;
 };
 
 // check which side point C on the line from A to B

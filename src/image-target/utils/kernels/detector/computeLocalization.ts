@@ -1,5 +1,5 @@
 import { Tensor } from '@tensorflow/tfjs';
-import { generateSubCodes, generateVariableName } from './helper';
+import { generateSubCodes, generateVariableName } from '../helper';
 
 const computeLocalization = (dogPyramidImagesT: Tensor[], prunedExtremasList: number[][]) => {
   const dogVariableNames: string[] = generateVariableName(dogPyramidImagesT);

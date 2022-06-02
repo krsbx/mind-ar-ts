@@ -11,7 +11,7 @@ import {
   TEMPLATE_SIZE,
 } from '../utils/constant/tracker';
 import { getSimilarity, selectFeature, templateVar } from './helper';
-import { Helper } from '../../libs';
+import { ImageDataWithScale } from '../utils/types/compiler';
 
 /*
  * Input image is in grey format. the imageData array size is width * height. value range from 0-255
@@ -21,11 +21,13 @@ import { Helper } from '../../libs';
  * @param {int} options.width image width
  * @param {int} options.height image height
  */
-const extract = (image: ImageData) => {
+const extract = (image: ImageDataWithScale) => {
   const { data: imageData, width, height } = image;
 
   // Step 1 - filter out interesting points. Interesting points have strong pixel value changed across neighbours
-  const isPixelSelected = Array.from({ length: width * height }, () => false);
+  const isPixelSelected: (number | boolean)[] = [width * height];
+
+  for (let i = 0; i < isPixelSelected.length; i++) isPixelSelected[i] = false;
 
   // Step 1.1 consider a pixel at position (x, y). compute:
   //   dx = ((data[x+1, y-1] - data[x-1, y-1]) + (data[x+1, y] - data[x-1, y]) + (data[x+1, y+1] - data[x-1, y-1])) / 256 / 3
@@ -67,6 +69,7 @@ const extract = (image: ImageData) => {
   const dValueHist = new Uint32Array(1000); // histogram of dvalue scaled to [0, 1000)
 
   for (let i = 0; i < 1000; i++) dValueHist[i] = 0;
+
   const neighbourOffsets = [-1, 1, -width, width];
 
   for (let i = 1; i < width - 1; i++) {
@@ -114,10 +117,7 @@ const extract = (image: ImageData) => {
 
   // Step 2
   // prebuild cumulative sum matrix for fast computation
-  const imageDataSqr = Array.from(
-    { length: imageData.length },
-    (_, i) => imageData[i] * imageData[i]
-  );
+  const imageDataSqr = Array.from({ length: imageData.length }, (_, i) => imageData[i] ** 2);
 
   const imageDataCumsum = new CumulativeSum(imageData, width, height);
   const imageDataSqrCumsum = new CumulativeSum(imageDataSqr, width, height);
@@ -144,7 +144,7 @@ const extract = (image: ImageData) => {
         imageDataSqrCumsum,
       });
 
-      if (Helper.isNil(vlen)) {
+      if (vlen === null) {
         featureMap[pos] = 1.0;
         continue;
       }
@@ -154,26 +154,29 @@ const extract = (image: ImageData) => {
       for (let jj = -SEARCH_SIZE1; jj <= SEARCH_SIZE1; jj++) {
         for (let ii = -SEARCH_SIZE1; ii <= SEARCH_SIZE1; ii++) {
           if (ii * ii + jj * jj <= SEARCH_SIZE2 * SEARCH_SIZE2) continue;
+
           const sim = getSimilarity({
             image,
             cx: i + ii,
             cy: j + jj,
-            vlen,
+            vlen: vlen,
             tx: i,
             ty: j,
             imageDataCumsum,
             imageDataSqrCumsum,
           });
 
-          if (Helper.isNil(sim)) continue;
+          if (sim === null) continue;
 
           if (sim > max) {
             max = sim;
             if (max > MAX_SIM_THRESH) break;
           }
         }
+
         if (max > MAX_SIM_THRESH) break;
       }
+
       featureMap[pos] = max;
     }
   }

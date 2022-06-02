@@ -6,6 +6,7 @@ import {
   Tensor,
   TensorInfo,
 } from '@tensorflow/tfjs';
+import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   PRECISION_ADJUST,
   AR2_DEFAULT_TS,
@@ -88,6 +89,7 @@ class Tracker {
       this.projectionTransform,
       lastModelViewTransform
     );
+
     const modelViewProjectionTransformT = this._buildAdjustedModelViewTransform(
       modelViewProjectionTransform
     );
@@ -128,6 +130,7 @@ class Tracker {
         );
 
         screenCoords.push(point as Vector2);
+
         worldCoords.push({
           x: trackingFrame.points[i].x / trackingFrame.scale,
           y: trackingFrame.points[i].y / trackingFrame.scale,
@@ -183,7 +186,7 @@ class Tracker {
     }
 
     return tfTidy(() => {
-      const programs = this.kernelCaches.computeMatching as any[];
+      const programs = this.kernelCaches.computeMatching as GPGPUProgram[];
 
       const allSims = this._compileAndRun(programs[0], [
         featurePointsT,
@@ -244,10 +247,11 @@ class Tracker {
       for (let i = 0; i < modelViewProjectionTransform.length; i++) {
         modelViewProjectionTransformAdjusted.push([]);
 
-        for (let j = 0; j < modelViewProjectionTransform[i].length; j++)
+        for (let j = 0; j < modelViewProjectionTransform[i].length; j++) {
           modelViewProjectionTransformAdjusted[i].push(
             modelViewProjectionTransform[i][j] / PRECISION_ADJUST
           );
+        }
       }
 
       const t = tfTensor(modelViewProjectionTransformAdjusted, [3, 4]);
@@ -282,8 +286,8 @@ class Tracker {
     });
   }
 
-  private _compileAndRun(program: any, inputs: TensorInfo[]) {
-    const outInfo = (tfBackend() as any).compileAndRun(program, inputs);
+  private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
+    const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
 
     return tfEngine().makeTensorFromTensorInfo(outInfo);
   }

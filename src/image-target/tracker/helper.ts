@@ -1,6 +1,5 @@
 import { TEMPLATE_SIZE } from '../utils/constant/tracker';
 import { IOptions, ISimiliarityOptions, ITemplateOptions } from '../utils/types/tracker';
-import { Helper } from '../../libs';
 
 // compute variances of the pixels, centered at (cx, cy)
 const templateVar = ({
@@ -15,7 +14,7 @@ const templateVar = ({
   if (cy - TEMPLATE_SIZE < 0 || cy + TEMPLATE_SIZE >= image.height) return null;
 
   const templateWidth = 2 * TEMPLATE_SIZE + 1;
-  const nPixels = templateWidth * templateWidth;
+  const nPixels = templateWidth ** 2;
 
   let average = imageDataCumsum.query(
     cx - TEMPLATE_SIZE,
@@ -45,9 +44,9 @@ const templateVar = ({
       cy + TEMPLATE_SIZE
     );
 
-  vlen += nPixels * average * average;
+  vlen += nPixels * average ** 2;
 
-  if (vlen / nPixels < sdThresh * sdThresh) return null;
+  if (vlen / nPixels < sdThresh ** 2) return null;
   vlen = Math.sqrt(vlen);
 
   return vlen;
@@ -108,10 +107,10 @@ const getSimilarity = (options: ISimiliarityOptions) => {
     tx + templateSize,
     ty + templateSize
   );
-  templateAverage /= templateWidth * templateWidth;
+  templateAverage /= templateWidth ** 2;
   sxy -= templateAverage * sx;
 
-  let vlen2 = sxx - (sx * sx) / (templateWidth * templateWidth);
+  let vlen2 = sxx - (sx * sx) / templateWidth ** 2;
 
   if (vlen2 == 0) return null;
 
@@ -148,8 +147,10 @@ const selectFeature = (options: IOptions) => {
   const maxFeatureNum =
     Math.floor(width / newOccSize) * Math.floor(height / newOccSize) + xDiv * yDiv;
 
-  const coords = [];
+  const coords: Vector2[] = [];
+
   const image2 = new Float32Array(imageData.length);
+
   for (let i = 0; i < image2.length; i++) {
     image2[i] = featureMap[i];
   }
@@ -168,6 +169,7 @@ const selectFeature = (options: IOptions) => {
         }
       }
     }
+
     if (cx === -1) break;
 
     const vlen = templateVar({
@@ -179,7 +181,7 @@ const selectFeature = (options: IOptions) => {
       imageDataSqrCumsum,
     });
 
-    if (Helper.isNil(vlen)) {
+    if (vlen === null) {
       image2[cy * width + cx] = 1.0;
       continue;
     }
@@ -194,7 +196,8 @@ const selectFeature = (options: IOptions) => {
 
     for (let j = -searchSize; j <= searchSize; j++) {
       for (let i = -searchSize; i <= searchSize; i++) {
-        if (i * i + j * j > searchSize * searchSize) continue;
+        if (i ** 2 + j ** 2 > searchSize * searchSize) continue;
+
         if (i === 0 && j === 0) continue;
 
         const sim = getSimilarity({
@@ -208,14 +211,16 @@ const selectFeature = (options: IOptions) => {
           imageDataSqrCumsum,
         });
 
-        if (Helper.isNil(sim)) continue;
+        if (sim === null) continue;
 
         if (sim < min) {
           min = sim;
           if (min < minSimThresh && min < minSim) break;
         }
+
         if (sim > max) {
           max = sim;
+
           if (max > 0.99) break;
         }
       }

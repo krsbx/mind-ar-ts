@@ -6,6 +6,7 @@ const createRandomizer = () => {
 
     arrayShuffle(options: { arr: number[]; sampleSize: number }) {
       const { arr, sampleSize } = options;
+
       for (let i = 0; i < sampleSize; i++) {
         this.seed = (214013 * this.seed + 2531011) % (1 << 31);
         let k = (this.seed >> 16) & 0x7fff;
