@@ -20,9 +20,9 @@ const _extractTrackingFeatures = (
       width: image.width,
       height: image.height,
       points,
-    };
+    } as ITrackingFeature;
 
-    featureSets.push(<ITrackingFeature>featureSet);
+    featureSets.push(featureSet);
 
     doneCallback(i);
   }
@@ -37,6 +37,7 @@ onmessage = (msg) => {
     case WORKER_EVENT.COMPILE:
       const { targetImages } = data;
       const percentPerImage = 50.0 / targetImages.length;
+
       let percent = 0.0;
       const list: ITrackingFeature[][] = [];
 
@@ -63,4 +64,5 @@ onmessage = (msg) => {
 
 export { _extractTrackingFeatures };
 
-export default {} as typeof Worker & (new () => Worker);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default null as any;

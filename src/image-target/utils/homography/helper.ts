@@ -14,15 +14,18 @@ const normalizePoints = (coords: number[][]) => {
   const meanY = sumY / coords.length;
 
   let sumDiff = 0;
+
   for (let i = 0; i < coords.length; i++) {
     const diffX = coords[i][0] - meanX;
     const diffY = coords[i][1] - meanY;
-    sumDiff += Math.sqrt(diffX * diffX + diffY * diffY);
+
+    sumDiff += Math.sqrt(diffX ** 2 + diffY ** 2);
   }
 
   const s = (Math.sqrt(2) * coords.length) / sumDiff;
 
-  const normPoints = [];
+  const normPoints: number[][] = [];
+
   for (let i = 0; i < coords.length; i++) {
     normPoints.push([(coords[i][0] - meanX) * s, (coords[i][1] - meanY) * s]);
   }
@@ -97,7 +100,9 @@ const denormalizeHomography = (
   ];
 
   // make H[8] === 1;
-  for (let i = 0; i < 9; i++) H[i] = H[i] / H[8];
+  for (let i = 0; i < 9; i++) {
+    H[i] = H[i] / H[8];
+  }
 
   return H;
 };

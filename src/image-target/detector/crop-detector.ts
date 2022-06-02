@@ -71,8 +71,9 @@ class CropDetector {
       p.y += startY;
     });
 
-    if (this.debugMode && debugExtra)
+    if (this.debugMode) {
       debugExtra.projectedImage = cropInputImageT.arraySync() as number[][];
+    }
 
     cropInputImageT.dispose();
 

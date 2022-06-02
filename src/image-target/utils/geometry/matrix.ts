@@ -6,6 +6,7 @@ const matrixInverse33 = (A: number[], threshold: number) => {
   if (Math.abs(det) <= threshold) return null;
 
   const oneOver = 1.0 / det;
+
   const B = [
     (A[4] * A[8] - A[5] * A[7]) * oneOver,
     (A[2] * A[7] - A[1] * A[8]) * oneOver,
@@ -23,6 +24,7 @@ const matrixInverse33 = (A: number[], threshold: number) => {
 
 const matrixMul33 = (A: number[], B: number[]) => {
   const C = [];
+
   C[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
   C[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
   C[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
@@ -38,7 +40,9 @@ const matrixMul33 = (A: number[], B: number[]) => {
 
 const multiplyPointHomographyInhomogenous = (x: number[], H: number[]) => {
   const w = H[6] * x[0] + H[7] * x[1] + H[8];
-  const xp = [];
+
+  const xp: number[] = [];
+
   xp[0] = (H[0] * x[0] + H[1] * x[1] + H[2]) / w;
   xp[1] = (H[3] * x[0] + H[4] * x[1] + H[5]) / w;
 

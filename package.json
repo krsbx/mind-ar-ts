@@ -15,7 +15,7 @@
     "lint": "eslint --cache --fix src/*",
     "preview": "vite preview",
     "prepare": "husky install",
-    "postinstall": "npx patch-package" 
+    "postinstall": "npx patch-package"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.0.0",
@@ -61,6 +61,7 @@
     "stats-js": "^1.0.1",
     "svd-js": "^1.1.1",
     "three": "^0.140.0",
+    "three-bmfont-text": "^3.0.1",
     "tinyqueue": "^2.0.3"
   },
   "lint-staged": {

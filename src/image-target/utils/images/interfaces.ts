@@ -1,7 +1,7 @@
 interface IBiliear {
   image: ImageData;
-  padOneWidth: number;
-  padOneHeight: number;
+  padOneWidth: boolean;
+  padOneHeight: boolean;
 }
 
 export type { IBiliear };

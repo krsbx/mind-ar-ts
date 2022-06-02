@@ -57,10 +57,10 @@ const match = (data: IControllerWorker['MATCH']) => {
 };
 
 const trackUpdate = (data: IControllerWorker['TRACK_UPDATE']) => {
-  const { modelViewTransform, worldCoords, screenCoords } = data;
+  const { modelViewTransform: initialModelViewTransform, worldCoords, screenCoords } = data;
 
   const finalModelViewTransform = estimator.refineEstimate({
-    initialModelViewTransform: modelViewTransform,
+    initialModelViewTransform,
     worldCoords,
     screenCoords,
   });
@@ -84,9 +84,8 @@ onmessage = (msg) => {
     case WORKER_EVENT.TRACK_UPDATE:
       trackUpdate(data);
       break;
-    default:
-      break;
   }
 };
 
-export default {} as typeof Worker & (new () => Worker);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default null as any;

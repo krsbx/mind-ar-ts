@@ -130,7 +130,7 @@ class Controller {
     });
   }
 
-  addImageTargetsFromBuffer(buffer: string | ArrayBuffer) {
+  addImageTargetsFromBuffer(buffer: ArrayBuffer) {
     const compiler = new Compiler();
     const dataList = compiler.importData(buffer);
 
@@ -196,11 +196,11 @@ class Controller {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async _trackAndUpdate(inputT: any, lastModelViewTransform: number[][], targetIndex: number) {
-    const trackResult = this.tracker.track(inputT, lastModelViewTransform, targetIndex);
-
-    if (!trackResult) return null;
-
-    const { worldCoords, screenCoords } = trackResult;
+    const { worldCoords, screenCoords } = this.tracker.track(
+      inputT,
+      lastModelViewTransform,
+      targetIndex
+    );
 
     if (worldCoords.length < 4) return null;
 
@@ -226,7 +226,7 @@ class Controller {
 
   private async _matchImageTarget(nTracking: number, inputT: Tensor) {
     // detect and match only if less then maxTrack
-    if (nTracking > this.maxTrack) return;
+    if (nTracking >= this.maxTrack) return;
 
     const matchingIndexes: number[] = [];
 
@@ -295,7 +295,7 @@ class Controller {
     trackingState.trackCount = 0;
     trackingState.trackMiss += 1;
 
-    if (trackingState.trackMiss < this.missTolerance) return;
+    if (trackingState.trackMiss <= this.missTolerance) return;
 
     trackingState.showing = false;
     trackingState.trackingMatrix = null;
@@ -333,8 +333,8 @@ class Controller {
     while (true) {
       if (!this.processingVideo) break;
 
-      const nTracking = this.trackingStates.reduce((acc, s) => acc + (s.isTracking ? 1 : 0), 0);
       const inputT = this.inputLoader.loadInput(input);
+      const nTracking = this.trackingStates.reduce((acc, s) => acc + (s.isTracking ? 1 : 0), 0);
 
       await this._matchImageTarget(nTracking, inputT);
 
@@ -349,7 +349,7 @@ class Controller {
       }
 
       inputT.dispose();
-      this.onUpdate && this.onUpdate({ type: 'processDone' });
+      this.onUpdate?.({ type: ON_UPDATE_EVENT.DONE });
       await tfNextFrame();
     }
   }

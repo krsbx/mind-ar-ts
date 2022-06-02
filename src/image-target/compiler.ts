@@ -43,7 +43,7 @@ class Compiler {
         processContext.drawImage(img, 0, 0, img.width, img.height);
 
         const processData = processContext.getImageData(0, 0, img.width, img.height);
-        const greyImageData = new Uint8ClampedArray(img.width * img.height);
+        const greyImageData = new Uint8Array(img.width * img.height);
 
         for (let i = 0; i < greyImageData.length; i++) {
           const offset = i * 4;
@@ -56,13 +56,13 @@ class Compiler {
           );
         }
 
-        const targetImage = {
+        const targetImage = Helper.castTo<ImageData>({
           data: greyImageData,
           height: img.height,
           width: img.width,
-        };
+        });
 
-        targetImages.push(<ImageData>targetImage);
+        targetImages.push(targetImage);
       }
 
       // compute matching data: 50% progress
@@ -76,7 +76,7 @@ class Compiler {
         const imageList = buildImageList(targetImage);
         const percentPerAction = percentPerImage / imageList.length;
 
-        const matchingData = await _extractMatchingFeatures(<ImageDataWithScale[]>imageList, () => {
+        const matchingData = await _extractMatchingFeatures(imageList, () => {
           percent += percentPerAction;
           progressCallback(percent);
         });
@@ -90,7 +90,7 @@ class Compiler {
 
       for (let i = 0; i < targetImages.length; i++) {
         const trackingImageList = buildTrackingImageList(targetImages[i]);
-        this.data[i].trackingImageList = <ImageDataWithScale[]>trackingImageList;
+        this.data[i].trackingImageList = trackingImageList;
       }
 
       // compute tracking data with worker: 50% progress
@@ -146,8 +146,8 @@ class Compiler {
     return buffer;
   }
 
-  importData(buffer: string | ArrayBuffer) {
-    const content = msgpack.decode(new Uint8Array(buffer as ArrayBuffer)) as {
+  importData(buffer: ArrayBuffer) {
+    const content = msgpack.decode(new Uint8Array(buffer)) as {
       v: number;
       dataList: IDataList[];
     };

@@ -11,6 +11,7 @@ import {
   TensorInfo,
   DataTypeMap,
 } from '@tensorflow/tfjs';
+import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
 import {
   FREAK_CONPARISON_COUNT,
   MAX_FEATURES_PER_BUCKET,
@@ -83,12 +84,13 @@ class Detector {
     for (let i = 0; i < this.numOctaves; i++) {
       let image1T: Tensor;
 
-      if (i === 0) image1T = this._applyFilter(inputImageT);
-      else
+      if (i === 0) {
+        image1T = this._applyFilter(inputImageT);
+      } else {
         image1T = this._downsampleBilinear(pyramidImagesT[i - 1][pyramidImagesT[i - 1].length - 1]);
+      }
 
       const image2T = this._applyFilter(image1T);
-
       pyramidImagesT.push([image1T, image2T]);
     }
 
@@ -143,9 +145,7 @@ class Detector {
     if (this.debugMode) {
       debugExtra = {
         pyramidImages: pyramidImagesT.map((ts) => ts.map((t) => t.arraySync())) as number[][],
-        dogPyramidImages: dogPyramidImagesT.map((t) => (t ? t.arraySync() : null)) as
-          | number[]
-          | null[],
+        dogPyramidImages: dogPyramidImagesT.map((t) => (t ? (t.arraySync() as number[]) : null)),
         extremasResults: extremasResultsT.map((t) => t.arraySync()) as number[],
         extremaAngles: extremaAnglesT.arraySync() as number[],
         prunedExtremas: prunedExtremasList,
@@ -313,7 +313,7 @@ class Detector {
         const radius = ORIENTATION_GAUSSIAN_EXPANSION_FACTOR * ORIENTATION_REGION_EXPANSION_FACTOR;
         const radiusCeil = Math.ceil(radius);
 
-        const radialProperties = [];
+        const radialProperties: number[][] = [];
 
         for (let y = -radiusCeil; y <= radiusCeil; y++) {
           for (let x = -radiusCeil; x <= radiusCeil; x++) {
@@ -322,13 +322,15 @@ class Detector {
             if (distanceSquare > radius ** 2) continue;
 
             // may just assign w = 1 will do, this could be over complicated.
-            const _x = distanceSquare * gwScale;
-            // fast expontenial approx
-            const w =
-              (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
-              0.0013888888;
+            if (distanceSquare <= radius * radius) {
+              const _x = distanceSquare * gwScale;
+              // fast expontenial approx
+              const w =
+                (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
+                0.0013888888;
 
-            radialProperties.push([y, x, w]);
+              radialProperties.push([y, x, w]);
+            }
           }
         }
 
@@ -357,7 +359,6 @@ class Detector {
         prunedExtremasT,
         radialPropertiesT,
       ]);
-
       const result2 = this._compileAndRun(program2, [result1]);
 
       return result2;
@@ -411,7 +412,8 @@ class Detector {
         for (let j = 0; j < pixels[i].length; j++) result[i].push([]);
       }
 
-      const localizedExtremas = [];
+      const localizedExtremas: number[][] = [];
+
       for (let i = 0; i < prunedExtremasList.length; i++) {
         localizedExtremas[i] = [
           prunedExtremasList[i][0],
@@ -460,7 +462,7 @@ class Detector {
     const nFeatures = MAX_FEATURES_PER_BUCKET;
 
     if (!this.kernelCaches.applyPrune) {
-      const reductionKernels: any[] = [];
+      const reductionKernels: GPGPUProgram[] = [];
 
       // to reduce to amount of data that need to sync back to CPU by 4 times, we apply this trick:
       // the fact that there is not possible to have consecutive maximum/minimum, we can safe combine 4 pixels into 1
@@ -523,7 +525,9 @@ class Detector {
             const absScore = Math.abs(score);
 
             let tIndex = nFeatures;
-            while (tIndex >= 1 && absScore > curAbsScores[bucket][tIndex - 1]) tIndex -= 1;
+            while (tIndex >= 1 && absScore > curAbsScores[bucket][tIndex - 1]) {
+              tIndex -= 1;
+            }
 
             if (tIndex < nFeatures) {
               for (let t = nFeatures - 1; t >= tIndex + 1; t--) {
@@ -650,14 +654,18 @@ class Detector {
     });
   }
 
-  private _compileAndRun(program: any, inputs: TensorInfo[]) {
-    const outInfo = (tfBackend() as any).compileAndRun(program, inputs);
+  private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
+    const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
 
     return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 
-  private _runWebGLProgram(program: any, inputs: TensorInfo[], outputType: keyof DataTypeMap) {
-    const outInfo = (tfBackend() as any).runWebGLProgram(program, inputs, outputType);
+  private _runWebGLProgram(
+    program: GPGPUProgram,
+    inputs: TensorInfo[],
+    outputType: keyof DataTypeMap
+  ) {
+    const outInfo = (tfBackend() as MathBackendWebGL).runWebGLProgram(program, inputs, outputType);
 
     return tfEngine().makeTensorFromTensorInfo(outInfo);
   }

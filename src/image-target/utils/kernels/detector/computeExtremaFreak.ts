@@ -1,7 +1,7 @@
 import { Tensor } from '@tensorflow/tfjs';
 import { FREAKPOINTS } from '../../constant/freak';
 import { FREAK_EXPANSION_FACTOR } from '../../constant/detector';
-import { generateSubCodes, generateVariableName } from './helper';
+import { generateSubCodes, generateVariableName } from '../helper';
 
 const computeExtremaFreak = (pyramidImagesT: Tensor[][], prunedExtremas: Tensor) => {
   const imageVariableNames: string[] = generateVariableName(pyramidImagesT);

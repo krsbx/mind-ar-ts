@@ -37,8 +37,8 @@ const estimate = ({
   const _KInvH = KInv.mmul(H);
   const KInvH = _KInvH.to1DArray();
 
-  const norm1 = Math.sqrt(KInvH[0] * KInvH[0] + KInvH[3] * KInvH[3] + KInvH[6] * KInvH[6]);
-  const norm2 = Math.sqrt(KInvH[1] * KInvH[1] + KInvH[4] * KInvH[4] + KInvH[7] * KInvH[7]);
+  const norm1 = Math.sqrt(KInvH[0] ** 2 + KInvH[3] ** 2 + KInvH[6] ** 2);
+  const norm2 = Math.sqrt(KInvH[1] ** 2 + KInvH[4] ** 2 + KInvH[7] ** 2);
   const tnorm = (norm1 + norm2) / 2;
 
   const rotate = [];
@@ -54,7 +54,7 @@ const estimate = ({
   rotate[5] = rotate[6] * rotate[1] - rotate[0] * rotate[7];
   rotate[8] = rotate[0] * rotate[4] - rotate[1] * rotate[3];
 
-  const norm3 = Math.sqrt(rotate[2] * rotate[2] + rotate[5] * rotate[5] + rotate[8] * rotate[8]);
+  const norm3 = Math.sqrt(rotate[2] ** 2 + rotate[5] ** 2 + rotate[8] ** 2);
   rotate[2] /= norm3;
   rotate[5] /= norm3;
   rotate[8] /= norm3;
