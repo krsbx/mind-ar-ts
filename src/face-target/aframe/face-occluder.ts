@@ -6,16 +6,23 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.OCCULDER, {
   el: null as any,
 
   init: function () {
-    this.el.addEventListener(AR_EVENT_NAME.MODEL_LOADED, () => {
-      this.el.getObject3D(AR_ELEMENT_TAG.MESH).traverse((o: any) => {
-        if (o.isMesh) {
-          const material = new AFRAME.THREE.MeshStandardMaterial({
-            colorWrite: false,
-          });
+    this.el.addEventListener(AR_EVENT_NAME.MODEL_LOADED, this.onModelLoaded.bind(this));
+    this.el.addEventListener(AR_EVENT_NAME.MODEL_ERROR, this.onModelError.bind(this));
+  },
 
-          o.material = material;
-        }
-      });
+  onModelLoaded: function () {
+    this.el.getObject3D(AR_ELEMENT_TAG.MESH).traverse((o: any) => {
+      if (o.isMesh) {
+        const material = new AFRAME.THREE.MeshStandardMaterial({
+          colorWrite: false,
+        });
+
+        o.material = material;
+      }
     });
+  },
+
+  onModelError: function () {
+    console.warn('Model failed to load.');
   },
 });
