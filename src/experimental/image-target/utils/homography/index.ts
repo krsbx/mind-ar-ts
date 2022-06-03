@@ -6,8 +6,10 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
   const { normPoints: normDstPoints, param: dstParam } = normalizePoints(dstPoints);
 
   const num = normDstPoints.length;
+
   const AData = [];
   const BData = [];
+
   for (let j = 0; j < num; j++) {
     const row1 = [
       normSrcPoints[j][0],
@@ -19,6 +21,7 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
       -(normSrcPoints[j][0] * normDstPoints[j][0]),
       -(normSrcPoints[j][1] * normDstPoints[j][0]),
     ];
+
     const row2 = [
       0,
       0,
@@ -29,6 +32,7 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
       -(normSrcPoints[j][0] * normDstPoints[j][1]),
       -(normSrcPoints[j][1] * normDstPoints[j][1]),
     ];
+
     AData.push(row1);
     AData.push(row2);
 

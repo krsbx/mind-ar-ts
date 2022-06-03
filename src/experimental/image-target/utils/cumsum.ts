@@ -1,7 +1,7 @@
 class Cumsum {
   private cumsum: number[][];
 
-  constructor(data: number[], width: number, height: number) {
+  constructor(data: ArrayLike<number>, width: number, height: number) {
     this.cumsum = [];
 
     for (let j = 0; j < height; j++) {
