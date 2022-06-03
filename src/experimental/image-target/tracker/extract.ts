@@ -2,11 +2,16 @@ import Cumsum from '../utils/cumsum';
 import { ImageDataWithScale } from '../../../image-target/utils/types/compiler';
 import {
   MAX_SIM_THRESH,
+  MAX_THRESH,
+  MIN_THRESH,
+  OCCUPANCY_SIZE,
+  SD_THRESH,
   SEARCH_SIZE1,
   SEARCH_SIZE2,
   TEMPLATE_SD_THRESH,
+  TEMPLATE_SIZE,
 } from '../utils/constant/tracker';
-import { getSimilarity, templateVar } from './helper';
+import { getSimilarity, selectFeature, templateVar } from './helper';
 
 /*
  * Input image is in grey format. the imageData array size is width * height. value range from 0-255
@@ -174,6 +179,22 @@ const extract = (image: ImageData | ImageDataWithScale) => {
       featureMap[pos] = max;
     }
   }
+
+  // Step 2.2 select feature
+  const coords = selectFeature({
+    image,
+    featureMap,
+    templateSize: TEMPLATE_SIZE,
+    searchSize: SEARCH_SIZE2,
+    occSize: OCCUPANCY_SIZE,
+    maxSimThresh: MAX_THRESH,
+    minSimThresh: MIN_THRESH,
+    sdThresh: SD_THRESH,
+    imageDataCumsum: imageDataCumsum as any,
+    imageDataSqrCumsum: imageDataSqrCumsum as any,
+  });
+
+  return coords;
 };
 
 export default extract;
