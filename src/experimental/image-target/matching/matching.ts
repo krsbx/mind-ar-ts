@@ -230,8 +230,8 @@ const _query = ({
   numPop: number;
 }) => {
   if (node.leaf) {
-    for (let i = 0; i < node.pointIndexes.length; i++) {
-      keypointIndexes.push(node.pointIndexes[i]);
+    for (const pointIndex of node.pointIndexes) {
+      keypointIndexes.push(pointIndex);
     }
 
     return;
@@ -253,17 +253,14 @@ const _query = ({
     distances.push(d);
   }
 
-  let minD = Number.MAX_SAFE_INTEGER;
-
-  for (let i = 0; i < node.children.length; i++) {
-    minD = Math.min(minD, distances[i]);
-  }
+  const minD = Math.min(Number.MAX_SAFE_INTEGER, ...distances);
 
   for (let i = 0; i < node.children.length; i++) {
     if (distances[i] !== minD) {
       queue.push({ node: node.children[i], d: distances[i] });
     }
   }
+
   for (let i = 0; i < node.children.length; i++) {
     if (distances[i] === minD) {
       _query({ node: node.children[i], keypoints, querypoint, queue, keypointIndexes, numPop });

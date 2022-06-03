@@ -15,11 +15,7 @@ const _computeKMedoids = (options: {
 }) => {
   const { points, pointIndexes, randomizer } = options;
 
-  const randomPointIndexes: number[] = [];
-
-  for (let i = 0; i < pointIndexes.length; i++) {
-    randomPointIndexes.push(i);
-  }
+  const randomPointIndexes: number[] = Array.from({ length: pointIndexes.length }, (_, i) => i);
 
   let bestSumD = Number.MAX_SAFE_INTEGER;
   let bestAssignmentIndex = -1;
@@ -70,10 +66,7 @@ const _computeKMedoids = (options: {
 //   centerPointIndex: int
 // }
 const build = ({ points }: { points: IMaximaMinimaPoint[] }) => {
-  const pointIndexes: number[] = [];
-  for (let i = 0; i < points.length; i++) {
-    pointIndexes.push(i);
-  }
+  const pointIndexes: number[] = Array.from({ length: points.length }, (_, i) => i);
 
   const randomizer = createRandomizer();
 
@@ -127,8 +120,8 @@ const _build = (options: {
     node.leaf = true;
     node.pointIndexes = [];
 
-    for (let i = 0; i < pointIndexes.length; i++) {
-      node.pointIndexes.push(pointIndexes[i]);
+    for (const pointIndexe of pointIndexes) {
+      node.pointIndexes.push(pointIndexe);
     }
 
     return node;

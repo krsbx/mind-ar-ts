@@ -41,11 +41,7 @@ const computeHomography = (options: {
 
   const randomizer = createRandomizer();
 
-  const perm: number[] = [];
-
-  for (let i = 0; i < srcPoints.length; i++) {
-    perm[i] = i;
-  }
+  const perm: number[] = Array.from({ length: srcPoints.length }, (_, i) => i);
 
   randomizer.arrayShuffle({ arr: perm, sampleSize: perm.length });
 
@@ -92,14 +88,10 @@ const computeHomography = (options: {
   if (Hs.length === 0) return null;
 
   // pick the best hypothesis
-  const hypotheses: { H: number[]; cost: number }[] = [];
-
-  for (let i = 0; i < Hs.length; i++) {
-    hypotheses.push({
-      H: Hs[i],
-      cost: 0,
-    });
-  }
+  const hypotheses: { H: number[]; cost: number }[] = Array.from(Hs, (H) => ({
+    cost: 0,
+    H,
+  }));
 
   let curChuckSize = chuckSize;
 
@@ -152,12 +144,11 @@ const _checkHeuristics = ({
 
   if (HInv === null) return false;
 
-  const mp: number[][] = [];
-
   // 4 test points, corner of keyframe
-  for (let i = 0; i < testPoints.length; i++) {
-    mp.push(multiplyPointHomographyInhomogenous(testPoints[i], HInv));
-  }
+  const mp: number[][] = Array.from(testPoints, (testPoint) =>
+    multiplyPointHomographyInhomogenous(testPoint, HInv)
+  );
+
   const smallArea = smallestTriangleArea(mp[0], mp[1], mp[2], mp[3]);
 
   if (smallArea < keyframe.width * keyframe.height * 0.0001) return false;
@@ -205,11 +196,9 @@ const _checkHomographyPointsGeometricallyConsistent = ({
   H: number[];
   testPoints: number[][];
 }) => {
-  const mappedPoints: number[][] = [];
-
-  for (let i = 0; i < testPoints.length; i++) {
-    mappedPoints[i] = multiplyPointHomographyInhomogenous(testPoints[i], H);
-  }
+  const mappedPoints: number[][] = Array.from(testPoints, (testPoint) =>
+    multiplyPointHomographyInhomogenous(testPoint, H)
+  );
 
   for (let i = 0; i < testPoints.length; i++) {
     const i1 = i;
