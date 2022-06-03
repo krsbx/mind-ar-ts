@@ -114,16 +114,9 @@ class Detector {
 
   // find local maximum/minimum
   private _getExtremas(dogPyramidImagesT: Tensor[]) {
-    const extremasResultsT: Tensor[] = [];
-
-    for (let i = 1; i < this.numOctaves - 1; i++) {
-      const extremasResultT = this._buildExtremas(
-        dogPyramidImagesT[i - 1],
-        dogPyramidImagesT[i],
-        dogPyramidImagesT[i + 1]
-      );
-      extremasResultsT.push(extremasResultT);
-    }
+    const extremasResultsT: Tensor[] = Array.from({ length: this.numOctaves - 1 }, (_, i) =>
+      this._buildExtremas(dogPyramidImagesT[i], dogPyramidImagesT[i + 1], dogPyramidImagesT[i + 2])
+    );
 
     return extremasResultsT;
   }
@@ -149,6 +142,7 @@ class Detector {
 
         const combined =
           v1 * EIGHT_BIT_COLOR ** 3 + v2 * EIGHT_BIT_COLOR ** 2 + v3 * EIGHT_BIT_COLOR + v4;
+
         descriptors.push(combined);
       }
 
@@ -172,7 +166,7 @@ class Detector {
     return featurePoints;
   }
 
-  public detect(inputImageT: Tensor) {
+  public async detect(inputImageT: Tensor) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const pyramidImagesT = this._buildPyramidImage(inputImageT);
@@ -200,18 +194,24 @@ class Detector {
     // compute the binary descriptors
     const freakDescriptorsT = this._computeFreakDescriptors(extremaFreaksT);
 
-    const prunedExtremasArr = prunedExtremasT.arraySync() as number[][];
-    const extremaAnglesArr = extremaAnglesT.arraySync() as number[];
-    const freakDescriptorsArr = freakDescriptorsT.arraySync() as number[][];
+    const prunedExtremasArr = (await prunedExtremasT.array()) as number[][];
+    const extremaAnglesArr = (await extremaAnglesT.array()) as number[];
+    const freakDescriptorsArr = (await freakDescriptorsT.array()) as number[][];
 
     if (this.debugMode) {
       debugExtra = {
-        pyramidImages: pyramidImagesT.map((ts) => ts.map((t) => t.arraySync())) as number[][],
-        dogPyramidImages: dogPyramidImagesT.map((t) => (t?.arraySync() as number[]) ?? null),
-        extremasResults: extremasResultsT.map((t) => t.arraySync()) as number[],
-        extremaAngles: extremaAnglesT.arraySync() as number[],
+        pyramidImages: (await Promise.all(
+          pyramidImagesT.map(async (ts) => await Promise.all(ts.map(async (t) => await t.array())))
+        )) as number[][],
+        dogPyramidImages: await Promise.all(
+          dogPyramidImagesT.map(async (t) => ((await t?.array()) as number[]) ?? null)
+        ),
+        extremasResults: (await Promise.all(
+          extremasResultsT.map(async (t) => await t.array())
+        )) as number[],
+        extremaAngles: (await extremaAnglesT.array()) as number[],
         prunedExtremas: prunedExtremasList,
-        localizedExtremas: prunedExtremasT.arraySync() as number[][],
+        localizedExtremas: (await prunedExtremasT.array()) as number[][],
       } as IDebugExtra;
     }
 
@@ -251,16 +251,16 @@ class Detector {
     const nFeatures = MAX_FEATURES_PER_BUCKET;
 
     if (!this.kernelCaches.applyPrune) {
-      const reductionKernels: GPGPUProgram[] = [];
-
       // to reduce to amount of data that need to sync back to CPU by 4 times, we apply this trick:
       // the fact that there is not possible to have consecutive maximum/minimum, we can safe combine 4 pixels into 1
-      for (let k = 0; k < extremasResultsT.length; k++) {
-        const extremaHeight = extremasResultsT[k].shape[0] as number;
-        const extremaWidth = extremasResultsT[k].shape[1] as number;
-
-        reductionKernels.push(DetectorKernel.applyPrune(extremaHeight, extremaWidth));
-      }
+      const reductionKernels: GPGPUProgram[] = Array.from(
+        { length: extremasResultsT.length },
+        (_, k) =>
+          DetectorKernel.applyPrune(
+            extremasResultsT[k].shape[0] as number,
+            extremasResultsT[k].shape[1] as number
+          )
+      );
 
       this.kernelCaches.applyPrune = { reductionKernels };
     }
@@ -430,16 +430,12 @@ class Detector {
         }
       }
 
-      const localizedExtremas: number[][] = [];
-
-      for (let i = 0; i < prunedExtremasList.length; i++) {
-        localizedExtremas[i] = [
-          prunedExtremasList[i][0],
-          prunedExtremasList[i][1],
-          prunedExtremasList[i][2],
-          prunedExtremasList[i][3],
-        ];
-      }
+      const localizedExtremas: number[][] = Array.from(prunedExtremasList, (prunedExtrema) => [
+        prunedExtrema[0],
+        prunedExtrema[1],
+        prunedExtrema[2],
+        prunedExtrema[3],
+      ]);
 
       for (let i = 0; i < localizedExtremas.length; i++) {
         if (localizedExtremas[i][0] === 0) continue;
