@@ -13,7 +13,7 @@ interface ICrop {
 
 interface IDebugExtra {
   pyramidImages: number[][];
-  dogPyramidImages: number[] | null[];
+  dogPyramidImages: number[][] | null[][];
   extremasResults: number[];
   extremaAngles: number[];
   prunedExtremas: number[][];

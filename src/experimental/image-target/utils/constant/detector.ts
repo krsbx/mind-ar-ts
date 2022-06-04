@@ -1,0 +1,26 @@
+import FREAKPOINTS from './freak';
+
+export const PYRAMID_MIN_SIZE = 8;
+export const PYRAMID_MAX_OCTAVE = 5;
+
+export const LAPLACIAN_THRESHOLD = 3.0;
+export const LAPLACIAN_SQR_THRESHOLD = LAPLACIAN_THRESHOLD ** 2;
+export const EDGE_THRESHOLD = 4.0;
+export const EDGE_HESSIAN_THRESHOLD = (EDGE_THRESHOLD + 1) ** 2 / EDGE_THRESHOLD;
+
+export const NUM_BUCKETS_PER_DIMENSION = 10;
+export const MAX_FEATURES_PER_BUCKET = 5;
+export const NUM_BUCKETS = NUM_BUCKETS_PER_DIMENSION ** 2;
+
+export const ORIENTATION_NUM_BINS = 36;
+export const ORIENTATION_SMOOTHING_ITERATIONS = 5;
+
+export const ORIENTATION_GAUSSIAN_EXPANSION_FACTOR = 3.0;
+export const ORIENTATION_REGION_EXPANSION_FACTOR = 1.5;
+export const FREAK_EXPANSION_FACTOR = 7.0;
+
+export const FREAK_CONPARISON_COUNT = ((FREAKPOINTS.length - 1) * FREAKPOINTS.length) / 2; // 666
+
+export const EIGHT_BIT_COLOR = 256;
+
+export const ONE_OVER_2PI = 1 / (2 * Math.PI);

@@ -6,5 +6,5 @@ declare module '*.worker.ts' {
 
   // Uncomment this if you set the `esModule` option to `false`
   // export = WebpackWorker;
-  export default WebpackWorker;
+  export default WebpackWorker as typeof Worker & (new () => Worker);
 }
