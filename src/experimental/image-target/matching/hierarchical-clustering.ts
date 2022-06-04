@@ -15,7 +15,7 @@ const _computeKMedoids = (options: {
 }) => {
   const { points, pointIndexes, randomizer } = options;
 
-  const randomPointIndexes: number[] = Array.from({ length: pointIndexes.length }, (_, i) => i);
+  const randomPointIndexes: number[] = pointIndexes.map((_, i) => i);
 
   let bestSumD = Number.MAX_SAFE_INTEGER;
   let bestAssignmentIndex = -1;
@@ -66,7 +66,7 @@ const _computeKMedoids = (options: {
 //   centerPointIndex: int
 // }
 const build = ({ points }: { points: IMaximaMinimaPoint[] }) => {
-  const pointIndexes: number[] = Array.from({ length: points.length }, (_, i) => i);
+  const pointIndexes: number[] = points.map((_, i) => i);
 
   const randomizer = createRandomizer();
 
@@ -100,11 +100,10 @@ const _build = (options: {
     // compute clusters
     const assignment = _computeKMedoids({ points, pointIndexes, randomizer });
 
-    for (let i = 0; i < assignment.length; i++) {
-      if (clusters[pointIndexes[assignment[i]]] === undefined)
-        clusters[pointIndexes[assignment[i]]] = [];
+    for (const [i, assign] of assignment.entries()) {
+      if (clusters[pointIndexes[assign]] === undefined) clusters[pointIndexes[assign]] = [];
 
-      clusters[pointIndexes[assignment[i]]].push(pointIndexes[i]);
+      clusters[pointIndexes[assign]].push(pointIndexes[i]);
     }
   }
 
@@ -118,11 +117,7 @@ const _build = (options: {
 
   if (isLeaf) {
     node.leaf = true;
-    node.pointIndexes = [];
-
-    for (const pointIndexe of pointIndexes) {
-      node.pointIndexes.push(pointIndexe);
-    }
+    node.pointIndexes = pointIndexes.map((pointIndex) => pointIndex);
 
     return node;
   }

@@ -49,9 +49,8 @@ class Tracker {
     this.projectionTransform = projectionTransform;
     this.debugMode = debugMode;
 
-    this.trackingKeyframeList = Array.from(
-      { length: trackingDataList.length },
-      (_, i) => trackingDataList[i][TRACKING_KEYFRAME]
+    this.trackingKeyframeList = trackingDataList.map(
+      (trackingData) => trackingData[TRACKING_KEYFRAME]
     );
 
     // prebuild feature and marker pixel tensors
@@ -61,9 +60,9 @@ class Tracker {
     this.imagePixelsListT = [];
     this.imagePropertiesListT = [];
 
-    for (let i = 0; i < this.trackingKeyframeList.length; i++) {
+    for (const [i, trackingKeyframe] of this.trackingKeyframeList.entries()) {
       const { featurePoints, imagePixels, imageProperties } = this._prebuild(
-        this.trackingKeyframeList[i],
+        trackingKeyframe,
         maxCount
       );
 
@@ -128,14 +127,14 @@ class Tracker {
     const screenCoords = [];
     const goodTrack = [];
 
-    for (let i = 0; i < matchingPoints.length; i++) {
+    for (const [i, matchingPoint] of matchingPoints.entries()) {
       if (sim[i] > AR2_SIM_THRESH && i < trackingFrame.points.length) {
         goodTrack.push(i);
 
         const point = computeScreenCoordiate(
           modelViewProjectionTransform,
-          matchingPoints[i][0],
-          matchingPoints[i][1]
+          matchingPoint[0],
+          matchingPoint[1]
         );
 
         screenCoords.push(point);
@@ -281,13 +280,9 @@ class Tracker {
 
   private _buildAdjustedModelViewTransform(modelViewProjectionTransform: number[][]) {
     return tfTidy(() => {
-      const modelViewProjectionTransformAdjusted: number[][] = [];
-
-      for (let i = 0; i < modelViewProjectionTransform.length; i++) {
-        const rows = Array.from(modelViewProjectionTransform[i], (v) => v / PRECISION_ADJUST);
-
-        modelViewProjectionTransformAdjusted.push(rows);
-      }
+      const modelViewProjectionTransformAdjusted: number[][] = modelViewProjectionTransform.map(
+        (row) => row.map((c) => c / PRECISION_ADJUST)
+      );
 
       const t = tfTensor(modelViewProjectionTransformAdjusted, [3, 4]);
 

@@ -10,8 +10,7 @@ const _extractTrackingFeatures = (
 ) => {
   const featureSets: ITrackingFeature[] = [];
 
-  for (let i = 0; i < imageList.length; i++) {
-    const image = imageList[i];
+  for (const [i, image] of imageList.entries()) {
     const points = extract(image);
 
     const featureSet = {
@@ -39,8 +38,8 @@ onmessage = (msg) => {
       const percentPerImage = 50.0 / targetImages.length;
 
       let percent = 0.0;
-      const list: ITrackingFeature[][] = Array.from(targetImages, (targetImage) => {
-        const imageList = buildTrackingImageList(targetImage as ImageData);
+      const list: ITrackingFeature[][] = targetImages.map((targetImage: ImageData) => {
+        const imageList = buildTrackingImageList(targetImage);
         const percentPerAction = percentPerImage / imageList.length;
 
         const trackingData = _extractTrackingFeatures(<ImageDataWithScale[]>imageList, () => {

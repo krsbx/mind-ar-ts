@@ -218,9 +218,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
             // eslint-disable-next-line no-case-declarations
             const { targetIndex, worldMatrix } = data;
 
-            for (let i = 0; i < this.anchorEntities.length; i++) {
-              if (this.anchorEntities[i].targetIndex === targetIndex)
-                this.anchorEntities[i].el.updateWorldMatrix(worldMatrix);
+            for (const anchorEntity of this.anchorEntities) {
+              if (anchorEntity.targetIndex === targetIndex)
+                anchorEntity.el.updateWorldMatrix(worldMatrix);
             }
 
             break;
@@ -235,8 +235,8 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
       this.imageTargetSrc
     );
 
-    for (let i = 0; i < this.anchorEntities.length; i++) {
-      const { el, targetIndex } = this.anchorEntities[i];
+    for (const anchorEntity of this.anchorEntities) {
+      const { el, targetIndex } = anchorEntity;
 
       if (targetIndex < imageTargetDimensions.length)
         el.setupMarker(imageTargetDimensions[targetIndex]);

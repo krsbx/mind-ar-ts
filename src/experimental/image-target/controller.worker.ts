@@ -23,9 +23,7 @@ const match = (data: IControllerWorker['MATCH']) => {
   let matchedModelViewTransform = null;
   let matchedDebugExtra = null;
 
-  for (let i = 0; i < interestedTargetIndexes.length; i++) {
-    const matchingIndex = interestedTargetIndexes[i];
-
+  for (const matchingIndex of interestedTargetIndexes) {
     const { keyframeIndex, screenCoords, worldCoords, debugExtra } = matcher.matchDetection(
       matchingDataList[matchingIndex],
       data.featurePoints

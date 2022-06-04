@@ -22,9 +22,9 @@ class Matcher {
       H: number[];
     } | null = null;
 
-    for (let i = 0; i < keyframes.length; i++) {
+    for (const [i, keyframe] of keyframes.entries()) {
       const matchResult = match({
-        keyframe: keyframes[i],
+        keyframe,
         querypoints: featurePoints,
         querywidth: this.queryWidth,
         queryheight: this.queryHeight,
@@ -56,9 +56,9 @@ class Matcher {
     const worldCoords: Vector3[] = [];
     const keyframe = keyframes[bestResult.keyframeIndex];
 
-    for (let i = 0; i < bestResult.matches.length; i++) {
-      const querypoint = bestResult.matches[i].querypoint;
-      const keypoint = bestResult.matches[i].keypoint;
+    for (const bestMatch of bestResult.matches) {
+      const querypoint = bestMatch.querypoint;
+      const keypoint = bestMatch.keypoint;
 
       screenCoords.push({
         x: querypoint.x,

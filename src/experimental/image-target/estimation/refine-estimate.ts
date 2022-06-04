@@ -32,7 +32,7 @@ const refineEstimate = ({
   const dx = worldCoords.reduce((acc, cur) => acc + cur.x, 0) / worldCoords.length;
   const dy = worldCoords.reduce((acc, cur) => acc + cur.y, 0) / worldCoords.length;
 
-  const normalizedWorldCoords: Vector3[] = Array.from(worldCoords, (worldCoord) => ({
+  const normalizedWorldCoords: Vector3[] = worldCoords.map((worldCoord) => ({
     x: worldCoord.x - dx,
     y: worldCoord.y - dy,
     z: worldCoord.z,

@@ -37,9 +37,9 @@ const computeHoughMatches = (options: {
   // compute numXBins and numYBins based on matches
   const projectedDims: number[] = [];
 
-  for (let i = 0; i < matches.length; i++) {
-    const queryscale = matches[i].querypoint.scale;
-    const keyscale = matches[i].keypoint.scale;
+  for (const match of matches) {
+    const queryscale = match.querypoint.scale;
+    const keyscale = match.keypoint.scale;
 
     if (keyscale == 0) {
       console.error('ERROR divide zero');
@@ -71,8 +71,8 @@ const computeHoughMatches = (options: {
   const querypointBinLocations: IQueryBinLocation[] = [];
   const votes: Record<number, number> = {};
 
-  for (let i = 0; i < matches.length; i++) {
-    const { keypoint, querypoint } = matches[i];
+  for (const [i, match] of matches.entries()) {
+    const { keypoint, querypoint } = match;
 
     const { x, y, scale, angle } = _mapCorrespondence({
       querypoint,

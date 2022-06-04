@@ -254,13 +254,11 @@ class Detector {
     if (!this.kernelCaches.applyPrune) {
       // to reduce to amount of data that need to sync back to CPU by 4 times, we apply this trick:
       // the fact that there is not possible to have consecutive maximum/minimum, we can safe combine 4 pixels into 1
-      const reductionKernels: GPGPUProgram[] = Array.from(
-        { length: extremasResultsT.length },
-        (_, k) =>
-          DetectorKernel.applyPrune(
-            extremasResultsT[k].shape[0] as number,
-            extremasResultsT[k].shape[1] as number
-          )
+      const reductionKernels: GPGPUProgram[] = extremasResultsT.map((extremasResultT) =>
+        DetectorKernel.applyPrune(
+          extremasResultT.shape[0] as number,
+          extremasResultT.shape[1] as number
+        )
       );
 
       this.kernelCaches.applyPrune = { reductionKernels };
@@ -431,7 +429,7 @@ class Detector {
         }
       }
 
-      const localizedExtremas: number[][] = Array.from(prunedExtremasList, (prunedExtrema) => [
+      const localizedExtremas: number[][] = prunedExtremasList.map((prunedExtrema) => [
         prunedExtrema[0],
         prunedExtrema[1],
         prunedExtrema[2],

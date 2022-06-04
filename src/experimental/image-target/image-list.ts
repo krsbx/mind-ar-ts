@@ -23,7 +23,7 @@ export const buildImageList = (inputImage: ImageData | ImageDataWithScale) => {
   scaleList.push(c);
   scaleList.reverse();
 
-  const imageList: ImageDataWithScale[] = Array.from(scaleList, (scale) => ({
+  const imageList: ImageDataWithScale[] = scaleList.map((scale) => ({
     ...(resize({ image: inputImage, ratio: scale }) as ImageData),
     scale,
   }));
@@ -35,7 +35,7 @@ export const buildTrackingImageList = (inputImage: ImageData | ImageDataWithScal
   const minDimension = Math.min(inputImage.width, inputImage.height);
   const scaleList = [256.0 / minDimension, 128.0 / minDimension];
 
-  const imageList: ImageDataWithScale[] = Array.from(scaleList, (scale) => ({
+  const imageList: ImageDataWithScale[] = scaleList.map((scale) => ({
     ...(resize({ image: inputImage, ratio: scale }) as ImageData),
     scale,
   }));

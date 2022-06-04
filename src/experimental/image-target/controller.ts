@@ -143,10 +143,10 @@ class Controller {
     const matchingDataList: IKeyFrame[][] = [];
     const dimensions: number[][] = [];
 
-    for (let i = 0; i < dataList.length; i++) {
-      matchingDataList.push(dataList[i].matchingData);
-      trackingDataList.push(dataList[i].trackingData);
-      dimensions.push([dataList[i].targetImage.width, dataList[i].targetImage.height]);
+    for (const data of dataList) {
+      matchingDataList.push(data.matchingData);
+      trackingDataList.push(data.trackingData);
+      dimensions.push([data.targetImage.width, data.targetImage.height]);
     }
 
     this.tracker = new Tracker(
@@ -326,8 +326,7 @@ class Controller {
 
     this.processingVideo = true;
 
-    this.trackingStates = Array.from(
-      { length: this.markerDimensions.length },
+    this.trackingStates = this.markerDimensions.map(
       () =>
         ({
           showing: false,

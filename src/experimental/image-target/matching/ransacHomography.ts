@@ -41,7 +41,7 @@ const computeHomography = (options: {
 
   const randomizer = createRandomizer();
 
-  const perm: number[] = Array.from({ length: srcPoints.length }, (_, i) => i);
+  const perm: number[] = srcPoints.map((_, i) => i);
 
   randomizer.arrayShuffle({ arr: perm, sampleSize: perm.length });
 
@@ -88,7 +88,7 @@ const computeHomography = (options: {
   if (Hs.length === 0) return null;
 
   // pick the best hypothesis
-  const hypotheses: { H: number[]; cost: number }[] = Array.from(Hs, (H) => ({
+  const hypotheses: { H: number[]; cost: number }[] = Hs.map((H) => ({
     cost: 0,
     H,
   }));
@@ -145,7 +145,7 @@ const _checkHeuristics = ({
   if (HInv === null) return false;
 
   // 4 test points, corner of keyframe
-  const mp: number[][] = Array.from(testPoints, (testPoint) =>
+  const mp: number[][] = testPoints.map((testPoint) =>
     multiplyPointHomographyInhomogenous(testPoint, HInv)
   );
 
@@ -196,7 +196,7 @@ const _checkHomographyPointsGeometricallyConsistent = ({
   H: number[];
   testPoints: number[][];
 }) => {
-  const mappedPoints: number[][] = Array.from(testPoints, (testPoint) =>
+  const mappedPoints: number[][] = testPoints.map((testPoint) =>
     multiplyPointHomographyInhomogenous(testPoint, H)
   );
 

@@ -4,9 +4,9 @@ export const normalizePoints = (coords: number[][]) => {
   let sumX = 0;
   let sumY = 0;
 
-  for (let i = 0; i < coords.length; i++) {
-    sumX += coords[i][0];
-    sumY += coords[i][1];
+  for (const coord of coords) {
+    sumX += coord[0];
+    sumY += coord[1];
   }
 
   const meanX = sumX / coords.length;
@@ -14,16 +14,16 @@ export const normalizePoints = (coords: number[][]) => {
 
   let sumDiff = 0;
 
-  for (let i = 0; i < coords.length; i++) {
-    const diffX = coords[i][0] - meanX;
-    const diffY = coords[i][1] - meanY;
+  for (const coord of coords) {
+    const diffX = coord[0] - meanX;
+    const diffY = coord[1] - meanY;
 
     sumDiff += Math.sqrt(diffX * diffX + diffY * diffY);
   }
 
   const s = (Math.sqrt(2) * coords.length) / sumDiff;
 
-  const normPoints: number[][] = Array.from(coords, (coord) => [
+  const normPoints: number[][] = coords.map((coord) => [
     (coord[0] - meanX) * s,
     (coord[1] - meanY) * s,
   ]);

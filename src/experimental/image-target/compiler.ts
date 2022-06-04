@@ -30,7 +30,7 @@ class Compiler {
   public compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
-      const targetImages: ImageData[] = Array.from(images, (image) => {
+      const targetImages: ImageData[] = images.map((image) => {
         const processCanvas = Helper.castTo<HTMLCanvasElement>(document.createElement('canvas'));
         processCanvas.width = image.width;
         processCanvas.height = image.height;
@@ -82,8 +82,9 @@ class Compiler {
         })
       );
 
-      for (let i = 0; i < targetImages.length; i++) {
-        const trackingImageList = buildTrackingImageList(targetImages[i]);
+      for (const [i, targetImage] of targetImages.entries()) {
+        const trackingImageList = buildTrackingImageList(targetImage);
+
         this.data[i].trackingImageList = trackingImageList;
       }
 
@@ -113,8 +114,8 @@ class Compiler {
 
       const trackingDataList = await compileTrack();
 
-      for (let i = 0; i < targetImages.length; i++) {
-        this.data[i].trackingData = trackingDataList[i];
+      for (const [i, trackingData] of trackingDataList.entries()) {
+        this.data[i].trackingData = trackingData;
       }
 
       resolve(this.data);
@@ -123,7 +124,7 @@ class Compiler {
 
   // not exporting imageList because too large. rebuild this using targetImage
   public exportData() {
-    const dataList = Array.from(this.data, (data) => ({
+    const dataList: IDataList[] = this.data.map((data) => ({
       targetImage: {
         width: data.targetImage.width,
         height: data.targetImage.height,
@@ -153,7 +154,7 @@ class Compiler {
 
     const { dataList } = content;
 
-    this.data = Array.from(dataList, (data) => data as ICompilerData);
+    this.data = dataList.map((data) => data as ICompilerData);
 
     return this.data;
   }
@@ -164,8 +165,7 @@ class Compiler {
   ) {
     const keyframes: IKeyFrame[] = [];
 
-    for (let i = 0; i < imageList.length; i++) {
-      const image = imageList[i];
+    for (const [i, image] of imageList.entries()) {
       // TODO: can improve performance greatly if reuse the same detector. just need to handle resizing the kernel outputs
       const detector = new Detector(image.width, image.height);
 

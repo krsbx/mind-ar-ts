@@ -119,8 +119,7 @@ const _getMatchesPoint = (options: { keyframe: IKeyFrame; querypoints: IMaximaMi
 
   const matches: IMatches[] = [];
 
-  for (let j = 0; j < querypoints.length; j++) {
-    const querypoint = querypoints[j];
+  for (const querypoint of querypoints) {
     const keypoints = querypoint.maxima ? keyframe.maximaPoints : keyframe.minimaPoints;
 
     if (keypoints.length === 0) continue;
@@ -175,8 +174,7 @@ const _getMatchesPoint2 = (options: {
   const dThreshold = 10 ** 2;
   const matches = [];
 
-  for (let j = 0; j < querypoints.length; j++) {
-    const querypoint = querypoints[j];
+  for (const querypoint of querypoints) {
     const mapquerypoint = multiplyPointHomographyInhomogenous([querypoint.x, querypoint.y], HInv);
 
     let bestIndex = -1;
@@ -185,9 +183,7 @@ const _getMatchesPoint2 = (options: {
 
     const keypoints = querypoint.maxima ? keyframe.maximaPoints : keyframe.minimaPoints;
 
-    for (let k = 0; k < keypoints.length; k++) {
-      const keypoint = keypoints[k];
-
+    for (const [k, keypoint] of keypoints.entries()) {
       // check distance threshold
       const d2 = (keypoint.x - mapquerypoint[0]) ** 2 + (keypoint.y - mapquerypoint[1]) ** 2;
       if (d2 > dThreshold) continue;
@@ -239,8 +235,7 @@ const _query = ({
 
   const distances: number[] = [];
 
-  for (let i = 0; i < node.children.length; i++) {
-    const childNode = node.children[i];
+  for (const childNode of node.children) {
     const centerPointIndex = childNode.centerPointIndex;
 
     if (Helper.isNil(centerPointIndex)) continue;
@@ -255,15 +250,15 @@ const _query = ({
 
   const minD = Math.min(Number.MAX_SAFE_INTEGER, ...distances);
 
-  for (let i = 0; i < node.children.length; i++) {
+  for (const [i, childNode] of node.children.entries()) {
     if (distances[i] !== minD) {
-      queue.push({ node: node.children[i], d: distances[i] });
+      queue.push({ node: childNode, d: distances[i] });
     }
   }
 
-  for (let i = 0; i < node.children.length; i++) {
+  for (const [i, childNode] of node.children.entries()) {
     if (distances[i] === minD) {
-      _query({ node: node.children[i], keypoints, querypoint, queue, keypointIndexes, numPop });
+      _query({ node: childNode, keypoints, querypoint, queue, keypointIndexes, numPop });
     }
   }
 
@@ -286,8 +281,8 @@ const _findInlierMatches = (options: { H: number[]; matches: IMatches[]; thresho
 
   const goodMatches: IMatches[] = [];
 
-  for (let i = 0; i < matches.length; i++) {
-    const { querypoint, keypoint } = matches[i];
+  for (const match of matches) {
+    const { querypoint, keypoint } = match;
 
     const mp = multiplyPointHomographyInhomogenous([keypoint.x, keypoint.y], H);
 
@@ -296,7 +291,7 @@ const _findInlierMatches = (options: { H: number[]; matches: IMatches[]; thresho
       (mp[1] - querypoint.y) * (mp[1] - querypoint.y);
 
     if (d2 <= thresholdSqr) {
-      goodMatches.push(matches[i]);
+      goodMatches.push(match);
     }
   }
 
