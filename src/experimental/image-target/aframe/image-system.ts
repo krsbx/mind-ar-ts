@@ -83,7 +83,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   _registerEventListener: function () {
     // Subcribe to the targetFound event
     // This event is fired when the target is found
-    this.el.addEventListener(AR_EVENT_NAME.MARKER_FOUND, this.ui.hideScanning.bind(this));
+    this.el.addEventListener(AR_EVENT_NAME.MARKER_FOUND, () => {
+      this.ui.hideScanning();
+    });
 
     // Subcribe to the targetFound event
     // This event is fired when the target is found
