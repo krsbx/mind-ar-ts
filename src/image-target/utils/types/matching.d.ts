@@ -1,24 +1,22 @@
 import { createRandomizer } from '../randomizer';
 
-interface INode {
+export interface INode {
   leaf: boolean;
   centerPointIndex: number | null;
   pointIndexes: number[];
   children: INode[];
 }
 
-interface IQueryBinLocation {
+export interface IQueryBinLocation {
   binX: number;
   binY: number;
   binAngle: number;
   binScale: number;
 }
 
-interface INodeQueue {
+export interface INodeQueue {
   node: INode;
   d: number;
 }
 
-type RandomizerType = ReturnType<typeof createRandomizer>;
-
-export type { INode, RandomizerType, IQueryBinLocation, INodeQueue };
+export type RandomizerType = ReturnType<typeof createRandomizer>;

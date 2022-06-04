@@ -1,17 +1,17 @@
 import { IMaximaMinimaPoint } from './compiler';
 
-interface IMatches {
+export interface IMatches {
   querypoint: IMaximaMinimaPoint;
   keypoint: IMaximaMinimaPoint;
 }
 
-interface ICrop {
+export interface ICrop {
   startX: number;
   startY: number;
   cropSize: number;
 }
 
-interface IDebugExtra {
+export interface IDebugExtra {
   pyramidImages: number[][];
   dogPyramidImages: number[][] | null[][];
   extremasResults: number[];
@@ -30,5 +30,3 @@ interface IDebugExtra {
   goodTrack: number[];
   trackedPoints: Vector2[];
 }
-
-export type { ICrop, IDebugExtra, IMatches };

@@ -2,17 +2,17 @@ import { OneEuroFilter } from '../../../libs/one-euro-filter';
 import { ON_UPDATE_EVENT, WORKER_EVENT } from '../constant/controller';
 import { IKeyFrame, IMaximaMinimaPoint } from './compiler';
 
-type WorkerEvent = typeof WORKER_EVENT[keyof typeof WORKER_EVENT];
+export type WorkerEvent = typeof WORKER_EVENT[keyof typeof WORKER_EVENT];
 
-type OnUpdateEvent = typeof ON_UPDATE_EVENT[keyof typeof ON_UPDATE_EVENT];
+export type OnUpdateEvent = typeof ON_UPDATE_EVENT[keyof typeof ON_UPDATE_EVENT];
 
-interface IOnUpdate {
+export interface IOnUpdate {
   type: typeof ON_UPDATE_EVENT[keyof typeof ON_UPDATE_EVENT];
   targetIndex?: number | null;
   worldMatrix?: number[] | null;
 }
 
-interface IControllerWorkerResult {
+export interface IControllerWorkerResult {
   SETUP: void;
   MATCH: {
     targetIndex: number;
@@ -24,7 +24,7 @@ interface IControllerWorkerResult {
   };
 }
 
-interface IControllerWorker {
+export interface IControllerWorker {
   SETUP: {
     type: typeof WORKER_EVENT.SETUP;
     inputWidth: number;
@@ -46,7 +46,7 @@ interface IControllerWorker {
   };
 }
 
-interface ITrackingState {
+export interface ITrackingState {
   showing: boolean;
   isTracking: boolean;
   currentModelViewTransform: number[][] | null;
@@ -56,17 +56,7 @@ interface ITrackingState {
   trackingMatrix: number[] | null;
 }
 
-interface ITrackingCoords {
+export interface ITrackingCoords {
   screenCoords: Vector2[];
   worldCoords: Vector3[];
 }
-
-export type {
-  WorkerEvent,
-  OnUpdateEvent,
-  IOnUpdate,
-  ITrackingState,
-  ITrackingCoords,
-  IControllerWorker,
-  IControllerWorkerResult,
-};
