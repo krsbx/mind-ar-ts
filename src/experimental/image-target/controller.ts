@@ -503,17 +503,23 @@ class Controller {
     return modelViewTransform2;
   }
 
-  private async _workerTrackUpdate(modelViewTransform: number[][], trackFeatures: ITrackingCoords) {
+  private async _workerTrackUpdate(
+    modelViewTransform: number[][],
+    trackingFeatures: ITrackingCoords
+  ) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<number[][]>(async (resolve) => {
       this.workerTrackDone = (data: IControllerWorkerResult['TRACK_UPDATE']) => {
         resolve(data.modelViewTransform);
       };
 
+      const { worldCoords, screenCoords } = trackingFeatures;
+
       this.worker.postMessage({
         type: WORKER_EVENT.TRACK_UPDATE,
         modelViewTransform,
-        trackFeatures,
+        screenCoords,
+        worldCoords,
       });
     });
   }

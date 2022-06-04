@@ -46,12 +46,12 @@ class Detector {
 
     let numOctaves = 0;
 
-    while (numOctaves >= PYRAMID_MIN_SIZE && height >= PYRAMID_MIN_SIZE) {
+    while (width >= PYRAMID_MIN_SIZE && height >= PYRAMID_MIN_SIZE) {
       width /= 2;
       height /= 2;
       numOctaves++;
 
-      if (numOctaves >= PYRAMID_MAX_OCTAVE) break;
+      if (numOctaves === PYRAMID_MAX_OCTAVE) break;
     }
 
     this.numOctaves = numOctaves;
@@ -63,10 +63,10 @@ class Detector {
   public detectImageData(imageData: number[]) {
     const arr = new Uint8ClampedArray(4 * imageData.length);
 
-    for (let i = 0; i < imageData.length; i++) {
-      arr[4 * i] = imageData[i];
-      arr[4 * i + 1] = imageData[i];
-      arr[4 * i + 2] = imageData[i];
+    for (const [i, imgData] of imageData.entries()) {
+      arr[4 * i] = imgData;
+      arr[4 * i + 1] = imgData;
+      arr[4 * i + 2] = imgData;
       arr[4 * i + 3] = 255;
     }
 
@@ -86,6 +86,7 @@ class Detector {
         image1T = this._downsampleBilinear(pyramidImagesT[i - 1][pyramidImagesT[i - 1].length - 1]);
 
       const image2T = this._applyFilter(image1T);
+
       pyramidImagesT.push([image1T, image2T]);
     }
 
@@ -94,12 +95,11 @@ class Detector {
 
   // Build difference-of-gaussian (dog) pyramid
   private _buildDogPyramid(pyramidImagesT: Tensor[][]) {
-    const dogPyramidImagesT: Tensor[] = [];
-
-    for (let i = 0; i < this.numOctaves; i++) {
+    const dogPyramidImagesT: Tensor[] = Array.from({ length: this.numOctaves }, (_, i) => {
       const dogImageT = this._differenceImageBinomial(pyramidImagesT[i][0], pyramidImagesT[i][1]);
-      dogPyramidImagesT.push(dogImageT);
-    }
+
+      return dogImageT;
+    });
 
     return dogPyramidImagesT;
   }
@@ -128,10 +128,10 @@ class Detector {
   ) {
     const featurePoints: IMaximaMinimaPoint[] = [];
 
-    for (let i = 0; i < prunedExtremasArr.length; i++) {
-      if (prunedExtremasArr[i][0] === 0) continue;
+    for (const [i, prunedExtremas] of prunedExtremasArr.entries()) {
+      if (prunedExtremas[0] === 0) continue;
 
-      const descriptors = [];
+      const descriptors: number[] = [];
 
       for (let m = 0; m < freakDescriptorsArr[i].length; m += 4) {
         const v1 = freakDescriptorsArr[i][m];
@@ -145,20 +145,20 @@ class Detector {
         descriptors.push(combined);
       }
 
-      const octave = prunedExtremasArr[i][1];
-      const y = prunedExtremasArr[i][2];
-      const x = prunedExtremasArr[i][3];
+      const octave = prunedExtremas[1];
+      const y = prunedExtremas[2];
+      const x = prunedExtremas[3];
       const originalX = x * Math.pow(2, octave) + Math.pow(2, octave - 1) - 0.5;
       const originalY = y * Math.pow(2, octave) + Math.pow(2, octave - 1) - 0.5;
       const scale = Math.pow(2, octave);
 
       featurePoints.push({
-        maxima: prunedExtremasArr[i][0] > 0,
+        maxima: prunedExtremas[0] > 0,
         x: originalX,
         y: originalY,
-        scale: scale,
+        scale,
         angle: extremaAnglesArr[i],
-        descriptors: descriptors,
+        descriptors,
       });
     }
 
@@ -477,23 +477,23 @@ class Detector {
 
         for (let y = -radiusCeil; y <= radiusCeil; y++) {
           for (let x = -radiusCeil; x <= radiusCeil; x++) {
-            const distance = Math.sqrt(x ** 2 + y ** 2);
+            const distance = x ** 2 + y ** 2;
 
-            // // may just assign w = 1 will do, this could be over complicated.
-            // if (distance ** 2 <= radius ** 2) {
-            //   const _x = distance ** 2 * gwScale;
-            //   // fast expontenial approx
-            //   const w =
-            //     (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
-            //     0.0013888888;
-            //   radialProperties.push([y, x, w]);
-            // }
+            // may just assign w = 1 will do, this could be over complicated.
+            if (distance ** 2 <= radius ** 2) {
+              const _x = distance ** 2 * gwScale;
+              // fast expontenial approx
+              const w =
+                (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
+                0.0013888888;
+              radialProperties.push([y, x, w]);
+            }
 
-            if (distance > radius) continue;
+            // if (distance > radius) continue;
 
-            const w = Math.exp(gwScale * distance ** 2);
+            // const w = Math.exp(gwScale * distance ** 2);
 
-            radialProperties.push([x, y, w]);
+            // radialProperties.push([x, y, w]);
           }
         }
 
@@ -639,7 +639,7 @@ class Detector {
     return tfTidy(() => {
       const program = this.kernelCaches.upsampleBilinear[kernelKey];
 
-      return this._compileAndRun(program, [image, targetImage]);
+      return this._compileAndRun(program, [image]);
     });
   }
 
