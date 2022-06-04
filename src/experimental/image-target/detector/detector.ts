@@ -95,11 +95,13 @@ class Detector {
 
   // Build difference-of-gaussian (dog) pyramid
   private _buildDogPyramid(pyramidImagesT: Tensor[][]) {
-    const dogPyramidImagesT: Tensor[] = Array.from({ length: this.numOctaves }, (_, i) => {
+    const dogPyramidImagesT: Tensor[] = [];
+
+    for (let i = 0; i < this.numOctaves; i++) {
       const dogImageT = this._differenceImageBinomial(pyramidImagesT[i][0], pyramidImagesT[i][1]);
 
-      return dogImageT;
-    });
+      dogPyramidImagesT.push(dogImageT);
+    }
 
     return dogPyramidImagesT;
   }
@@ -165,7 +167,7 @@ class Detector {
     return featurePoints;
   }
 
-  public detect(inputImageT: Tensor) {
+  public async detect(inputImageT: Tensor) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const pyramidImagesT = this._buildPyramidImage(inputImageT);
@@ -193,18 +195,22 @@ class Detector {
     // compute the binary descriptors
     const freakDescriptorsT = this._computeFreakDescriptors(extremaFreaksT);
 
-    const prunedExtremasArr = prunedExtremasT.arraySync() as number[][];
-    const extremaAnglesArr = extremaAnglesT.arraySync() as number[];
-    const freakDescriptorsArr = freakDescriptorsT.arraySync() as number[][];
+    const prunedExtremasArr = (await prunedExtremasT.array()) as number[][];
+    const extremaAnglesArr = (await extremaAnglesT.array()) as number[];
+    const freakDescriptorsArr = (await freakDescriptorsT.array()) as number[][];
 
     if (this.debugMode) {
       debugExtra = {
-        pyramidImages: pyramidImagesT.map((ts) => ts.map((t) => t.arraySync())) as number[][],
-        dogPyramidImages: dogPyramidImagesT.map((t) => (t?.arraySync() as number[]) ?? null),
-        extremasResults: extremasResultsT.map((t) => t.arraySync()) as number[],
-        extremaAngles: extremaAnglesT.arraySync() as number[],
+        pyramidImages: (await Promise.all(
+          pyramidImagesT.map(async (ts) => await Promise.all(ts.map((t) => t.array())))
+        )) as number[][],
+        dogPyramidImages: await Promise.all(
+          dogPyramidImagesT.map(async (t) => ((await t?.array()) as number[]) ?? null)
+        ),
+        extremasResults: (await Promise.all(extremasResultsT.map((t) => t.array()))) as number[],
+        extremaAngles: (await extremaAnglesT.array()) as number[],
         prunedExtremas: prunedExtremasList,
-        localizedExtremas: prunedExtremasT.arraySync() as number[][],
+        localizedExtremas: (await prunedExtremasT.array()) as number[][],
       } as IDebugExtra;
     }
 
@@ -428,8 +434,8 @@ class Detector {
         prunedExtrema[3],
       ]);
 
-      for (let i = 0; i < localizedExtremas.length; i++) {
-        if (localizedExtremas[i][0] === 0) continue;
+      for (const [i, localizedExtrema] of localizedExtremas.entries()) {
+        if (localizedExtrema[0] === 0) continue;
 
         const pixel = pixels[i];
         const dx = 0.5 * (pixel[1][2] - pixel[1][0]);
@@ -442,13 +448,13 @@ class Detector {
         const ux = (dyy * -dx + -dxy * -dy) / det;
         const uy = (-dxy * -dx + dxx * -dy) / det;
 
-        const newY = localizedExtremas[i][2] + uy;
-        const newX = localizedExtremas[i][3] + ux;
+        const newY = localizedExtrema[2] + uy;
+        const newX = localizedExtrema[3] + ux;
 
         if (Math.abs(det) < 0.0001) continue;
 
-        localizedExtremas[i][2] = newY;
-        localizedExtremas[i][3] = newX;
+        localizedExtrema[2] = newY;
+        localizedExtrema[3] = newX;
       }
 
       return tfTensor(
@@ -477,23 +483,13 @@ class Detector {
 
         for (let y = -radiusCeil; y <= radiusCeil; y++) {
           for (let x = -radiusCeil; x <= radiusCeil; x++) {
-            const distance = x ** 2 + y ** 2;
+            const distance = Math.sqrt(x ** 2 + y ** 2);
 
-            // may just assign w = 1 will do, this could be over complicated.
-            if (distance ** 2 <= radius ** 2) {
-              const _x = distance ** 2 * gwScale;
-              // fast expontenial approx
-              const w =
-                (720 + _x * (720 + _x * (360 + _x * (120 + _x * (30 + _x * (6 + _x)))))) *
-                0.0013888888;
-              radialProperties.push([y, x, w]);
-            }
+            if (distance > radius) continue;
 
-            // if (distance > radius) continue;
+            const w = Math.exp(gwScale * distance ** 2);
 
-            // const w = Math.exp(gwScale * distance ** 2);
-
-            // radialProperties.push([x, y, w]);
+            radialProperties.push([x, y, w]);
           }
         }
 

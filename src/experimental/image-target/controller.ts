@@ -191,7 +191,7 @@ class Controller {
   }
 
   private async _detectAndMatch(inputT: Tensor, targetIndexes: number[]) {
-    const { featurePoints } = this.cropDetector.detectMoving(inputT);
+    const { featurePoints } = await this.cropDetector.detectMoving(inputT);
 
     const { targetIndex: matchedTargetIndex, modelViewTransform } = await this._workerMatch(
       featurePoints,
