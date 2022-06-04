@@ -1,13 +1,13 @@
 import { CumulativeSum } from '../../utils/cumsum';
 
-interface IBaseOptions {
+export interface IBaseOptions {
   image: ImageData;
   imageDataCumsum: CumulativeSum;
   imageDataSqrCumsum: CumulativeSum;
   sdThresh: number;
 }
 
-interface IOptions extends IBaseOptions {
+export interface IOptions extends IBaseOptions {
   featureMap: Float32Array;
   templateSize: number;
   searchSize: number;
@@ -16,7 +16,7 @@ interface IOptions extends IBaseOptions {
   minSimThresh: number;
 }
 
-interface ISimiliarityOptions extends Omit<IBaseOptions, 'sdThresh'> {
+export interface ISimiliarityOptions extends Omit<IBaseOptions, 'sdThresh'> {
   cx: number;
   cy: number;
   tx: number;
@@ -24,6 +24,4 @@ interface ISimiliarityOptions extends Omit<IBaseOptions, 'sdThresh'> {
   vlen: number;
 }
 
-interface ITemplateOptions extends IBaseOptions, Pick<ISimiliarityOptions, 'cx' | 'cy'> {}
-
-export type { IOptions, ISimiliarityOptions, ITemplateOptions };
+export interface ITemplateOptions extends IBaseOptions, Pick<ISimiliarityOptions, 'cx' | 'cy'> {}
