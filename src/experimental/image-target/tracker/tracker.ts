@@ -34,10 +34,6 @@ class Tracker {
   private imagePixelsListT: Tensor[];
   private imagePropertiesListT: Tensor[];
 
-  // Tensorflow related
-  private engine: ReturnType<typeof tfEngine>;
-  private backend: MathBackendWebGL;
-
   constructor(
     _markerDimensions: number[][],
     trackingDataList: ITrackingFeature[][],
@@ -72,10 +68,6 @@ class Tracker {
     }
 
     this.kernelCaches = {};
-
-    // Create the instance for the tensorflow backend and engine
-    this.backend = tfBackend() as MathBackendWebGL;
-    this.engine = tfEngine();
   }
 
   public dummyRun(inputT: Tensor) {
@@ -291,9 +283,9 @@ class Tracker {
   }
 
   private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
-    const outInfo = this.backend.compileAndRun(program, inputs);
+    const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
 
-    return this.engine.makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

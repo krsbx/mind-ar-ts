@@ -13,10 +13,8 @@ class InputLoader {
   private height: number;
   private texShape: [number, number];
   private context: CanvasRenderingContext2D;
-  private backend: MathBackendWebGL;
   private program: GPGPUProgram;
   private tempPixelHandle: TensorInfo;
-  private engine: ReturnType<typeof tfEngine>;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -30,25 +28,26 @@ class InputLoader {
     context.canvas.height = height;
     this.context = context;
 
-    this.engine = tfEngine();
-    this.backend = tfBackend() as MathBackendWebGL;
     this.program = this.buildProgram(width, height);
 
+    const backend = tfBackend() as MathBackendWebGL;
+
     //this.tempPixelHandle = backend.makeTensorInfo(this.texShape, 'int32');
-    this.tempPixelHandle = this.backend.makeTensorInfo(this.texShape, 'float32');
+    this.tempPixelHandle = backend.makeTensorInfo(this.texShape, 'float32');
 
     // warning!!!
     // usage type should be TextureUsage.PIXELS, but tfjs didn't export this enum type, so we hard-coded 2 here
     //   i.e. backend.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
-    this.backend.texData.get(this.tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
+    backend.texData.get(this.tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
   }
 
   // input is instance of HTMLVideoElement or HTMLImageElement
   public loadInput(input: CanvasImageSource) {
     this.context.drawImage(input, 0, 0, this.width, this.height);
 
-    this.backend.gpgpu.uploadPixelDataToTexture(
-      this.backend.getTexture(this.tempPixelHandle.dataId),
+    const backend = tfBackend() as MathBackendWebGL;
+    backend.gpgpu.uploadPixelDataToTexture(
+      backend.getTexture(this.tempPixelHandle.dataId),
       this.context.canvas
     );
 
@@ -79,8 +78,8 @@ class InputLoader {
   }
 
   private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
-    const outInfo = this.backend.compileAndRun(program, inputs);
-    return this.engine.makeTensorFromTensorInfo(outInfo);
+    const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 

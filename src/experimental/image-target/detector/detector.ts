@@ -34,10 +34,6 @@ class Detector {
   private height: number;
   private numOctaves: number;
 
-  // Tensorflow related
-  private engine: ReturnType<typeof tfEngine>;
-  private backend: MathBackendWebGL;
-
   /* eslint-disable @typescript-eslint/no-explicit-any */
   private tensorCaches: Record<any, any>;
   private kernelCaches: Record<any, any>;
@@ -62,10 +58,6 @@ class Detector {
 
     this.tensorCaches = {};
     this.kernelCaches = {};
-
-    // Create the instance for the tensorflow backend and engine
-    this.backend = tfBackend() as MathBackendWebGL;
-    this.engine = tfEngine();
   }
 
   public detectImageData(imageData: number[]) {
@@ -242,9 +234,9 @@ class Detector {
   private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
     // Reuse the backend and engine
     // By doing this we doesnt need to create a new backend and engine for each detection
-    const outInfo = this.backend.compileAndRun(program, inputs);
+    const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
 
-    return this.engine.makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 
   private _applyPrune(extremasResultsT: Tensor[]) {
@@ -695,9 +687,9 @@ class Detector {
   ) {
     // Reuse the backend and engine
     // By doing this we doesnt need to create a new backend and engine for each detection
-    const outInfo = this.backend.runWebGLProgram(program, inputs, outputType);
+    const outInfo = (tfBackend() as MathBackendWebGL).runWebGLProgram(program, inputs, outputType);
 
-    return this.engine.makeTensorFromTensorInfo(outInfo);
+    return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 
