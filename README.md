@@ -1,5 +1,5 @@
-# :warning: Support for Image Target will be drop for the time being, Image Target will be re-work in the experimental folder
-
+# :warning: Image Target is under heavy development :warning:
+Image target need to be re-written since it has a slow performance issue and the development one can be found in [image-target branch](https://github.com/krsbx/mind-ar-ts/tree/image-target). Image Target in the [image-target branch](https://github.com/krsbx/mind-ar-ts/tree/image-target) is much better in than in the [main branch](https://github.com/krsbx/mind-ar-ts/tree/main) at the momment but need to fix the slow response for tracking
 
 # MindAR
 
