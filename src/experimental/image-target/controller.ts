@@ -6,7 +6,6 @@ import Compiler from './compiler';
 import InputLoader from './input-loader';
 import { Helper, OneEuroFilter } from '../../libs';
 import ProdControllerWorker from './controller.worker.ts';
-import ControllerWorker from './controller.worker';
 import { IS_PRODUCTION } from '../../utils/constant';
 import { ControllerConstructor } from '../../image-target/utils/types/image-target';
 import {
@@ -101,7 +100,9 @@ class Controller {
       far,
     });
 
-    this.worker = IS_PRODUCTION ? new ProdControllerWorker() : new ControllerWorker();
+    this.worker = IS_PRODUCTION
+      ? new ProdControllerWorker()
+      : new Worker('/src/experimental/image-target/controller.worker.ts', { type: 'module' });
 
     this.workerMatchDone = null;
     this.workerTrackDone = null;
@@ -190,7 +191,7 @@ class Controller {
   }
 
   private async _detectAndMatch(inputT: Tensor, targetIndexes: number[]) {
-    const { featurePoints } = await this.cropDetector.detectMoving(inputT);
+    const { featurePoints } = this.cropDetector.detectMoving(inputT);
 
     const { targetIndex: matchedTargetIndex, modelViewTransform } = await this._workerMatch(
       featurePoints,

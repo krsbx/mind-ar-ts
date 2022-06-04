@@ -91,7 +91,7 @@ class Tracker {
     }
   }
 
-  public async track(inputImageT: Tensor, lastModelViewTransform: number[][], targetIndex: number) {
+  public track(inputImageT: Tensor, lastModelViewTransform: number[][], targetIndex: number) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const modelViewProjectionTransform = buildModelViewProjectionTransform(
@@ -120,8 +120,8 @@ class Tracker {
       projectedImageT
     );
 
-    const matchingPoints = (await matchingPointsT.array()) as number[][];
-    const sim = (await simT.array()) as number[];
+    const matchingPoints = matchingPointsT.arraySync() as number[][];
+    const sim = simT.arraySync() as number[];
 
     const trackingFrame = this.trackingKeyframeList[targetIndex];
     const worldCoords = [];
@@ -150,7 +150,7 @@ class Tracker {
 
     if (this.debugMode) {
       debugExtra = {
-        projectedImage: (await projectedImageT.array()) as number[][],
+        projectedImage: projectedImageT.arraySync() as number[][],
         matchingPoints,
         trackedPoints: screenCoords,
         goodTrack,

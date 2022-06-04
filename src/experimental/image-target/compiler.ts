@@ -1,7 +1,6 @@
 import { tensor as tfTensor, tidy as tfTidy, nextFrame as tfNextFrame } from '@tensorflow/tfjs';
 import * as msgpack from '@msgpack/msgpack';
 import ProdCompilerWorker from './compiler.worker.ts';
-import CompilerWorker from './compiler.worker';
 import { buildImageList, buildTrackingImageList } from './image-list';
 import hierarchicalClusteringBuild from './matching/hierarchical-clustering';
 import { IS_PRODUCTION } from '../../utils/constant';
@@ -28,10 +27,7 @@ class Compiler {
   }
 
   // input html Images
-  public async compileImageTargets(
-    images: ImageBitmap[],
-    progressCallback: (progress: number) => void
-  ) {
+  public compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
       const targetImages: ImageData[] = Array.from(images, (image) => {
@@ -94,7 +90,9 @@ class Compiler {
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
         return new Promise<ITrackingFeature[][]>((resolve) => {
-          const worker = IS_PRODUCTION ? new ProdCompilerWorker() : new CompilerWorker();
+          const worker = IS_PRODUCTION
+            ? new ProdCompilerWorker()
+            : new Worker('/src/experimental/image-target/compiler.worker.ts', { type: 'module' });
           worker.onmessage = (e: {
             data: { type: string; percent: number; list: ITrackingFeature[][] };
           }) => {
@@ -164,10 +162,10 @@ class Compiler {
     imageList: ImageDataWithScale[],
     doneCallback: (iteration: number) => void
   ) {
-    const keyframesPromises: ReturnType<Detector['detect']>[] = [];
     const keyframes: IKeyFrame[] = [];
 
-    for (const image of imageList) {
+    for (let i = 0; i < imageList.length; i++) {
+      const image = imageList[i];
       // TODO: can improve performance greatly if reuse the same detector. just need to handle resizing the kernel outputs
       const detector = new Detector(image.width, image.height);
 
@@ -179,30 +177,25 @@ class Compiler {
           image.width,
         ]);
 
-        keyframesPromises.push(detector.detect(inputT));
+        const { featurePoints: ps } = detector.detect(inputT);
+
+        const maximaPoints = ps.filter((p) => p.maxima);
+        const minimaPoints = ps.filter((p) => !p.maxima);
+        const maximaPointsCluster = hierarchicalClusteringBuild({ points: maximaPoints });
+        const minimaPointsCluster = hierarchicalClusteringBuild({ points: minimaPoints });
+
+        keyframes.push({
+          maximaPoints,
+          minimaPoints,
+          maximaPointsCluster,
+          minimaPointsCluster,
+          width: image.width,
+          height: image.height,
+          scale: image.scale,
+        });
+
+        doneCallback(i);
       });
-    }
-
-    for (let i = 0; i < keyframesPromises.length; i++) {
-      const { featurePoints: ps } = await keyframesPromises[i];
-      const image = imageList[i];
-
-      const maximaPoints = ps.filter((p) => p.maxima);
-      const minimaPoints = ps.filter((p) => !p.maxima);
-      const maximaPointsCluster = hierarchicalClusteringBuild({ points: maximaPoints });
-      const minimaPointsCluster = hierarchicalClusteringBuild({ points: minimaPoints });
-
-      keyframes.push({
-        maximaPoints,
-        minimaPoints,
-        maximaPointsCluster,
-        minimaPointsCluster,
-        width: image.width,
-        height: image.height,
-        scale: image.scale,
-      });
-
-      doneCallback(i);
     }
 
     return keyframes;
