@@ -1,13 +1,13 @@
 import { Estimator } from '../../face-geometry/estimator';
 
-type EstimateResult = ReturnType<Estimator['estimate']>;
+export type EstimateResult = ReturnType<Estimator['estimate']>;
 
-interface IOnUpdateArgs {
+export interface IOnUpdateArgs {
   hasFace?: boolean;
   estimateResult?: EstimateResult;
 }
 
-interface ThreeConstructor {
+export interface ThreeConstructor {
   container: HTMLDivElement;
   uiLoading?: string;
   uiScanning?: string;
@@ -17,13 +17,13 @@ interface ThreeConstructor {
   shouldFaceUser?: boolean;
 }
 
-interface IAnchor {
+export interface IAnchor {
   group: THREE.Group;
   landmarkIndex: number;
   css: boolean;
 }
 
-type Matrix4Args = readonly [
+export type Matrix4Args = readonly [
   number,
   number,
   number,
@@ -41,5 +41,3 @@ type Matrix4Args = readonly [
   number,
   number
 ];
-
-export type { ThreeConstructor, IAnchor, EstimateResult, IOnUpdateArgs, Matrix4Args };
