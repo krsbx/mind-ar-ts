@@ -8,9 +8,6 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   arSystem: null as any,
   el: null as any,
 
-  initialized: false,
-  isAdded: false,
-
   schema: {
     shouldFaceUser: { type: 'boolean', default: false },
     simulateAltitude: { type: 'number', default: 0 },
@@ -33,7 +30,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_CAMERA, {
   tick: function () {
     if (!this.arSystem || !this.arSystem.controller) return;
 
-    if (Helper.isNil(this.arSystem.controller.heading)) return;
+    if (Helper.isNil(this.arSystem.controller.camera.heading === null)) return;
 
     this.arSystem.controller.updateRotation();
   },

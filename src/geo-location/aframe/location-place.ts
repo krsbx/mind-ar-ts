@@ -10,9 +10,15 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.LOCATION_PLACE, {
     longitude: { type: 'number', default: 0 },
     latitude: { type: 'number', default: 0 },
     placeIndex: { type: 'number' },
+    minDistance: { type: 'number', default: -1 },
+    maxDistance: { type: 'number', default: -1 },
   },
 
   init: function () {
+    // Clamp minDistance and maxDistance
+    this.data.minDistance = Math.max(-1, this.data.minDistance);
+    this.data.maxDistance = Math.max(-1, this.data.maxDistance);
+
     // Trigger the event only after the camera is initialized
     this.el.sceneEl.addEventListener(SYSTEM_STATE.CAMERA_INITIALIZED, this.setup.bind(this));
     this.el.sceneEl.addEventListener(AR_EVENT_NAME.LOCATION_FOUND, this.onLocationFound.bind(this));

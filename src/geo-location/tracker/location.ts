@@ -3,6 +3,7 @@
 // * 2. The location/place
 
 import { Scene } from 'aframe';
+import { Helper } from '../../libs';
 import { Controller } from '../controller';
 import { AR_EVENT_NAME, AR_POSITION_MULTIPLIER } from '../utils/constant';
 import { formatDistance, getPositionMultiplier } from '../utils/distance';
@@ -17,6 +18,11 @@ class LocationTracker {
   private position: HaversineParams;
   private wasFound: boolean;
   private placeIndex: number;
+  // * We add a custom distance for specific location
+  // * by doing this, user can have a better experience
+  // * since multiple location can be visible at different distance
+  private minDistance: number;
+  private maxDistance: number;
 
   constructor({
     location,
@@ -25,6 +31,8 @@ class LocationTracker {
     controller,
     camera,
     placeIndex,
+    minDistance = -1,
+    maxDistance = -1,
   }: LocationTrackerConstructor) {
     this.location = location;
     this.latitude = latitude;
@@ -35,6 +43,8 @@ class LocationTracker {
       latitude,
       longitude,
     };
+    this.minDistance = minDistance;
+    this.maxDistance = maxDistance;
     this.placeIndex = placeIndex;
 
     this.wasFound = false;
@@ -50,24 +60,10 @@ class LocationTracker {
     );
   }
 
-  private _getCamera() {
-    if (!this.controller) return;
-
-    const camera = this.controller.camera;
-    if (!camera) return 'Location camera not found';
-
-    this.camera = camera.camera;
-    return;
-  }
-
   private _onPositionSet() {
     if (!this.camera) {
-      const res = this._getCamera();
-
-      if (res) {
-        console.error(res);
-        return;
-      }
+      console.error('Location camera not found');
+      return;
     }
 
     this._updatePosition();
@@ -76,12 +72,14 @@ class LocationTracker {
   private _onPositionUpdate(ev: Event) {
     if (!this.camera || !this.controller) return;
 
-    const dstCoords = {
-      longitude: this.longitude,
-      latitude: this.latitude,
+    if (!ev.detail.position) return;
+
+    const distanceToCompute = {
+      src: ev.detail.position,
+      dest: this.position,
     };
 
-    const distanceMsg = this.controller.computeDistance(ev.detail.position, dstCoords);
+    const distanceMsg = this.controller.computeDistance(distanceToCompute);
 
     this.location.setAttribute('distance', distanceMsg);
     this.location.setAttribute('distanceMsg', formatDistance(distanceMsg));
@@ -93,17 +91,22 @@ class LocationTracker {
       })
     );
 
-    const distance = this.controller.computeDistance(ev.detail.position, dstCoords, true);
+    const distance = this.controller.computeDistance({
+      ...distanceToCompute,
+      minDistance: this.minDistance,
+      maxDistance: this.maxDistance,
+      isPlace: true,
+    });
 
     this.hideForMinDistance(distance === Number.MAX_SAFE_INTEGER);
   }
 
   private _updatePosition() {
-    if (!this.controller || !this.controller.camera) return;
+    if (!this.controller || !this.camera) return;
 
     if (!this.controller.camera.originPosition) return;
 
-    const originPosition = this.controller.camera.originPosition;
+    const originPosition = Helper.deepClone(this.controller.camera.originPosition);
 
     const position = {
       x: 0,
@@ -111,21 +114,38 @@ class LocationTracker {
       z: 0,
     };
 
+    // Compute X Axis
     const dstCoordsX: HaversineParams = {
       longitude: this.longitude,
       latitude: originPosition.latitude,
     };
 
+    const distanceX = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsX,
+    });
+
+    position.x = distanceX;
+    position.x *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.X);
+
+    // Compute Z Axis
     const dstCoordsZ: HaversineParams = {
       longitude: originPosition.longitude,
       latitude: this.latitude,
     };
 
-    position.x = this.controller.computeDistance(originPosition, dstCoordsX);
-    position.x *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.X);
+    const distanceZ = this.controller.computeDistance({
+      src: originPosition,
+      dest: dstCoordsZ,
+    });
 
-    position.z = this.controller.computeDistance(originPosition, dstCoordsZ);
+    position.z = distanceZ;
     position.z *= getPositionMultiplier(originPosition, this.position, AR_POSITION_MULTIPLIER.Z);
+
+    if (position.y !== 0) {
+      const altitude = originPosition.altitude ?? 0;
+      position.y -= altitude;
+    }
 
     this.location.setAttribute('position', position);
   }

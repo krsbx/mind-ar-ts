@@ -40,7 +40,7 @@ const getPositionMultiplier = (
 ) => {
   switch (type) {
     case AR_POSITION_MULTIPLIER.X:
-      return dest.longitude > src.longitude ? -1 : 1;
+      return dest.longitude > src.longitude ? 1 : -1;
 
     case AR_POSITION_MULTIPLIER.Z:
       return dest.latitude > src.latitude ? -1 : 1;
