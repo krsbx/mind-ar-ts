@@ -9,10 +9,12 @@ import {
 } from './helper';
 
 class Estimator {
-  private near: number;
-  private frameHeight: number;
-  private frameWidth: number;
+  readonly near: number;
+  readonly far: number;
+  readonly frameHeight: number;
+  readonly frameWidth: number;
   private focalLength: number;
+  readonly fov: number;
   private top: number;
   private right: number;
   private bottom: number;
@@ -21,6 +23,7 @@ class Estimator {
 
   constructor(input: { height: number; width: number }) {
     const near = 1;
+    const far = 10000;
     const frameHeight = input.height;
     const frameWidth = input.width;
     const focalLength = frameWidth;
@@ -29,9 +32,11 @@ class Estimator {
     const nearWidth = (frameWidth * nearHeight) / frameHeight;
 
     this.near = near;
+    this.far = far;
     this.frameHeight = frameHeight;
     this.frameWidth = frameWidth;
     this.focalLength = focalLength;
+    this.fov = fov;
     this.left = -0.5 * nearWidth;
     this.right = 0.5 * nearWidth;
     this.bottom = -0.5 * nearHeight;
