@@ -1,9 +1,9 @@
 import { positions as canonicalMetricLandmarks, landmarkBasis } from './face-data';
 
-export const landmarkWeights = new Array(canonicalMetricLandmarks.length).fill(0);
+const landmarkWeights: number[] = Array(canonicalMetricLandmarks.length).fill(0);
 
-for (const [i, basis] of landmarkBasis.entries()) {
-  landmarkWeights[i] = basis;
+for (const [i, [, w]] of landmarkBasis.entries()) {
+  landmarkWeights[i] = w;
 }
 
 export const sqrtWeights = landmarkWeights.map((w) => Math.sqrt(w));

@@ -1,14 +1,16 @@
-import { FaceMesh, InputImage, Results } from '@mediapipe/face_mesh';
+import { FaceMesh, Results } from '@mediapipe/face_mesh';
 
 class FaceMeshHelper {
   private faceMesh: FaceMesh;
-  private detectResolve: ((results: Results) => void) | null;
+  private detectResolve: ((value: Results | PromiseLike<Results>) => void) | null;
 
   constructor() {
     this.detectResolve = null;
 
     this.faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${file}`,
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${file}`;
+      },
     });
 
     this.faceMesh.setOptions({
@@ -23,7 +25,7 @@ class FaceMeshHelper {
     });
   }
 
-  public async detect(input: InputImage) {
+  public async detect(input: HTMLVideoElement) {
     const results = await new Promise<Results>((resolve) => {
       this.detectResolve = resolve;
 
