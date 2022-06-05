@@ -44,7 +44,7 @@ class CropDetector {
     return result;
   }
 
-  public async detectMoving(inputImageT: Tensor) {
+  public detectMoving(inputImageT: Tensor) {
     // loop a few locations around center
     const dx = this.lastRandomIndex % 3;
     const dy = Math.floor(this.lastRandomIndex / 3);
@@ -59,21 +59,21 @@ class CropDetector {
 
     this.lastRandomIndex = (this.lastRandomIndex + 1) % 9;
 
-    const result = await this._detect(inputImageT, startX, startY);
+    const result = this._detect(inputImageT, startX, startY);
     return result;
   }
 
-  private async _detect(inputImageT: Tensor, startX: number, startY: number) {
+  private _detect(inputImageT: Tensor, startX: number, startY: number) {
     const cropInputImageT = inputImageT.slice([startY, startX], [this.cropSize, this.cropSize]);
 
-    const { featurePoints, debugExtra } = await this.detector.detect(cropInputImageT);
+    const { featurePoints, debugExtra } = this.detector.detect(cropInputImageT);
 
     featurePoints.forEach((p) => {
       p.x += startX;
       p.y += startY;
     });
 
-    if (this.debugMode) debugExtra.projectedImage = (await cropInputImageT.array()) as number[][];
+    if (this.debugMode) debugExtra.projectedImage = cropInputImageT.arraySync() as number[][];
 
     cropInputImageT.dispose();
 
