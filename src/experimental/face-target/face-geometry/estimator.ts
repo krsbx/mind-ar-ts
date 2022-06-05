@@ -62,7 +62,6 @@ class Estimator {
     this._changeHandedness(intermediateLandmarks);
 
     const secondIterationScale = this._estimateScale(intermediateLandmarks);
-
     const metricLandmarks = this._cloneLandmarks(screenLandmarks);
     const totalScale = firstIterationScale * secondIterationScale;
 
@@ -295,19 +294,19 @@ class Estimator {
 
     const twiceWeightedSources = [];
 
-    for (const [i, weightedSourcesRow] of weightedSources.entries()) {
+    for (let i = 0; i < weightedSources.length; i++) {
       twiceWeightedSources[i] = [
-        weightedSourcesRow[0] * sqrtWeights[i],
-        weightedSourcesRow[1] * sqrtWeights[i],
-        weightedSourcesRow[2] * sqrtWeights[i],
+        weightedSources[i][0] * sqrtWeights[i],
+        weightedSources[i][1] * sqrtWeights[i],
+        weightedSources[i][2] * sqrtWeights[i],
       ];
     }
 
     const sourceCenterOfMass = [0, 0, 0];
 
     for (let k = 0; k < 3; k++) {
-      for (const twiceWeightedSource of twiceWeightedSources) {
-        sourceCenterOfMass[k] += twiceWeightedSource[k];
+      for (let i = 0; i < twiceWeightedSources.length; i++) {
+        sourceCenterOfMass[k] += twiceWeightedSources[i][k];
       }
 
       sourceCenterOfMass[k] /= totalWeight;
@@ -379,11 +378,11 @@ class Estimator {
       }
     }
 
-    const translation = [0, 0, 0];
+    const translation: number[] = [0, 0, 0];
 
     for (let k = 0; k < 3; k++) {
-      for (const weightedPointwiseDiff of weightedPointwiseDiffs) {
-        sourceCenterOfMass[k] += weightedPointwiseDiff[k];
+      for (let i = 0; i < weightedPointwiseDiffs.length; i++) {
+        translation[k] += weightedPointwiseDiffs[i][k];
       }
 
       translation[k] /= totalWeight;
