@@ -167,7 +167,7 @@ class Detector {
     return featurePoints;
   }
 
-  public async detect(inputImageT: Tensor) {
+  public detect(inputImageT: Tensor) {
     let debugExtra: IDebugExtra = {} as IDebugExtra;
 
     const pyramidImagesT = this._buildPyramidImage(inputImageT);
@@ -195,22 +195,18 @@ class Detector {
     // compute the binary descriptors
     const freakDescriptorsT = this._computeFreakDescriptors(extremaFreaksT);
 
-    const prunedExtremasArr = (await prunedExtremasT.array()) as number[][];
-    const extremaAnglesArr = (await extremaAnglesT.array()) as number[];
-    const freakDescriptorsArr = (await freakDescriptorsT.array()) as number[][];
+    const prunedExtremasArr = prunedExtremasT.arraySync() as number[][];
+    const extremaAnglesArr = extremaAnglesT.arraySync() as number[];
+    const freakDescriptorsArr = freakDescriptorsT.arraySync() as number[][];
 
     if (this.debugMode) {
       debugExtra = {
-        pyramidImages: (await Promise.all(
-          pyramidImagesT.map(async (ts) => await Promise.all(ts.map((t) => t.array())))
-        )) as number[][],
-        dogPyramidImages: await Promise.all(
-          dogPyramidImagesT.map(async (t) => ((await t?.array()) as number[]) ?? null)
-        ),
-        extremasResults: (await Promise.all(extremasResultsT.map((t) => t.array()))) as number[],
-        extremaAngles: (await extremaAnglesT.array()) as number[],
+        pyramidImages: pyramidImagesT.map((ts) => ts.map((t) => t.arraySync())) as number[][],
+        dogPyramidImages: dogPyramidImagesT.map((t) => (t?.arraySync() as number[]) ?? null),
+        extremasResults: extremasResultsT.map((t) => t.arraySync()) as number[],
+        extremaAngles: extremaAnglesT.arraySync() as number[],
         prunedExtremas: prunedExtremasList,
-        localizedExtremas: (await prunedExtremasT.array()) as number[][],
+        localizedExtremas: prunedExtremasT.arraySync() as number[][],
       } as IDebugExtra;
     }
 
