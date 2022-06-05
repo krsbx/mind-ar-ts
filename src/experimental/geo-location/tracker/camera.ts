@@ -29,7 +29,7 @@ class CameraTracker {
   private lastPosition: HaversineParams;
   private currentPosition!: Coordinates;
   private heading: number | null;
-  private originPosition: Coordinates | null;
+  public originPosition: Coordinates | null;
   readonly isEmulated: boolean;
   readonly camera: Scene;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
