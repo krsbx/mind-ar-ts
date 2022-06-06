@@ -97,9 +97,9 @@ class CameraTracker {
 
     const heading = FULL_CIRCLE_DEG - this.heading;
     const cameraRotation = this.camera.getAttribute('rotation').y;
-    const yawaRotation = radToDeg(this.lookControls.yawObject.getAttribute('rotation').y);
+    const yawRotation = radToDeg(this.lookControls.yawObject.rotation.y);
 
-    const offset = (heading - cameraRotation - yawaRotation) % FULL_CIRCLE_DEG;
+    const offset = (heading - (cameraRotation - yawRotation)) % FULL_CIRCLE_DEG;
 
     this.lookControls.yawObject.rotation.y = degToRad(offset);
   }

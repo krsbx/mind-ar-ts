@@ -4,6 +4,7 @@ import {
   HaversineParams,
   LocationTrackerConstructor,
 } from '../../geo-location/utils/types/geo-location';
+import { Helper } from '../../libs';
 import CameraTracker from './tracker/camera';
 import LocationTracker from './tracker/location';
 
@@ -51,6 +52,16 @@ class Controller {
     if (isPlace && maxDist > 0 && distance > maxDist) return Number.MAX_SAFE_INTEGER;
 
     return distance;
+  }
+
+  public startAR() {
+    this.camera.startAR();
+  }
+
+  public updateRotation() {
+    if (Helper.isNil(this.camera)) return;
+
+    this.camera.updateRotation();
   }
 }
 
