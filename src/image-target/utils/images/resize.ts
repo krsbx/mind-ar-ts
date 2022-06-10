@@ -1,3 +1,5 @@
+import { Helper } from '../../../libs';
+
 const resize = ({ image, ratio }: { image: ImageData; ratio: number }) => {
   const width = Math.round(image.width * ratio);
   const height = Math.round(image.height * ratio);
@@ -29,7 +31,8 @@ const resize = ({ image, ratio }: { image: ImageData; ratio: number }) => {
       imageData[j * width + i] = Math.floor(sum / count);
     }
   }
-  return { data: imageData, width: width, height: height };
+
+  return Helper.castTo<ImageData>({ data: imageData, width: width, height: height });
 };
 
-export { resize };
+export default resize;

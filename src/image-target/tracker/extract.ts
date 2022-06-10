@@ -1,4 +1,5 @@
-import { CumulativeSum } from '../utils';
+import Cumsum from '../utils/cumsum';
+import { ImageDataWithScale } from '../utils/types/compiler';
 import {
   MAX_SIM_THRESH,
   MAX_THRESH,
@@ -11,7 +12,6 @@ import {
   TEMPLATE_SIZE,
 } from '../utils/constant/tracker';
 import { getSimilarity, selectFeature, templateVar } from './helper';
-import { ImageDataWithScale } from '../utils/types/compiler';
 
 /*
  * Input image is in grey format. the imageData array size is width * height. value range from 0-255
@@ -21,12 +21,12 @@ import { ImageDataWithScale } from '../utils/types/compiler';
  * @param {int} options.width image width
  * @param {int} options.height image height
  */
-const extract = (image: ImageDataWithScale) => {
-  const { data: imageData, width, height } = image;
+
+const extract = (image: ImageData | ImageDataWithScale) => {
+  const { data: imageData, height, width } = image;
 
   // Step 1 - filter out interesting points. Interesting points have strong pixel value changed across neighbours
-  const isPixelSelected: (number | boolean)[] = [width * height];
-
+  const isPixelSelected: (boolean | number)[] = [width * height];
   for (let i = 0; i < isPixelSelected.length; i++) isPixelSelected[i] = false;
 
   // Step 1.1 consider a pixel at position (x, y). compute:
@@ -34,7 +34,6 @@ const extract = (image: ImageDataWithScale) => {
   //   dy = ((data[x+1, y+1] - data[x+1, y-1]) + (data[x, y+1] - data[x, y-1]) + (data[x-1, y+1] - data[x-1, y-1])) / 256 / 3
   //   dValue =  sqrt(dx^2 + dy^2) / 2;
   const dValue = new Float32Array(imageData.length);
-
   for (let i = 0; i < width; i++) {
     dValue[i] = -1;
     dValue[width * (height - 1) + i] = -1;
@@ -66,9 +65,7 @@ const extract = (image: ImageDataWithScale) => {
 
   // Step 1.2 - select all pixel which is dValue largest than all its neighbour as "potential" candidate
   //  the number of selected points is still too many, so we use the value to further filter (e.g. largest the dValue, the better)
-  const dValueHist = new Uint32Array(1000); // histogram of dvalue scaled to [0, 1000)
-
-  for (let i = 0; i < 1000; i++) dValueHist[i] = 0;
+  const dValueHist = new Uint32Array(1000).fill(0); // histogram of dvalue scaled to [0, 1000)
 
   const neighbourOffsets = [-1, 1, -width, width];
 
@@ -99,13 +96,14 @@ const extract = (image: ImageDataWithScale) => {
   // reduce number of points according to dValue.
   // actually, the whole Step 1. might be better to just sort the dvalues and pick the top (0.02 * width * height) points
   const maxPoints = 0.02 * width * height;
-
   let k = 999;
   let filteredCount = 0;
 
   while (k >= 0) {
     filteredCount += dValueHist[k];
+
     if (filteredCount > maxPoints) break;
+
     k--;
   }
 
@@ -117,10 +115,10 @@ const extract = (image: ImageDataWithScale) => {
 
   // Step 2
   // prebuild cumulative sum matrix for fast computation
-  const imageDataSqr = Array.from({ length: imageData.length }, (_, i) => imageData[i] ** 2);
+  const imageDataSqr = imageData.map((imgData) => imgData ** 2);
 
-  const imageDataCumsum = new CumulativeSum(imageData, width, height);
-  const imageDataSqrCumsum = new CumulativeSum(imageDataSqr, width, height);
+  const imageDataCumsum = new Cumsum(imageData, width, height);
+  const imageDataSqrCumsum = new Cumsum(imageDataSqr, width, height);
 
   // holds the max similariliy value computed within SEARCH area of each pixel
   //   idea: if there is high simliarity with another pixel in nearby area, then it's not a good feature point
@@ -130,6 +128,7 @@ const extract = (image: ImageDataWithScale) => {
   for (let i = 0; i < width; i++) {
     for (let j = 0; j < height; j++) {
       const pos = j * width + i;
+
       if (!isPixelSelected[pos]) {
         featureMap[pos] = 1.0;
         continue;
@@ -140,8 +139,8 @@ const extract = (image: ImageDataWithScale) => {
         cx: i,
         cy: j,
         sdThresh: TEMPLATE_SD_THRESH,
-        imageDataCumsum,
-        imageDataSqrCumsum,
+        imageDataCumsum: imageDataCumsum as any,
+        imageDataSqrCumsum: imageDataSqrCumsum as any,
       });
 
       if (vlen === null) {
@@ -153,7 +152,7 @@ const extract = (image: ImageDataWithScale) => {
 
       for (let jj = -SEARCH_SIZE1; jj <= SEARCH_SIZE1; jj++) {
         for (let ii = -SEARCH_SIZE1; ii <= SEARCH_SIZE1; ii++) {
-          if (ii * ii + jj * jj <= SEARCH_SIZE2 * SEARCH_SIZE2) continue;
+          if (ii * ii + jj * jj <= SEARCH_SIZE2 ** 2) continue;
 
           const sim = getSimilarity({
             image,
@@ -162,14 +161,15 @@ const extract = (image: ImageDataWithScale) => {
             vlen: vlen,
             tx: i,
             ty: j,
-            imageDataCumsum,
-            imageDataSqrCumsum,
+            imageDataCumsum: imageDataCumsum as any,
+            imageDataSqrCumsum: imageDataSqrCumsum as any,
           });
 
           if (sim === null) continue;
 
           if (sim > max) {
             max = sim;
+
             if (max > MAX_SIM_THRESH) break;
           }
         }
@@ -191,11 +191,11 @@ const extract = (image: ImageDataWithScale) => {
     maxSimThresh: MAX_THRESH,
     minSimThresh: MIN_THRESH,
     sdThresh: SD_THRESH,
-    imageDataCumsum,
-    imageDataSqrCumsum,
+    imageDataCumsum: imageDataCumsum as any,
+    imageDataSqrCumsum: imageDataSqrCumsum as any,
   });
 
-  return coords as Vector2[];
+  return coords;
 };
 
-export { extract };
+export default extract;

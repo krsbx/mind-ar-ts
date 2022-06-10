@@ -1,4 +1,12 @@
-import { createRandomizer, Geometry, Homography } from '../utils';
+import createRandomizer from '../utils/randomizer';
+import { smallestTriangleArea } from '../utils/geometry/area';
+import { matrixInverse33, multiplyPointHomographyInhomogenous } from '../utils/geometry/matrix';
+import {
+  checkFourPointsConsistent,
+  checkThreePointsConsistent,
+  quadrilateralConvex,
+} from '../utils/geometry/checker';
+import solveHomography from '../utils/homography';
 import {
   CAUCHY_SCALE,
   CHUNK_SIZE,
@@ -7,16 +15,6 @@ import {
 } from '../utils/constant/matching';
 import { IKeyFrame } from '../utils/types/compiler';
 
-const {
-  quadrilateralConvex,
-  matrixInverse33,
-  smallestTriangleArea,
-  multiplyPointHomographyInhomogenous,
-  checkThreePointsConsistent,
-  checkFourPointsConsistent,
-} = Geometry;
-const { solveHomography } = Homography;
-
 // Using RANSAC to estimate homography
 const computeHomography = (options: {
   srcPoints: number[][];
@@ -24,7 +22,7 @@ const computeHomography = (options: {
   keyframe: IKeyFrame;
   quickMode?: boolean;
 }) => {
-  const { srcPoints, dstPoints, keyframe, quickMode } = options;
+  const { dstPoints, keyframe, srcPoints, quickMode } = options;
 
   // testPoints is four corners of keyframe
   const testPoints = [
@@ -38,16 +36,12 @@ const computeHomography = (options: {
   if (srcPoints.length < sampleSize) return null;
 
   const scale = CAUCHY_SCALE;
-  const oneOverScale2 = 1.0 / (scale * scale);
+  const oneOverScaleSqr = 1.0 / scale ** 2;
   const chuckSize = Math.min(CHUNK_SIZE, srcPoints.length);
 
   const randomizer = createRandomizer();
 
-  const perm: number[] = [];
-
-  for (let i = 0; i < srcPoints.length; i++) {
-    perm[i] = i;
-  }
+  const perm: number[] = srcPoints.map((_, i) => i);
 
   randomizer.arrayShuffle({ arr: perm, sampleSize: perm.length });
 
@@ -94,13 +88,10 @@ const computeHomography = (options: {
   if (Hs.length === 0) return null;
 
   // pick the best hypothesis
-  const hypotheses = [];
-
-  for (let i = 0; i < Hs.length; i++)
-    hypotheses.push({
-      H: Hs[i],
-      cost: 0,
-    });
+  const hypotheses: { H: number[]; cost: number }[] = Hs.map((H) => ({
+    cost: 0,
+    H,
+  }));
 
   let curChuckSize = chuckSize;
 
@@ -114,7 +105,7 @@ const computeHomography = (options: {
           H: hypotheses[j].H,
           srcPoint: srcPoints[k],
           dstPoint: dstPoints[k],
-          oneOverScale2,
+          oneOverScaleSqr,
         });
 
         hypotheses[j].cost += cost;
@@ -131,7 +122,7 @@ const computeHomography = (options: {
   for (let i = 0; i < hypotheses.length; i++) {
     const H = _normalizeHomography({ inH: hypotheses[i].H });
 
-    if (_checkHeuristics({ H, testPoints, keyframe })) {
+    if (_checkHeuristics({ H: H, testPoints, keyframe })) {
       finalH = H;
       break;
     }
@@ -151,14 +142,12 @@ const _checkHeuristics = ({
 }) => {
   const HInv = matrixInverse33(H, 0.00001);
 
-  if (!HInv) return false;
+  if (HInv === null) return false;
 
-  const mp: number[][] = [];
-
-  for (let i = 0; i < testPoints.length; i++) {
-    // 4 test points, corner of keyframe
-    mp.push(multiplyPointHomographyInhomogenous(testPoints[i], HInv));
-  }
+  // 4 test points, corner of keyframe
+  const mp: number[][] = testPoints.map((testPoint) =>
+    multiplyPointHomographyInhomogenous(testPoint, HInv)
+  );
 
   const smallArea = smallestTriangleArea(mp[0], mp[1], mp[2], mp[3]);
 
@@ -172,7 +161,8 @@ const _checkHeuristics = ({
 const _normalizeHomography = ({ inH }: { inH: number[] }) => {
   const oneOver = 1.0 / inH[8];
 
-  const H = [];
+  const H: number[] = [];
+
   for (let i = 0; i < 8; i++) {
     H[i] = inH[i] * oneOver;
   }
@@ -186,17 +176,17 @@ const _cauchyProjectiveReprojectionCost = ({
   H,
   srcPoint,
   dstPoint,
-  oneOverScale2,
+  oneOverScaleSqr,
 }: {
   H: number[];
   srcPoint: number[];
   dstPoint: number[];
-  oneOverScale2: number;
+  oneOverScaleSqr: number;
 }) => {
   const x = multiplyPointHomographyInhomogenous(srcPoint, H);
   const f = [x[0] - dstPoint[0], x[1] - dstPoint[1]];
 
-  return Math.log(1 + (f[0] * f[0] + f[1] * f[1]) * oneOverScale2);
+  return Math.log(1 + (f[0] * f[0] + f[1] * f[1]) * oneOverScaleSqr);
 };
 
 const _checkHomographyPointsGeometricallyConsistent = ({
@@ -206,11 +196,9 @@ const _checkHomographyPointsGeometricallyConsistent = ({
   H: number[];
   testPoints: number[][];
 }) => {
-  const mappedPoints = [];
-
-  for (let i = 0; i < testPoints.length; i++) {
-    mappedPoints[i] = multiplyPointHomographyInhomogenous(testPoints[i], H);
-  }
+  const mappedPoints: number[][] = testPoints.map((testPoint) =>
+    multiplyPointHomographyInhomogenous(testPoint, H)
+  );
 
   for (let i = 0; i < testPoints.length; i++) {
     const i1 = i;
@@ -233,4 +221,4 @@ const _checkHomographyPointsGeometricallyConsistent = ({
   return true;
 };
 
-export { computeHomography };
+export default computeHomography;

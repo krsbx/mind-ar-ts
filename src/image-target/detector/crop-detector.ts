@@ -1,35 +1,38 @@
 import { Tensor } from '@tensorflow/tfjs';
-import { Detector } from './detector';
+import Detector from './detector';
 
 class CropDetector {
   private width: number;
   private height: number;
   private debugMode: boolean;
   private cropSize: number;
-  private detector: Detector;
   private lastRandomIndex: number;
+  private detector: Detector;
 
   constructor(width: number, height: number, debugMode = false) {
-    this.debugMode = debugMode;
     this.width = width;
     this.height = height;
+    this.debugMode = debugMode;
 
-    // nearest power of 2, min dimensions
-    const minDimension = Math.min(width, height) / 2;
-    const cropSize = Math.pow(2, Math.round(Math.log(minDimension) / Math.log(2)));
+    this.cropSize = this._getCropSize(width, height);
 
-    this.cropSize = cropSize;
-
-    this.detector = new Detector(cropSize, cropSize, debugMode);
+    this.detector = new Detector(width, height, debugMode);
 
     this.lastRandomIndex = 4;
   }
 
-  detect(inputImageT: Tensor) {
-    // crop center
+  private _getCropSize(width: number, height: number) {
+    // nearest power of 2, min dimensions
+    const minDimension = Math.min(width, height) / 2;
+    const cropSize = Math.pow(2, Math.round(Math.log(minDimension) / Math.log(2)));
+
+    return cropSize;
+  }
+
+  public async detect(inputImageT: Tensor) {
     const startY = Math.floor(this.height / 2 - this.cropSize / 2);
     const startX = Math.floor(this.width / 2 - this.cropSize / 2);
-    const result = this._detect(inputImageT, startX, startY);
+    const result = await this._detect(inputImageT, startX, startY);
 
     if (this.debugMode)
       result.debugExtra.crop = {
@@ -41,7 +44,7 @@ class CropDetector {
     return result;
   }
 
-  detectMoving(inputImageT: Tensor) {
+  public detectMoving(inputImageT: Tensor) {
     // loop a few locations around center
     const dx = this.lastRandomIndex % 3;
     const dy = Math.floor(this.lastRandomIndex / 3);
@@ -57,11 +60,10 @@ class CropDetector {
     this.lastRandomIndex = (this.lastRandomIndex + 1) % 9;
 
     const result = this._detect(inputImageT, startX, startY);
-
     return result;
   }
 
-  _detect(inputImageT: Tensor, startX: number, startY: number) {
+  private _detect(inputImageT: Tensor, startX: number, startY: number) {
     const cropInputImageT = inputImageT.slice([startY, startX], [this.cropSize, this.cropSize]);
 
     const { featurePoints, debugExtra } = this.detector.detect(cropInputImageT);
@@ -71,14 +73,15 @@ class CropDetector {
       p.y += startY;
     });
 
-    if (this.debugMode) {
-      debugExtra.projectedImage = cropInputImageT.arraySync() as number[][];
-    }
+    if (this.debugMode) debugExtra.projectedImage = cropInputImageT.arraySync() as number[][];
 
     cropInputImageT.dispose();
 
-    return { featurePoints, debugExtra };
+    return {
+      featurePoints,
+      debugExtra,
+    };
   }
 }
 
-export { CropDetector };
+export default CropDetector;

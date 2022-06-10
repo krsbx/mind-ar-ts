@@ -1,8 +1,8 @@
 /* eslint-disable no-case-declarations */
-import { extract } from './tracker/extract';
+import extract from './tracker/extract';
 import { buildTrackingImageList } from './image-list';
-import { ImageDataWithScale, ITrackingFeature } from './utils/types/compiler';
 import { WORKER_EVENT } from './utils/constant/compiler';
+import { ImageDataWithScale, ITrackingFeature } from './utils/types/compiler';
 
 const _extractTrackingFeatures = (
   imageList: ImageDataWithScale[],
@@ -10,8 +10,7 @@ const _extractTrackingFeatures = (
 ) => {
   const featureSets: ITrackingFeature[] = [];
 
-  for (let i = 0; i < imageList.length; i++) {
-    const image = imageList[i];
+  for (const [i, image] of imageList.entries()) {
     const points = extract(image);
 
     const featureSet = {
@@ -39,10 +38,7 @@ onmessage = (msg) => {
       const percentPerImage = 50.0 / targetImages.length;
 
       let percent = 0.0;
-      const list: ITrackingFeature[][] = [];
-
-      for (let i = 0; i < targetImages.length; i++) {
-        const targetImage = targetImages[i];
+      const list: ITrackingFeature[][] = targetImages.map((targetImage: ImageData) => {
         const imageList = buildTrackingImageList(targetImage);
         const percentPerAction = percentPerImage / imageList.length;
 
@@ -51,8 +47,8 @@ onmessage = (msg) => {
           postMessage({ type: WORKER_EVENT.PROGRESS, percent });
         });
 
-        list.push(trackingData);
-      }
+        return trackingData;
+      });
 
       postMessage({
         type: WORKER_EVENT.COMPILE_DONE,
@@ -62,7 +58,4 @@ onmessage = (msg) => {
   }
 };
 
-export { _extractTrackingFeatures };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default null as any;
+export default {} as typeof Worker & (new () => Worker);

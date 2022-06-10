@@ -7,8 +7,8 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
 
   const num = normDstPoints.length;
 
-  const AData: number[][] = [];
-  const BData: number[][] = [];
+  const AData = [];
+  const BData = [];
 
   for (let j = 0; j < num; j++) {
     const row1 = [
@@ -45,12 +45,12 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
     const B = new Matrix(BData);
 
     const AT = A.transpose();
-
     const ATA = AT.mmul(A);
     const ATB = AT.mmul(B);
     const ATAInv = inverse(ATA);
 
     const C = ATAInv.mmul(ATB).to1DArray();
+
     const H = denormalizeHomography(C, srcParam, dstParam);
 
     return H;
@@ -59,4 +59,4 @@ const solveHomography = (srcPoints: number[][], dstPoints: number[][]) => {
   }
 };
 
-export { solveHomography };
+export default solveHomography;

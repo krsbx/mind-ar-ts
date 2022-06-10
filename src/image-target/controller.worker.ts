@@ -1,5 +1,5 @@
-import { Matcher } from './matching/matcher';
-import { Estimator } from './estimation/estimator';
+import Matcher from './matching/matcher';
+import Estimator from './estimation/estimator';
 import { IControllerWorker, WorkerEvent } from './utils/types/controller';
 import { WORKER_EVENT } from './utils/constant/controller';
 import { IKeyFrame } from './utils/types/compiler';
@@ -23,9 +23,7 @@ const match = (data: IControllerWorker['MATCH']) => {
   let matchedModelViewTransform = null;
   let matchedDebugExtra = null;
 
-  for (let i = 0; i < interestedTargetIndexes.length; i++) {
-    const matchingIndex = interestedTargetIndexes[i];
-
+  for (const matchingIndex of interestedTargetIndexes) {
     const { keyframeIndex, screenCoords, worldCoords, debugExtra } = matcher.matchDetection(
       matchingDataList[matchingIndex],
       data.featurePoints
@@ -58,11 +56,10 @@ const match = (data: IControllerWorker['MATCH']) => {
 
 const trackUpdate = (data: IControllerWorker['TRACK_UPDATE']) => {
   const { modelViewTransform: initialModelViewTransform, worldCoords, screenCoords } = data;
-
   const finalModelViewTransform = estimator.refineEstimate({
     initialModelViewTransform,
-    worldCoords,
     screenCoords,
+    worldCoords,
   });
 
   postMessage({
@@ -87,5 +84,4 @@ onmessage = (msg) => {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default null as any;
+export default {} as typeof Worker & (new () => Worker);

@@ -1,4 +1,5 @@
 import { Matrix, inverse } from 'ml-matrix';
+import { IICP, IRefineEstimations } from '../utils/types/estimation';
 import {
   ICP_BREAK_LOOP_ERROR_RATIO_THRESH,
   ICP_BREAK_LOOP_ERROR_THRESH,
@@ -6,7 +7,6 @@ import {
   K2_FACTOR,
   TRACKING_THRESH,
 } from '../utils/constant/estimation';
-import { IICP, IRefineEstimations } from '../utils/types/estimation';
 import {
   applyModelViewProjectionTransform,
   buildModelViewProjectionTransform,
@@ -29,24 +29,14 @@ const refineEstimate = ({
   //
   // normalize world coords - reposition them to center of mass
   //   assume z coordinate is always zero (in our case, the image target is planar with z = 0
-  let dx = 0;
-  let dy = 0;
-  for (let i = 0; i < worldCoords.length; i++) {
-    dx += worldCoords[i].x;
-    dy += worldCoords[i].y;
-  }
-  dx /= worldCoords.length;
-  dy /= worldCoords.length;
+  const dx = worldCoords.reduce((acc, cur) => acc + cur.x, 0) / worldCoords.length;
+  const dy = worldCoords.reduce((acc, cur) => acc + cur.y, 0) / worldCoords.length;
 
-  const normalizedWorldCoords: Vector3[] = [];
-
-  for (let i = 0; i < worldCoords.length; i++) {
-    normalizedWorldCoords.push({
-      x: worldCoords[i].x - dx,
-      y: worldCoords[i].y - dy,
-      z: worldCoords[i].z,
-    } as Vector3);
-  }
+  const normalizedWorldCoords: Vector3[] = worldCoords.map((worldCoord) => ({
+    x: worldCoord.x - dx,
+    y: worldCoord.y - dy,
+    z: worldCoord.z,
+  }));
 
   const diffModelViewTransform: number[][] = [[], [], []];
 
@@ -60,10 +50,12 @@ const refineEstimate = ({
     initialModelViewTransform[0][0] * dx +
     initialModelViewTransform[0][1] * dy +
     initialModelViewTransform[0][3];
+
   diffModelViewTransform[1][3] =
     initialModelViewTransform[1][0] * dx +
     initialModelViewTransform[1][1] * dy +
     initialModelViewTransform[1][3];
+
   diffModelViewTransform[2][3] =
     initialModelViewTransform[2][0] * dx +
     initialModelViewTransform[2][1] * dy +
@@ -71,16 +63,17 @@ const refineEstimate = ({
 
   // use iterative closest point algorithm to refine the modelViewTransform
   const inlierProbs = [1.0, 0.8, 0.6, 0.4, 0.0];
+
   let updatedModelViewTransform = diffModelViewTransform; // iteratively update this transform
   let finalModelViewTransform = null;
 
-  for (let i = 0; i < inlierProbs.length; i++) {
+  for (const inlierProb of inlierProbs) {
     const ret = _doICP({
       initialModelViewTransform: updatedModelViewTransform,
       projectionTransform,
       worldCoords: normalizedWorldCoords,
       screenCoords,
-      inlierProb: inlierProbs[i],
+      inlierProb,
     });
 
     updatedModelViewTransform = ret.modelViewTransform;
@@ -91,7 +84,7 @@ const refineEstimate = ({
     }
   }
 
-  if (!finalModelViewTransform) return null;
+  if (finalModelViewTransform === null) return null;
 
   // de-normalize
   finalModelViewTransform[0][3] =
@@ -126,10 +119,10 @@ const _doICP = ({
   let err0 = 0.0;
   let err1 = 0.0;
 
-  const E = new Array(worldCoords.length);
-  const E2 = new Array(worldCoords.length);
-  const dxs = new Array(worldCoords.length);
-  const dys = new Array(worldCoords.length);
+  const E: number[] = new Array(worldCoords.length);
+  const E2: number[] = new Array(worldCoords.length);
+  const dxs: number[] = new Array(worldCoords.length);
+  const dys: number[] = new Array(worldCoords.length);
 
   for (let l = 0; l <= ICP_MAX_LOOP; l++) {
     const modelViewProjectionTransform = buildModelViewProjectionTransform(
@@ -174,15 +167,12 @@ const _doICP = ({
           err1 += (K2 / 6.0) * (1.0 - (1.0 - E2[n] / K2) * (1.0 - E2[n] / K2) * (1.0 - E2[n] / K2));
       }
     } else {
-      for (let n = 0; n < worldCoords.length; n++) {
-        err1 += E[n];
-      }
+      err1 = E.reduce((acc, cur) => acc + cur, 0.0);
     }
 
     err1 /= worldCoords.length;
 
     if (err1 < ICP_BREAK_LOOP_ERROR_THRESH) break;
-    //if (l > 0 && err1 < ICP_BREAK_LOOP_ERROR_THRESH2 && err1/err0 > ICP_BREAK_LOOP_ERROR_RATIO_THRESH) break;
     if (l > 0 && err1 / err0 > ICP_BREAK_LOOP_ERROR_RATIO_THRESH) break;
     if (l === ICP_MAX_LOOP) break;
 
@@ -190,6 +180,7 @@ const _doICP = ({
 
     const dU: number[][] = [];
     const allJ_U_S = [];
+
     for (let n = 0; n < worldCoords.length; n++) {
       if (isRobustMode && E[n] > K2) continue;
 
@@ -223,12 +214,14 @@ const _doICP = ({
 
     const dS = _getDeltaS({ dU, J_U_S: allJ_U_S });
 
-    if (!dS) break;
+    if (dS === null) break;
 
     modelViewTransform = _updateModelViewTransform({ modelViewTransform, dS });
   }
-
-  return { modelViewTransform, err: err1 };
+  return {
+    modelViewTransform,
+    err: err1,
+  };
 };
 
 const _updateModelViewTransform = ({
@@ -243,8 +236,7 @@ const _updateModelViewTransform = ({
    * rotation is expressed in angle-axis,
    *   [S[0], S[1] ,S[2]] is the axis of rotation, and the magnitude is the angle
    */
-
-  let ra = dS[0] * dS[0] + dS[1] * dS[1] + dS[2] * dS[2];
+  let ra = dS[0] ** 2 + dS[1] ** 2 + dS[2] ** 2;
   let q0, q1, q2;
 
   if (ra < 0.000001) {
@@ -287,6 +279,7 @@ const _updateModelViewTransform = ({
         modelViewTransform[j][1] * mat[1][i] +
         modelViewTransform[j][2] * mat[2][i];
     }
+
     mat2[j][3] += modelViewTransform[j][3];
   }
 
@@ -302,6 +295,7 @@ const _getDeltaS = ({ dU, J_U_S }: { dU: number[][]; J_U_S: number[][] }) => {
   const JTU = JT.mmul(U);
 
   let JTJInv;
+
   try {
     JTJInv = inverse(JTJ);
   } catch (e) {
@@ -309,6 +303,7 @@ const _getDeltaS = ({ dU, J_U_S }: { dU: number[][]; J_U_S: number[][] }) => {
   }
 
   const S = JTJInv.mmul(JTU);
+
   return S.to1DArray();
 };
 
@@ -329,7 +324,6 @@ const _getJ_U_S = ({
   const u = applyModelViewProjectionTransform(modelViewProjectionTransform, x, y, z);
 
   const z2 = u.z * u.z;
-
   // Question: This is the most confusing matrix to me. I've no idea how to derive this.
   //J_U_Xc[0][0] = (projectionTransform[0][0] * u.z - projectionTransform[2][0] * u.x) / z2;
   //J_U_Xc[0][1] = (projectionTransform[0][1] * u.z - projectionTransform[2][1] * u.x) / z2;
@@ -388,4 +382,4 @@ const _getJ_U_S = ({
   return J_U_S;
 };
 
-export { refineEstimate };
+export default refineEstimate;

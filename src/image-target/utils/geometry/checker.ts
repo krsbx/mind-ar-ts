@@ -1,7 +1,7 @@
 import { linePointSide } from './helper';
 
 // srcPoints, dstPoints: array of four elements [x, y]
-const checkFourPointsConsistent = (
+export const checkFourPointsConsistent = (
   x1: number[],
   x2: number[],
   x3: number[],
@@ -19,7 +19,7 @@ const checkFourPointsConsistent = (
   return true;
 };
 
-const checkThreePointsConsistent = (
+export const checkThreePointsConsistent = (
   x1: number[],
   x2: number[],
   x3: number[],
@@ -27,10 +27,18 @@ const checkThreePointsConsistent = (
   x2p: number[],
   x3p: number[]
 ) => {
-  const point1 = linePointSide(x1, x2, x3) > 0;
-  const point2 = linePointSide(x1p, x2p, x3p) > 0;
+  if (linePointSide(x1, x2, x3) > 0 !== linePointSide(x1p, x2p, x3p) > 0) return false;
 
-  return point1 === point2;
+  return true;
 };
 
-export { checkFourPointsConsistent, checkThreePointsConsistent };
+// check if four points form a convex quadrilaternal.
+// all four combinations should have same sign
+export const quadrilateralConvex = (x1: number[], x2: number[], x3: number[], x4: number[]) => {
+  const first = linePointSide(x1, x2, x3) <= 0;
+  if (linePointSide(x2, x3, x4) <= 0 !== first) return false;
+  if (linePointSide(x3, x4, x1) <= 0 !== first) return false;
+  if (linePointSide(x4, x1, x2) <= 0 !== first) return false;
+
+  return true;
+};

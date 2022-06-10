@@ -1,13 +1,12 @@
-import { compute as hammingCompute } from './hamming-distance';
-import { createRandomizer } from '../utils';
-import { INode, RandomizerType } from '../utils/types/matching';
+import hammingCompute from './hamming-distance';
+import createRandomizer from '../utils/randomizer';
+import {
+  MIN_FEATURE_PER_NODE,
+  NUM_ASSIGNMENT_HYPOTHESES,
+  NUM_CENTERS,
+} from '../utils/constant/matching';
 import { IMaximaMinimaPoint } from '../utils/types/compiler';
-import { Helper } from '../../libs';
-
-const MIN_FEATURE_PER_NODE = 16;
-const NUM_ASSIGNMENT_HYPOTHESES = 128;
-const NUM_CENTERS = 8;
-const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+import { INode, RandomizerType } from '../utils/types/matching';
 
 const _computeKMedoids = (options: {
   points: IMaximaMinimaPoint[];
@@ -16,29 +15,24 @@ const _computeKMedoids = (options: {
 }) => {
   const { points, pointIndexes, randomizer } = options;
 
-  const randomPointIndexes = [];
+  const randomPointIndexes: number[] = pointIndexes.map((_, i) => i);
 
-  for (let i = 0; i < pointIndexes.length; i++) {
-    randomPointIndexes.push(i);
-  }
-
-  let bestSumD = MAX_SAFE_INTEGER;
+  let bestSumD = Number.MAX_SAFE_INTEGER;
   let bestAssignmentIndex = -1;
 
-  const assignments = [];
+  const assignments: number[][] = [];
 
   for (let i = 0; i < NUM_ASSIGNMENT_HYPOTHESES; i++) {
     randomizer.arrayShuffle({ arr: randomPointIndexes, sampleSize: NUM_CENTERS });
 
     let sumD = 0;
-    const assignment = [];
+    const assignment: number[] = [];
 
     for (let j = 0; j < pointIndexes.length; j++) {
-      let bestD = MAX_SAFE_INTEGER;
+      let bestD = Number.MAX_SAFE_INTEGER;
 
       for (let k = 0; k < NUM_CENTERS; k++) {
         const centerIndex = pointIndexes[randomPointIndexes[k]];
-
         const d = hammingCompute({
           v1: points[pointIndexes[j]].descriptors,
           v2: points[centerIndex].descriptors,
@@ -49,7 +43,6 @@ const _computeKMedoids = (options: {
           bestD = d;
         }
       }
-
       sumD += bestD;
     }
 
@@ -73,11 +66,7 @@ const _computeKMedoids = (options: {
 //   centerPointIndex: int
 // }
 const build = ({ points }: { points: IMaximaMinimaPoint[] }) => {
-  const pointIndexes: number[] = [];
-
-  for (let i = 0; i < points.length; i++) {
-    pointIndexes.push(i);
-  }
+  const pointIndexes: number[] = points.map((_, i) => i);
 
   const randomizer = createRandomizer();
 
@@ -102,35 +91,33 @@ const _build = (options: {
 
   let isLeaf = false;
 
-  if (pointIndexes.length <= NUM_CENTERS || pointIndexes.length <= MIN_FEATURE_PER_NODE) {
+  if (pointIndexes.length <= NUM_CENTERS || pointIndexes.length <= MIN_FEATURE_PER_NODE)
     isLeaf = true;
-  }
 
-  const clusters: number[][] = [];
+  const clusters: Record<number | string, number[]> = {};
 
   if (!isLeaf) {
     // compute clusters
     const assignment = _computeKMedoids({ points, pointIndexes, randomizer });
 
-    for (let i = 0; i < assignment.length; i++) {
-      if (Helper.isNil(clusters[pointIndexes[assignment[i]]]))
-        clusters[pointIndexes[assignment[i]]] = [];
+    for (const [i, assign] of assignment.entries()) {
+      if (clusters[pointIndexes[assign]] === undefined) clusters[pointIndexes[assign]] = [];
 
-      clusters[pointIndexes[assignment[i]]].push(pointIndexes[i]);
+      clusters[pointIndexes[assign]].push(pointIndexes[i]);
     }
   }
 
-  if (Object.keys(clusters).length === 1) isLeaf = true;
+  if (Object.keys(clusters).length === 1) {
+    isLeaf = true;
+  }
 
   const node: INode = {
-    centerPointIndex,
+    centerPointIndex: centerPointIndex,
   } as INode;
 
   if (isLeaf) {
     node.leaf = true;
-    node.pointIndexes = [];
-
-    for (let i = 0; i < pointIndexes.length; i++) node.pointIndexes.push(pointIndexes[i]);
+    node.pointIndexes = pointIndexes.map((pointIndex) => pointIndex);
 
     return node;
   }
@@ -139,14 +126,12 @@ const _build = (options: {
   node.leaf = false;
   node.children = [];
 
-  Object.keys(clusters).forEach((id) => {
-    const centerIndex = +id;
-
+  Object.keys(clusters).forEach((centerIndex) => {
     node.children.push(
       _build({
         points: points,
         pointIndexes: clusters[centerIndex],
-        centerPointIndex: centerIndex,
+        centerPointIndex: +centerIndex,
         randomizer,
       })
     );
@@ -155,4 +140,4 @@ const _build = (options: {
   return node;
 };
 
-export { build };
+export default build;

@@ -1,6 +1,6 @@
-import { estimate } from './estimate';
 import { IRefineEstimations } from '../utils/types/estimation';
-import { refineEstimate } from './refine-estimate';
+import estimate from './estimate';
+import refineEstimate from './refine-estimate';
 
 class Estimator {
   private projectionTransform: number[][];
@@ -40,4 +40,4 @@ class Estimator {
   }
 }
 
-export { Estimator };
+export default Estimator;

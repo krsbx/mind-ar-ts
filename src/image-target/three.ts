@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
-import { Controller } from './controller';
+import Controller from './controller';
 import { UI } from '../ui/ui';
 import { ON_UPDATE_EVENT } from './utils/constant/controller';
 import { IOnUpdate } from './utils/types/controller';
@@ -322,4 +322,4 @@ class MindARThree {
 if (!window.MINDAR.IMAGE.MindARThree) window.MINDAR.IMAGE.MindARThree = MindARThree;
 if (!window.MINDAR.IMAGE.THREE) window.MINDAR.IMAGE.THREE = THREE;
 
-export { MindARThree };
+export default MindARThree;

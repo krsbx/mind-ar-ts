@@ -1,6 +1,6 @@
 import { areaOfTriangle, vector2DDistance } from './helper';
 
-const smallestTriangleArea = (x1: number[], x2: number[], x3: number[], x4: number[]) => {
+export const smallestTriangleArea = (x1: number[], x2: number[], x3: number[], x4: number[]) => {
   const v12 = vector2DDistance(x2, x1);
   const v13 = vector2DDistance(x3, x1);
   const v14 = vector2DDistance(x4, x1);
@@ -14,5 +14,3 @@ const smallestTriangleArea = (x1: number[], x2: number[], x3: number[], x4: numb
 
   return Math.min(a1, a2, a3, a4);
 };
-
-export { smallestTriangleArea };

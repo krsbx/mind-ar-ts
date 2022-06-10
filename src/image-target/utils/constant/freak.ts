@@ -86,8 +86,9 @@ for (let r = 0; r < FREAK_RINGS.length; r++) {
 
   for (let i = 0; i < FREAK_RINGS[r].points.length; i++) {
     const point = FREAK_RINGS[r].points[i];
+
     FREAKPOINTS.push([sigma, point[0], point[1]]);
   }
 }
 
-export { FREAKPOINTS };
+export default FREAKPOINTS;

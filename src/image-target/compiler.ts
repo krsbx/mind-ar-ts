@@ -1,9 +1,9 @@
 import { tensor as tfTensor, tidy as tfTidy, nextFrame as tfNextFrame } from '@tensorflow/tfjs';
 import * as msgpack from '@msgpack/msgpack';
-import CompilerWorker from './compiler.worker.ts';
-import { Detector } from './detector/detector';
+import ProdCompilerWorker from './compiler.worker.ts';
 import { buildImageList, buildTrackingImageList } from './image-list';
-import { build as hierarchicalClusteringBuild } from './matching/hierarchical-clustering';
+import hierarchicalClusteringBuild from './matching/hierarchical-clustering';
+import { IS_PRODUCTION } from '../utils/constant';
 import {
   ICompilerData,
   IDataList,
@@ -11,9 +11,9 @@ import {
   ImageDataWithScale,
   ITrackingFeature,
 } from './utils/types/compiler';
-import { WORKER_EVENT } from './utils/constant/compiler';
-import { DEFAULT_WORKER, IS_PRODUCTION } from './utils/constant';
 import { Helper } from '../libs';
+import { WORKER_EVENT } from './utils/constant/compiler';
+import Detector from './detector/detector';
 
 // TODO: better compression method. now grey image saved in pixels, which could be larger than original image
 
@@ -27,23 +27,19 @@ class Compiler {
   }
 
   // input html Images
-  compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
+  public compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
-      const targetImages: ImageData[] = [];
-
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-
+      const targetImages: ImageData[] = images.map((image) => {
         const processCanvas = Helper.castTo<HTMLCanvasElement>(document.createElement('canvas'));
-        processCanvas.width = img.width;
-        processCanvas.height = img.height;
+        processCanvas.width = image.width;
+        processCanvas.height = image.height;
 
         const processContext = processCanvas.getContext('2d') as CanvasRenderingContext2D;
-        processContext.drawImage(img, 0, 0, img.width, img.height);
+        processContext.drawImage(image, 0, 0, image.width, image.height);
 
-        const processData = processContext.getImageData(0, 0, img.width, img.height);
-        const greyImageData = new Uint8Array(img.width * img.height);
+        const processData = processContext.getImageData(0, 0, image.width, image.height);
+        const greyImageData = new Uint8Array(image.width * image.height);
 
         for (let i = 0; i < greyImageData.length; i++) {
           const offset = i * 4;
@@ -56,53 +52,56 @@ class Compiler {
           );
         }
 
-        const targetImage = Helper.castTo<ImageData>({
+        return Helper.castTo<ImageData>({
           data: greyImageData,
-          height: img.height,
-          width: img.width,
+          width: image.width,
+          height: image.height,
         });
-
-        targetImages.push(targetImage);
-      }
+      });
 
       // compute matching data: 50% progress
       const percentPerImage = 50.0 / targetImages.length;
 
       let percent = 0.0;
-      this.data = [];
 
-      for (let i = 0; i < targetImages.length; i++) {
-        const targetImage = targetImages[i];
-        const imageList = buildImageList(targetImage);
-        const percentPerAction = percentPerImage / imageList.length;
+      this.data = await Promise.all(
+        targetImages.map(async (targetImage) => {
+          const imageList = buildImageList(targetImage);
+          const percentPerAction = percentPerImage / imageList.length;
 
-        const matchingData = await _extractMatchingFeatures(imageList, () => {
-          percent += percentPerAction;
-          progressCallback(percent);
-        });
+          const matchingData = await this._extractMatchingFeatures(imageList, () => {
+            percent += percentPerAction;
+            progressCallback(percent);
+          });
 
-        this.data.push({
-          targetImage,
-          imageList,
-          matchingData,
-        } as ICompilerData);
-      }
+          return {
+            targetImage,
+            imageList,
+            matchingData,
+          } as ICompilerData;
+        })
+      );
 
-      for (let i = 0; i < targetImages.length; i++) {
-        const trackingImageList = buildTrackingImageList(targetImages[i]);
+      for (const [i, targetImage] of targetImages.entries()) {
+        const trackingImageList = buildTrackingImageList(targetImage);
+
         this.data[i].trackingImageList = trackingImageList;
       }
 
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
         return new Promise<ITrackingFeature[][]>((resolve) => {
-          const worker = IS_PRODUCTION ? new CompilerWorker() : DEFAULT_WORKER.COMPILER;
-
-          worker.onmessage = (e) => {
+          const worker = IS_PRODUCTION
+            ? new ProdCompilerWorker()
+            : new Worker('/src/image-target/compiler.worker.ts', { type: 'module' });
+          worker.onmessage = (e: {
+            data: { type: string; percent: number; list: ITrackingFeature[][] };
+          }) => {
             switch (e.data.type) {
               case WORKER_EVENT.PROGRESS:
                 progressCallback(50 + e.data.percent);
                 break;
+
               case WORKER_EVENT.COMPILE_DONE:
                 resolve(e.data.list);
                 break;
@@ -115,8 +114,8 @@ class Compiler {
 
       const trackingDataList = await compileTrack();
 
-      for (let i = 0; i < targetImages.length; i++) {
-        this.data[i].trackingData = trackingDataList[i];
+      for (const [i, trackingData] of trackingDataList.entries()) {
+        this.data[i].trackingData = trackingData;
       }
 
       resolve(this.data);
@@ -124,19 +123,15 @@ class Compiler {
   }
 
   // not exporting imageList because too large. rebuild this using targetImage
-  exportData() {
-    const dataList: IDataList[] = [];
-
-    for (let i = 0; i < this.data.length; i++) {
-      dataList.push({
-        targetImage: {
-          width: this.data[i].targetImage.width,
-          height: this.data[i].targetImage.height,
-        },
-        trackingData: this.data[i].trackingData,
-        matchingData: this.data[i].matchingData,
-      });
-    }
+  public exportData() {
+    const dataList: IDataList[] = this.data.map((data) => ({
+      targetImage: {
+        width: data.targetImage.width,
+        height: data.targetImage.height,
+      },
+      trackingData: data.trackingData,
+      matchingData: data.matchingData,
+    }));
 
     const buffer = msgpack.encode({
       v: CURRENT_VERSION,
@@ -146,7 +141,7 @@ class Compiler {
     return buffer;
   }
 
-  importData(buffer: ArrayBuffer) {
+  public importData(buffer: ArrayBuffer) {
     const content = msgpack.decode(new Uint8Array(buffer)) as {
       v: number;
       dataList: IDataList[];
@@ -154,67 +149,57 @@ class Compiler {
 
     if (!content.v || content.v !== CURRENT_VERSION) {
       console.error('Your compiled .mind might be outdated. Please recompile');
-
       return [];
     }
 
     const { dataList } = content;
 
-    this.data = [];
-
-    for (let i = 0; i < dataList.length; i++) {
-      this.data.push({
-        targetImage: dataList[i].targetImage,
-        trackingData: dataList[i].trackingData,
-        matchingData: dataList[i].matchingData,
-      } as ICompilerData);
-    }
+    this.data = dataList.map((data) => data as ICompilerData);
 
     return this.data;
   }
+
+  private async _extractMatchingFeatures(
+    imageList: ImageDataWithScale[],
+    doneCallback: (iteration: number) => void
+  ) {
+    const keyframes: IKeyFrame[] = [];
+
+    for (const [i, image] of imageList.entries()) {
+      // TODO: can improve performance greatly if reuse the same detector. just need to handle resizing the kernel outputs
+      const detector = new Detector(image.width, image.height);
+
+      await tfNextFrame();
+
+      tfTidy(() => {
+        const inputT = tfTensor(image.data, [image.data.length], 'float32').reshape([
+          image.height,
+          image.width,
+        ]);
+
+        const { featurePoints: ps } = detector.detect(inputT);
+
+        const maximaPoints = ps.filter((p) => p.maxima);
+        const minimaPoints = ps.filter((p) => !p.maxima);
+        const maximaPointsCluster = hierarchicalClusteringBuild({ points: maximaPoints });
+        const minimaPointsCluster = hierarchicalClusteringBuild({ points: minimaPoints });
+
+        keyframes.push({
+          maximaPoints,
+          minimaPoints,
+          maximaPointsCluster,
+          minimaPointsCluster,
+          width: image.width,
+          height: image.height,
+          scale: image.scale,
+        });
+
+        doneCallback(i);
+      });
+    }
+
+    return keyframes;
+  }
 }
 
-const _extractMatchingFeatures = async (
-  imageList: ImageDataWithScale[],
-  doneCallback: (iteration: number) => void
-) => {
-  const keyframes: IKeyFrame[] = [];
-
-  for (let i = 0; i < imageList.length; i++) {
-    const image = imageList[i];
-    // TODO: can improve performance greatly if reuse the same detector. just need to handle resizing the kernel outputs
-    const detector = new Detector(image.width, image.height);
-
-    await tfNextFrame();
-
-    tfTidy(() => {
-      const inputT = tfTensor(image.data, [image.data.length], 'float32').reshape([
-        image.height,
-        image.width,
-      ]);
-
-      const { featurePoints: ps } = detector.detect(inputT);
-
-      const maximaPoints = ps.filter((p) => p.maxima);
-      const minimaPoints = ps.filter((p) => !p.maxima);
-      const maximaPointsCluster = hierarchicalClusteringBuild({ points: maximaPoints });
-      const minimaPointsCluster = hierarchicalClusteringBuild({ points: minimaPoints });
-
-      keyframes.push({
-        maximaPoints,
-        minimaPoints,
-        maximaPointsCluster,
-        minimaPointsCluster,
-        width: image.width,
-        height: image.height,
-        scale: image.scale,
-      });
-
-      doneCallback(i);
-    });
-  }
-
-  return keyframes;
-};
-
-export { Compiler };
+export default Compiler;

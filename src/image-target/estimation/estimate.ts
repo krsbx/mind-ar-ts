@@ -1,5 +1,5 @@
 import { Matrix, inverse } from 'ml-matrix';
-import { Homography } from '../utils';
+import solveHomography from '../utils/homography';
 
 // build world matrix with list of matching worldCoords|screenCoords
 //
@@ -8,17 +8,14 @@ import { Homography } from '../utils';
 //
 // Step 2. decompose homography into rotation and translation matrixes (i.e. world matrix)
 // Ref: can anyone provide reference?
-
-const estimate = ({
-  screenCoords,
-  worldCoords,
-  projectionTransform,
-}: {
+const estimate = (options: {
   screenCoords: Vector2[];
   worldCoords: Vector3[];
   projectionTransform: number[][];
 }) => {
-  const Harray = Homography.solveHomography(
+  const { projectionTransform, screenCoords, worldCoords } = options;
+
+  const Harray = solveHomography(
     worldCoords.map((p) => [p.x, p.y]),
     screenCoords.map((p) => [p.x, p.y])
   );
@@ -37,8 +34,8 @@ const estimate = ({
   const _KInvH = KInv.mmul(H);
   const KInvH = _KInvH.to1DArray();
 
-  const norm1 = Math.sqrt(KInvH[0] ** 2 + KInvH[3] ** 2 + KInvH[6] ** 2);
-  const norm2 = Math.sqrt(KInvH[1] ** 2 + KInvH[4] ** 2 + KInvH[7] ** 2);
+  const norm1 = Math.sqrt(KInvH[0] * KInvH[0] + KInvH[3] * KInvH[3] + KInvH[6] * KInvH[6]);
+  const norm2 = Math.sqrt(KInvH[1] * KInvH[1] + KInvH[4] * KInvH[4] + KInvH[7] * KInvH[7]);
   const tnorm = (norm1 + norm2) / 2;
 
   const rotate = [];
@@ -54,7 +51,7 @@ const estimate = ({
   rotate[5] = rotate[6] * rotate[1] - rotate[0] * rotate[7];
   rotate[8] = rotate[0] * rotate[4] - rotate[1] * rotate[3];
 
-  const norm3 = Math.sqrt(rotate[2] ** 2 + rotate[5] ** 2 + rotate[8] ** 2);
+  const norm3 = Math.sqrt(rotate[2] * rotate[2] + rotate[5] * rotate[5] + rotate[8] * rotate[8]);
   rotate[2] /= norm3;
   rotate[5] /= norm3;
   rotate[8] /= norm3;
@@ -63,7 +60,6 @@ const estimate = ({
   // https://github.com/artoolkitx/artoolkit5/blob/5bf0b671ff16ead527b9b892e6aeb1a2771f97be/lib/SRC/ARICP/icpUtil.c#L215
 
   const tran = [];
-
   tran[0] = KInvH[2] / tnorm;
   tran[1] = KInvH[5] / tnorm;
   tran[2] = KInvH[8] / tnorm;
@@ -77,4 +73,4 @@ const estimate = ({
   return initialModelViewTransform;
 };
 
-export { estimate };
+export default estimate;
