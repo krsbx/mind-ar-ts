@@ -3,7 +3,6 @@ import * as msgpack from '@msgpack/msgpack';
 import ProdCompilerWorker from './compiler.worker.ts';
 import { buildImageList, buildTrackingImageList } from './image-list';
 import hierarchicalClusteringBuild from './matching/hierarchical-clustering';
-import { IS_PRODUCTION } from '../utils/constant';
 import {
   ICompilerData,
   IDataList,
@@ -91,9 +90,7 @@ class Compiler {
       // compute tracking data with worker: 50% progress
       const compileTrack = () => {
         return new Promise<ITrackingFeature[][]>((resolve) => {
-          const worker = IS_PRODUCTION
-            ? new ProdCompilerWorker()
-            : new Worker('/src/image-target/compiler.worker.ts', { type: 'module' });
+          const worker = new ProdCompilerWorker();
           worker.onmessage = (e: {
             data: { type: string; percent: number; list: ITrackingFeature[][] };
           }) => {
