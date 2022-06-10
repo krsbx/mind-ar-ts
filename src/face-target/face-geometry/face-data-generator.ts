@@ -1,48 +1,55 @@
 // canonical-face-model.obj source:
 // https://github.com/google/mediapipe/tree/master/mediapipe/modules/face_geometry/data
 //
-// this script parse the model data. To run: node face-data-generator.js
+// this script parse the model data. To run: npx ts-node face-data-generator.ts
 import fs from 'fs';
+import path from 'path';
 import { execSync } from 'child_process';
+
+const EOL = '\n'; // End of line that the model file use
 
 console.log('Generating face data...');
 
-const model = fs.readFileSync('./canonical-face-model.obj', 'utf8');
-const modelEOL = '\n';
-const modelLines = model.split(modelEOL);
+// Read canonical-face-model.obj file
+const model = fs.readFileSync(path.resolve(__dirname + '/canonical-face-model.obj'), 'utf8');
+const textByLine = model.split(EOL); // Split the model file into lines
 
 const positions: number[][] = [];
 const uvs: number[][] = [];
 const faces: number[] = [];
 const uvIndexes: number[] = [];
 
-modelLines.forEach((line) => {
-  const ss = line.split(' ');
+textByLine.forEach((line) => {
+  const str = line.split(' ');
 
-  if (ss[0] === 'f') {
-    for (let i = 1; i <= 3; i++) {
-      const [index, uvIndex] = ss[i].split('/');
+  if (str[0] !== 'f') return;
 
-      uvIndexes[parseInt(uvIndex) - 1] = parseInt(index) - 1;
-    }
+  for (let i = 1; i <= 3; i++) {
+    const [index, uvIndex] = str[i].split('/');
+
+    uvIndexes[parseInt(uvIndex) - 1] = parseInt(index) - 1;
   }
 });
 
 let uvCount = 0;
 
-modelLines.forEach((line) => {
-  const ss = line.split(' ');
+textByLine.forEach((line) => {
+  const str = line.split(' ');
 
-  if (ss[0] === 'v') {
-    positions.push([parseFloat(ss[1]), parseFloat(ss[2]), parseFloat(ss[3])]);
-  } else if (ss[0] === 'vt') {
-    uvs[uvIndexes[uvCount++]] = [parseFloat(ss[1]), parseFloat(ss[2])];
-  } else if (ss[0] === 'f') {
-    faces.push(
-      parseInt(ss[1].split('/')[0]) - 1,
-      parseInt(ss[2].split('/')[0]) - 1,
-      parseInt(ss[3].split('/')[0]) - 1
-    );
+  switch (str[0]) {
+    case 'v':
+      positions.push([parseFloat(str[1]), parseFloat(str[2]), parseFloat(str[3])]);
+      break;
+    case 'vt':
+      uvs[uvIndexes[uvCount++]] = [parseFloat(str[1]), parseFloat(str[2])];
+      break;
+    case 'f':
+      faces.push(
+        parseInt(str[1].split('/')[0]) - 1,
+        parseInt(str[2].split('/')[0]) - 1,
+        parseInt(str[3].split('/')[0]) - 1
+      );
+      break;
   }
 });
 
@@ -84,7 +91,7 @@ const landmarkBasis = [
   [425, 0.047252278774977],
 ];
 
-const doubleEnter = `${modelEOL}${modelEOL}`;
+const doubleEnter = `${EOL}${EOL}`;
 const fileHeader = `//This is a generated file${doubleEnter}`;
 
 let faceOutput = '';
@@ -118,24 +125,26 @@ import uvs from './uvs';
 
 export { faces, landmarkBasis, positions, uvs };`;
 
-const isFileExist = fs.existsSync('./face-data');
+const basePath = path.resolve(__dirname + '/face-data');
+
+const isFileExist = fs.existsSync(basePath);
 
 // If directory exists, remove it.
-if (isFileExist) fs.rmSync('./face-data', { recursive: true });
+if (isFileExist) fs.rmSync(basePath, { recursive: true });
 
 // Create a new directory.
-fs.mkdirSync('./face-data');
+fs.mkdirSync(basePath);
 
-fs.writeFileSync('./face-data/faces.ts', faceOutput);
-fs.writeFileSync('./face-data/landmark-basis.ts', landmarkBasisOutput);
-fs.writeFileSync('./face-data/positions.ts', positionsOutput);
-fs.writeFileSync('./face-data/uvs.ts', uvsOutput);
-fs.writeFileSync('./face-data/index.ts', outputIndex);
+fs.writeFileSync(`${basePath}/faces.ts`, faceOutput);
+fs.writeFileSync(`${basePath}/landmark-basis.ts`, landmarkBasisOutput);
+fs.writeFileSync(`${basePath}/positions.ts`, positionsOutput);
+fs.writeFileSync(`${basePath}/uvs.ts`, uvsOutput);
+fs.writeFileSync(`${basePath}/index.ts`, outputIndex);
 
-execSync('npx prettier --write ./face-data/faces.ts');
-execSync('npx prettier --write ./face-data/landmark-basis.ts');
-execSync('npx prettier --write ./face-data/positions.ts');
-execSync('npx prettier --write ./face-data/uvs.ts');
-execSync('npx prettier --write ./face-data/index.ts');
+execSync(`npx prettier --write ${basePath}/faces.ts`);
+execSync(`npx prettier --write ${basePath}/landmark-basis.ts`);
+execSync(`npx prettier --write ${basePath}/positions.ts`);
+execSync(`npx prettier --write ${basePath}/uvs.ts`);
+execSync(`npx prettier --write ${basePath}/index.ts`);
 
 console.log('Face data generated successfully...');

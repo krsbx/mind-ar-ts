@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Scene } from 'aframe';
 import { UI } from '../../ui/ui';
-import { Controller } from '../controller';
+import Controller from '../controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
@@ -199,7 +199,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.controller = new ControllerClass({
       filterMinCF: this.filterMinCF,
       filterBeta: this.filterBeta,
-    });
+    }) as any;
 
     this._resize();
 
@@ -208,7 +208,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
 
     const { fov, aspect, near, far } = this.controller.getCameraParams();
 
-    const camera = new AFRAME.THREE.PerspectiveCamera();
+    const camera = new AFRAME.THREE.PerspectiveCamera() as any;
     camera.fov = fov;
     camera.aspect = aspect;
     camera.near = near;

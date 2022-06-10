@@ -1,50 +1,20 @@
 // TODO: delete opencv Mat
 import cv from '@techstark/opencv-js';
-import { positions as canonicalMetricLandmarks, landmarkBasis } from './face-data';
-
-const landmarkWeights: number[] = [];
-
-for (let i = 0; i < canonicalMetricLandmarks.length; i++) {
-  landmarkWeights[i] = 0;
-}
-
-landmarkBasis.forEach(([index, w]) => {
-  landmarkWeights[index] = w;
-});
-
-const sqrtWeights: number[] = [];
-
-for (let i = 0; i < landmarkWeights.length; i++) {
-  sqrtWeights[i] = Math.sqrt(landmarkWeights[i]);
-}
-
-const majorLandmarkIndexes = [33, 263, 61, 291, 199]; // for computing solvePnP
-
-landmarkBasis.forEach(([index]) => {
-  if (!majorLandmarkIndexes.includes(index)) {
-    majorLandmarkIndexes.push(index);
-  }
-});
-
-majorLandmarkIndexes.sort((a, b) => a - b);
-
-let leftMostLandmarkIndex = 0;
-let rightMostLandmarkIndex = 0;
-for (let i = 0; i < canonicalMetricLandmarks.length; i++) {
-  if (canonicalMetricLandmarks[i][0] < canonicalMetricLandmarks[leftMostLandmarkIndex][0])
-    leftMostLandmarkIndex = i;
-
-  if (canonicalMetricLandmarks[i][0] > canonicalMetricLandmarks[rightMostLandmarkIndex][0])
-    rightMostLandmarkIndex = i;
-}
+import { positions as canonicalMetricLandmarks } from './face-data';
+import {
+  leftMostLandmarkIndex,
+  majorLandmarkIndexes,
+  rightMostLandmarkIndex,
+  sqrtWeights,
+} from './helper';
 
 class Estimator {
-  public near: number;
-  public far: number;
-  public frameHeight: number;
-  public frameWidth: number;
-  public focalLength: number;
-  public fov: number;
+  readonly near: number;
+  readonly far: number;
+  readonly frameHeight: number;
+  readonly frameWidth: number;
+  private focalLength: number;
+  readonly fov: number;
   private top: number;
   private right: number;
   private bottom: number;
@@ -75,26 +45,23 @@ class Estimator {
     this.center = [frameWidth / 2, frameHeight / 2];
   }
 
-  estimate(landmarks: number[][]) {
+  public estimate(landmarks: number[][]) {
     const screenLandmarks = this._projectToScreen(landmarks);
 
     let intermediateLandmarks = this._cloneLandmarks(screenLandmarks);
     this._changeHandedness(intermediateLandmarks);
 
-    const depthOffset =
-      screenLandmarks.reduce((a, l) => {
-        return a + l[2];
-      }, 0) / screenLandmarks.length;
+    const depthOffset = screenLandmarks.reduce((a, l) => a + l[2], 0) / screenLandmarks.length;
 
     const firstIterationScale = this._estimateScale(intermediateLandmarks);
 
     intermediateLandmarks = this._cloneLandmarks(screenLandmarks);
+
     this._moveAndRescaleZ(depthOffset, firstIterationScale, intermediateLandmarks);
     this._unprojectScreen(intermediateLandmarks);
     this._changeHandedness(intermediateLandmarks);
 
     const secondIterationScale = this._estimateScale(intermediateLandmarks);
-
     const metricLandmarks = this._cloneLandmarks(screenLandmarks);
     const totalScale = firstIterationScale * secondIterationScale;
 
@@ -227,32 +194,87 @@ class Estimator {
       0,
       1,
     ];
+
     const faceScale =
       newMetricLandmarks[rightMostLandmarkIndex][0] - newMetricLandmarks[leftMostLandmarkIndex][0];
 
     return { metricLandmarks: newMetricLandmarks, faceMatrix: m, faceScale };
   }
 
-  _estimateScale(landmarks: number[][]) {
+  private _projectToScreen(landmarks: number[][]) {
+    const ret: number[][] = [];
+
+    const xScale = this.right - this.left;
+    const yScale = this.top - this.bottom;
+    const xTranslation = this.left;
+    const yTranslation = this.bottom;
+
+    for (let i = 0; i < landmarks.length; i++) {
+      ret.push([
+        landmarks[i][0] * xScale + xTranslation,
+        (1 - landmarks[i][1]) * yScale + yTranslation,
+        landmarks[i][2] * xScale,
+      ]);
+    }
+
+    return ret;
+  }
+
+  private _cloneLandmarks(landmarks: number[][]) {
+    const ret: number[][] = [];
+
+    for (let i = 0; i < landmarks.length; i++) {
+      ret[i] = [landmarks[i][0], landmarks[i][1], landmarks[i][2]];
+    }
+
+    return ret;
+  }
+
+  private _changeHandedness(landmarks: number[][]) {
+    for (let i = 0; i < landmarks.length; i++) {
+      landmarks[i][2] *= -1;
+    }
+  }
+
+  private _moveAndRescaleZ(depthOffset: number, scale: number, landmarks: number[][]) {
+    for (let k = 0; k < landmarks.length; k++) {
+      landmarks[k][2] = (landmarks[k][2] - depthOffset + this.near) / scale;
+    }
+  }
+
+  private _unprojectScreen(landmarks: number[][]) {
+    for (let k = 0; k < landmarks.length; k++) {
+      landmarks[k][0] = (landmarks[k][0] * landmarks[k][2]) / this.near;
+      landmarks[k][1] = (landmarks[k][1] * landmarks[k][2]) / this.near;
+    }
+  }
+
+  private _estimateScale(landmarks: number[][]) {
     const transformMat = this._solveWeightedOrthogonal(
       canonicalMetricLandmarks,
       landmarks,
       sqrtWeights
     );
 
-    const scale = Math.sqrt(
-      transformMat[0][0] * transformMat[0][0] +
-        transformMat[0][1] * transformMat[0][1] +
-        transformMat[0][2] * transformMat[0][2]
-    );
+    const firstTransformMatSqr = transformMat[0][0] ** 2;
+    const secondTransformMatSqr = transformMat[0][1] ** 2;
+    const thirdTransformMatSqr = transformMat[0][2] ** 2;
+
+    const sumOfTransformMatSqr =
+      firstTransformMatSqr + secondTransformMatSqr + thirdTransformMatSqr;
+
+    const scale = Math.sqrt(sumOfTransformMatSqr);
 
     return scale;
   }
 
-  // Orthogonal Procrustes solver
-  _solveWeightedOrthogonal(sources: number[][], targets: number[][], sqrtWeights: number[]) {
-    const weightedSources = [];
-    const weightedTargets = [];
+  private _solveWeightedOrthogonal(
+    sources: number[][],
+    targets: number[][],
+    sqrtWeights: number[]
+  ) {
+    const weightedSources: number[][] = [];
+    const weightedTargets: number[][] = [];
 
     for (let i = 0; i < sources.length; i++) {
       weightedSources.push([
@@ -268,9 +290,9 @@ class Estimator {
       ]);
     }
 
-    const totalWeight = sqrtWeights.reduce((a: number, w: number) => a + w * w, 0);
+    const totalWeight = sqrtWeights.reduce((a, w) => a + w ** 2, 0);
 
-    const twiceWeightedSources: number[][] = [];
+    const twiceWeightedSources = [];
 
     for (let i = 0; i < weightedSources.length; i++) {
       twiceWeightedSources[i] = [
@@ -280,7 +302,8 @@ class Estimator {
       ];
     }
 
-    const sourceCenterOfMass: number[] = [0, 0, 0];
+    const sourceCenterOfMass = [0, 0, 0];
+
     for (let k = 0; k < 3; k++) {
       for (let i = 0; i < twiceWeightedSources.length; i++) {
         sourceCenterOfMass[k] += twiceWeightedSources[i][k];
@@ -300,7 +323,7 @@ class Estimator {
       }
     }
 
-    const designMatrix: number[][] = [
+    const designMatrix = [
       [0, 0, 0],
       [0, 0, 0],
       [0, 0, 0],
@@ -335,8 +358,10 @@ class Estimator {
 
     for (let l = 0; l < weightedSources.length; l++) {
       pointwiseDiffs[l] = [];
+
       for (let k = 0; k < 3; k++) {
         pointwiseDiffs[l][k] = weightedTargets[l][k];
+
         for (let i = 0; i < 3; i++) {
           pointwiseDiffs[l][k] -= rotationAndScale[k][i] * weightedSources[l][i];
         }
@@ -373,17 +398,17 @@ class Estimator {
     return transformMat;
   }
 
-  _computeOptimalRotation(design_matrix: number[][]) {
+  private _computeOptimalRotation(designMatrix: number[][]) {
     const designMatrixMat = cv.matFromArray(3, 3, cv.CV_64F, [
-      design_matrix[0][0],
-      design_matrix[0][1],
-      design_matrix[0][2],
-      design_matrix[1][0],
-      design_matrix[1][1],
-      design_matrix[1][2],
-      design_matrix[2][0],
-      design_matrix[2][1],
-      design_matrix[2][2],
+      designMatrix[0][0],
+      designMatrix[0][1],
+      designMatrix[0][2],
+      designMatrix[1][0],
+      designMatrix[1][1],
+      designMatrix[1][2],
+      designMatrix[2][0],
+      designMatrix[2][1],
+      designMatrix[2][2],
     ]);
 
     const wMat = new cv.Mat(3, 1, cv.CV_64F);
@@ -400,15 +425,16 @@ class Estimator {
 
     for (let k = 0; k < 3; k++) {
       for (let l = 0; l < 3; l++) {
-        for (let i = 0; i < 3; i++)
+        for (let i = 0; i < 3; i++) {
           rotation[k][l] += uMat.data64F[k * 3 + i] * vtMat.data64F[i * 3 + l];
+        }
       }
     }
 
     return rotation;
   }
 
-  _computeOptimalScale(
+  private _computeOptimalScale(
     centeredWeightedSources: number[][],
     weightedSources: number[][],
     weightedTargets: number[][],
@@ -444,56 +470,10 @@ class Estimator {
       }
     }
 
-    const scale: number = numerator / denominator;
+    const scale = numerator / denominator;
 
     return scale;
   }
-
-  _projectToScreen(landmarks: number[][]) {
-    const ret: number[][] = [];
-
-    const xScale = this.right - this.left;
-    const yScale = this.top - this.bottom;
-    const xTranslation = this.left;
-    const yTranslation = this.bottom;
-
-    for (let i = 0; i < landmarks.length; i++)
-      ret.push([
-        landmarks[i][0] * xScale + xTranslation,
-        (1 - landmarks[i][1]) * yScale + yTranslation,
-        landmarks[i][2] * xScale,
-      ]);
-
-    return ret;
-  }
-
-  _cloneLandmarks(landmarks: number[][]) {
-    const ret: number[][] = [];
-
-    for (let i = 0; i < landmarks.length; i++)
-      ret[i] = [landmarks[i][0], landmarks[i][1], landmarks[i][2]];
-
-    return ret;
-  }
-
-  _changeHandedness(landmarks: number[][]) {
-    for (let i = 0; i < landmarks.length; i++) {
-      landmarks[i][2] *= -1;
-    }
-  }
-
-  _moveAndRescaleZ(depthOffset: number, scale: number, landmarks: number[][]) {
-    for (let k = 0; k < landmarks.length; k++) {
-      landmarks[k][2] = (landmarks[k][2] - depthOffset + this.near) / scale;
-    }
-  }
-
-  _unprojectScreen(landmarks: number[][]) {
-    for (let k = 0; k < landmarks.length; k++) {
-      landmarks[k][0] = (landmarks[k][0] * landmarks[k][2]) / this.near;
-      landmarks[k][1] = (landmarks[k][1] * landmarks[k][2]) / this.near;
-    }
-  }
 }
 
-export { Estimator };
+export default Estimator;
