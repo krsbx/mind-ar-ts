@@ -1,8 +1,5 @@
-# :warning: Image Target is under heavy development :warning:
-Image target need to be re-written since it has a slow performance issue and the development one can be found in [image-target branch](https://github.com/krsbx/mind-ar-ts/tree/image-target) or in the [experimental/image-target](./src/experimental/image-target). Image Target in the [image-target branch](https://github.com/krsbx/mind-ar-ts/tree/image-target) is much better in than in the [main branch](https://github.com/krsbx/mind-ar-ts/tree/main) at the momment but need to fix the slow response for tracking
-
-# :warning: Please use the one in experimental directory in this [commit](https://github.com/krsbx/mind-ar-ts/commit/daa1ff4a97b3901ee85fc48a76684577f1efdbad) :warning:
-For much stable usage for both Image-Target and Face Target please use the one in the experimental one in this [commit](https://github.com/krsbx/mind-ar-ts/commit/daa1ff4a97b3901ee85fc48a76684577f1efdbad). The main one will be replaced with the one in the experimental in the near future.
+# :warning: Geo Location is under heavy development :warning:
+Geo Location need to be re-written since the model keep following the camera and the development one can be found in [geo-location branch](https://github.com/krsbx/mind-ar-ts/tree/geo-location) or in the [experimental/geo-location](./src/experimental/geo-location).
 
 # MindAR
 
