@@ -1,40 +1,43 @@
-import { FaceMeshHelper } from './face-mesh-helper';
-import { OneEuroFilter } from '../libs';
-import { Estimator } from './face-geometry/estimator';
-import { _createThreeFaceGeometry } from './face-geometry/face-geometry';
+import FaceMeshHelper from './face-mesh-helper';
+import Estimator from './face-geometry/estimator';
+import createThreeFaceGeometry from './face-geometry/face-geometry';
 import { positions as canonicalMetricLandmarks } from './face-geometry/face-data';
+import { OneEuroFilter } from '../libs';
 import { DEFAULT_FILTER_BETA, DEFAULT_FILTER_CUTOFF } from './utils/constant';
 import { EstimateResult, IOnUpdateArgs } from './utils/types/face-target';
 
 class Controller {
-  private estimator!: Estimator;
+  private estimator: Estimator | null;
   private lastEstimateResult: EstimateResult | null;
   private filterMinCF: number;
   private filterBeta: number;
-  private customFaceGeometries: ReturnType<typeof _createThreeFaceGeometry>[];
+  private customFaceGeometries: ReturnType<typeof createThreeFaceGeometry>[];
   private landmarkFilters: OneEuroFilter[];
   public onUpdate?: ((value: IOnUpdateArgs) => void) | null;
   private faceMatrixFilter: OneEuroFilter;
   private faceScaleFilter: OneEuroFilter;
-  private faceMeshHelper!: FaceMeshHelper;
+  private faceMeshHelper: FaceMeshHelper | null;
   private processingVideo: boolean;
 
   constructor({
-    filterMinCF,
     filterBeta,
+    filterMinCF,
     onUpdate = null,
   }: {
     filterMinCF: number | null;
     filterBeta: number | null;
     onUpdate?: ((value: IOnUpdateArgs) => void) | null;
   }) {
-    this.processingVideo = false;
-    this.landmarkFilters = [];
     this.customFaceGeometries = [];
+    this.estimator = null;
     this.lastEstimateResult = null;
-    this.filterMinCF = !filterMinCF ? DEFAULT_FILTER_CUTOFF : filterMinCF;
-    this.filterBeta = !filterBeta ? DEFAULT_FILTER_BETA : filterBeta;
+    this.filterMinCF = filterMinCF === null ? DEFAULT_FILTER_CUTOFF : filterMinCF;
+    this.filterBeta = filterBeta === null ? DEFAULT_FILTER_BETA : filterBeta;
     this.onUpdate = onUpdate;
+    this.faceMeshHelper = null;
+    this.processingVideo = false;
+
+    this.landmarkFilters = [];
 
     for (let i = 0; i < canonicalMetricLandmarks.length; i++) {
       this.landmarkFilters[i] = new OneEuroFilter({
@@ -54,12 +57,14 @@ class Controller {
     });
   }
 
-  async setup(input: { height: number; width: number }) {
+  public async setup(input: { height: number; width: number }) {
     this.faceMeshHelper = new FaceMeshHelper();
     this.estimator = new Estimator(input);
   }
 
-  getCameraParams() {
+  public getCameraParams() {
+    if (!this.estimator) return {};
+
     return {
       fov: (this.estimator.fov * 180) / Math.PI,
       aspect: this.estimator.frameWidth / this.estimator.frameHeight,
@@ -68,89 +73,86 @@ class Controller {
     };
   }
 
-  // Dummy run for warming up
-  async dummyRun(input: HTMLVideoElement) {
-    await this.faceMeshHelper.detect(input);
+  public async dummyRun(input: HTMLVideoElement) {
+    await this.faceMeshHelper?.detect(input);
   }
 
-  resetFilters() {
+  private _onNoMultiFaceLandmarks() {
     this.lastEstimateResult = null;
     this.onUpdate?.({ hasFace: false });
 
-    // Reset any active filters
-    for (let i = 0; i < this.landmarkFilters.length; i++) {
-      this.landmarkFilters[i].reset();
+    for (const landmarkFilter of this.landmarkFilters) {
+      landmarkFilter?.reset();
     }
 
     this.faceMatrixFilter.reset();
     this.faceScaleFilter.reset();
   }
 
-  getEstimatedFilterResults(estimateResult: ReturnType<Estimator['estimate']>) {
-    if (!this.lastEstimateResult) return;
+  private _updateEstimateResult(estimateResult: EstimateResult) {
+    const lastMetricLandmarks = this.lastEstimateResult?.metricLandmarks ?? null;
 
-    const lastMetricLandmarks = this.lastEstimateResult.metricLandmarks;
+    if (!lastMetricLandmarks) return;
 
-    const newMetricLandmarks: number[][] = [];
+    const metricLandmarks = [];
 
-    for (let i = 0; i < lastMetricLandmarks.length; i++) {
-      newMetricLandmarks[i] = this.landmarkFilters[i].filter(
-        Date.now(),
-        estimateResult.metricLandmarks[i]
-      );
+    for (const [i, landMarkFilter] of this.landmarkFilters.entries()) {
+      metricLandmarks[i] = landMarkFilter.filter(Date.now(), estimateResult.metricLandmarks[i]);
     }
 
-    const newFaceMatrix: number[] = this.faceMatrixFilter.filter(
-      Date.now(),
-      estimateResult.faceMatrix
-    );
+    const faceMatrix = this.faceMatrixFilter.filter(Date.now(), estimateResult.faceMatrix);
 
-    const newFaceScale: number[] = this.faceScaleFilter.filter(Date.now(), [
-      estimateResult.faceScale,
-    ]);
+    const faceScale = this.faceScaleFilter.filter(Date.now(), [estimateResult.faceScale]);
 
     this.lastEstimateResult = {
-      metricLandmarks: newMetricLandmarks,
-      faceMatrix: newFaceMatrix,
-      faceScale: newFaceScale[0],
+      faceScale: faceScale[0],
+      metricLandmarks,
+      faceMatrix,
     };
   }
 
-  async processFilters(input: HTMLVideoElement) {
-    const results = await this.faceMeshHelper.detect(input);
+  private async _doFaceDetection(input: HTMLVideoElement) {
+    const results = await this.faceMeshHelper?.detect(input);
 
     if (!results) return;
 
-    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+    if (results.multiFaceLandmarks.length === 0) {
+      this._onNoMultiFaceLandmarks();
 
-    const landmarks: number[][] = results.multiFaceLandmarks[0].map((l) => [l.x, l.y, l.z]);
+      return;
+    }
 
-    const estimateResult = this.estimator.estimate(landmarks);
+    const landmarks = results.multiFaceLandmarks[0].map((l) => [l.x, l.y, l.z]);
 
-    if (!this.lastEstimateResult) this.lastEstimateResult = estimateResult;
-    else {
-      this.getEstimatedFilterResults(estimateResult);
+    const estimateResult = this.estimator?.estimate(landmarks) ?? null;
 
-      this.onUpdate?.({ hasFace: true, estimateResult: this.lastEstimateResult });
+    if (!this.lastEstimateResult || !estimateResult) {
+      this.lastEstimateResult = estimateResult;
+      return;
+    }
 
-      for (let i = 0; i < this.customFaceGeometries.length; i++)
-        this.customFaceGeometries[i].updatePositions(estimateResult.metricLandmarks);
+    this._updateEstimateResult(estimateResult);
+
+    this.onUpdate?.({ hasFace: true, estimateResult: this.lastEstimateResult });
+
+    for (const customFaceGeometry of this.customFaceGeometries) {
+      customFaceGeometry.updatePositions(estimateResult.metricLandmarks);
     }
   }
 
   private _doVideoProcessing(input: HTMLVideoElement) {
     return async () => {
-      const results = await this.faceMeshHelper.detect(input);
+      if (!this.processingVideo) return;
 
-      if (results && results.multiFaceLandmarks && results.multiFaceLandmarks.length === 0)
-        this.resetFilters();
-      else this.processFilters(input);
+      await this._doFaceDetection(input);
 
-      if (this.processingVideo) window.requestAnimationFrame(this._doVideoProcessing(input));
+      if (this.processingVideo) {
+        window.requestAnimationFrame(this._doVideoProcessing(input));
+      }
     };
   }
 
-  processVideo(input: HTMLVideoElement) {
+  public processVideo(input: HTMLVideoElement) {
     if (this.processingVideo) return;
 
     this.processingVideo = true;
@@ -158,19 +160,18 @@ class Controller {
     window.requestAnimationFrame(this._doVideoProcessing(input));
   }
 
-  stopProcessVideo() {
+  public stopProcessVideo() {
     this.processingVideo = false;
   }
 
-  createThreeFaceGeometry(THREE: typeof AFRAME.THREE) {
-    const faceGeometry = _createThreeFaceGeometry(THREE);
-
+  public createThreeFaceGeometry(THREE: typeof AFRAME.THREE) {
+    const faceGeometry = createThreeFaceGeometry(THREE);
     this.customFaceGeometries.push(faceGeometry);
 
     return faceGeometry;
   }
 
-  getLandmarkMatrix(landmarkIndex: number) {
+  public getLandmarkMatrix(landmarkIndex: number) {
     if (!this.lastEstimateResult) return null;
 
     const { metricLandmarks, faceMatrix, faceScale } = this.lastEstimateResult;
@@ -214,4 +215,4 @@ class Controller {
   }
 }
 
-export { Controller };
+export default Controller;
