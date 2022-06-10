@@ -1,23 +1,20 @@
 import {
-  TensorInfo,
+  engine as tfEngine,
   backend as tfBackend,
   env as tfEnv,
-  engine as tfEngine,
+  TensorInfo,
 } from '@tensorflow/tfjs';
 import { GPGPUProgram, MathBackendWebGL } from '@tensorflow/tfjs-backend-webgl';
+import { TextureUsage } from '@tensorflow/tfjs-backend-webgl/dist/tex_util';
 import { Helper } from '../libs';
 
-// More efficient implementation for tf.browser.fromPixels
-//   original implementation: /node_modules/@tensorflow/tfjs-backend-webgl/src/kernels/FromPixels.ts
-//
-// This implementation return grey scale instead of RGBA in the orignal implementation
 class InputLoader {
   private width: number;
   private height: number;
-  private texShape: number[];
+  private texShape: [number, number];
   private context: CanvasRenderingContext2D;
-  private tempPixelHandle: TensorInfo;
   private program: GPGPUProgram;
+  private tempPixelHandle: TensorInfo;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -35,30 +32,30 @@ class InputLoader {
 
     const backend = tfBackend() as MathBackendWebGL;
 
+    //this.tempPixelHandle = backend.makeTensorInfo(this.texShape, 'int32');
     this.tempPixelHandle = backend.makeTensorInfo(this.texShape, 'float32');
+
     // warning!!!
     // usage type should be TextureUsage.PIXELS, but tfjs didn't export this enum type, so we hard-coded 2 here
     //   i.e. backend.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
-    backend.texData.get(this.tempPixelHandle.dataId).usage = 2;
+    backend.texData.get(this.tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
   }
 
   // input is instance of HTMLVideoElement or HTMLImageElement
-  loadInput(input: CanvasImageSource) {
+  public loadInput(input: CanvasImageSource) {
     this.context.drawImage(input, 0, 0, this.width, this.height);
 
     const backend = tfBackend() as MathBackendWebGL;
-
     backend.gpgpu.uploadPixelDataToTexture(
       backend.getTexture(this.tempPixelHandle.dataId),
       this.context.canvas
     );
 
     const res = this._compileAndRun(this.program, [this.tempPixelHandle]);
-
     return res;
   }
 
-  buildProgram(width: number, height: number) {
+  public buildProgram(width: number, height: number) {
     const textureMethod = tfEnv().getNumber('WEBGL_VERSION') === 2 ? 'texture' : 'texture2D';
 
     const program = {
@@ -80,11 +77,10 @@ class InputLoader {
     return program;
   }
 
-  _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
+  private _compileAndRun(program: GPGPUProgram, inputs: TensorInfo[]) {
     const outInfo = (tfBackend() as MathBackendWebGL).compileAndRun(program, inputs);
-
     return tfEngine().makeTensorFromTensorInfo(outInfo);
   }
 }
 
-export { InputLoader };
+export default InputLoader;

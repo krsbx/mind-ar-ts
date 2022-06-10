@@ -1,5 +1,5 @@
-import { Controller } from './controller';
-import { Compiler } from './compiler';
+import Controller from './controller';
+import Compiler from './compiler';
 import { UI } from '../ui/ui';
 
 const imageTarget = {

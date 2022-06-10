@@ -2,7 +2,7 @@
 import Stats from 'stats-js';
 import { Scene } from 'aframe';
 import { UI } from '../../ui/ui';
-import { Controller } from '../controller';
+import Controller from '../controller';
 import { ON_UPDATE_EVENT } from '../utils/constant/controller';
 import { IOnUpdate } from '../utils/types/controller';
 import { Helper } from '../../libs';
@@ -78,7 +78,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   _registerEventListener: function () {
     // Subcribe to the targetFound event
     // This event is fired when the target is found
-    this.el.addEventListener(AR_EVENT_NAME.MARKER_FOUND, this.ui.hideScanning.bind(this));
+    this.el.addEventListener(AR_EVENT_NAME.MARKER_FOUND, () => {
+      this.ui.hideScanning();
+    });
 
     // Subcribe to the targetFound event
     // This event is fired when the target is found
@@ -213,15 +215,15 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
             // eslint-disable-next-line no-case-declarations
             const { targetIndex, worldMatrix } = data;
 
-            for (let i = 0; i < this.anchorEntities.length; i++) {
-              if (this.anchorEntities[i].targetIndex === targetIndex)
-                this.anchorEntities[i].el.updateWorldMatrix(worldMatrix);
+            for (const anchorEntity of this.anchorEntities) {
+              if (anchorEntity.targetIndex === targetIndex)
+                anchorEntity.el.updateWorldMatrix(worldMatrix);
             }
 
             break;
         }
       },
-    });
+    }) as any;
 
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
@@ -230,8 +232,8 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
       this.imageTargetSrc
     );
 
-    for (let i = 0; i < this.anchorEntities.length; i++) {
-      const { el, targetIndex } = this.anchorEntities[i];
+    for (const anchorEntity of this.anchorEntities) {
+      const { el, targetIndex } = anchorEntity;
 
       if (targetIndex < imageTargetDimensions.length)
         el.setupMarker(imageTargetDimensions[targetIndex]);

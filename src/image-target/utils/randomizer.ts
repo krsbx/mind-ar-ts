@@ -9,10 +9,12 @@ const createRandomizer = () => {
 
       for (let i = 0; i < sampleSize; i++) {
         this.seed = (214013 * this.seed + 2531011) % (1 << 31);
+
         let k = (this.seed >> 16) & 0x7fff;
         k = k % arr.length;
 
         const tmp = arr[i];
+
         arr[i] = arr[k];
         arr[k] = tmp;
       }
@@ -31,4 +33,4 @@ const createRandomizer = () => {
   return randomizer;
 };
 
-export { createRandomizer };
+export default createRandomizer;

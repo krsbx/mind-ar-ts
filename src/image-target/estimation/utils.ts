@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-const buildModelViewProjectionTransform = (
+export const buildModelViewProjectionTransform = (
   projectionTransform: number[][],
   modelViewTransform: number[][]
 ) => {
@@ -36,27 +34,15 @@ const buildModelViewProjectionTransform = (
       modelViewTransform[2][3],
     ],
   ];
-  return modelViewProjectionTransform;
 
-  /*
-  // this is the full computation if the projectTransform does not look like the expected format, but more computations
-  //  
-  const modelViewProjectionTransform = [[],[],[]];
-  for (let j = 0; j < 3; j++ ) {
-    for (let i = 0; i < 4; i++) {
-      modelViewProjectionTransform[j][i] = projectionTransform[j][0] * modelViewTransform[0][i]
-                                         + projectionTransform[j][1] * modelViewTransform[1][i]
-                                         + projectionTransform[j][2] * modelViewTransform[2][i];
-    }
-  }
   return modelViewProjectionTransform;
-  */
 };
 
-const applyModelViewProjectionTransform = (
+export const applyModelViewProjectionTransform = (
   modelViewProjectionTransform: number[][],
   x: number,
   y: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _z = 0
 ) => {
   // assume z is zero
@@ -64,12 +50,10 @@ const applyModelViewProjectionTransform = (
     modelViewProjectionTransform[0][0] * x +
     modelViewProjectionTransform[0][1] * y +
     modelViewProjectionTransform[0][3];
-
   const uy =
     modelViewProjectionTransform[1][0] * x +
     modelViewProjectionTransform[1][1] * y +
     modelViewProjectionTransform[1][3];
-
   const uz =
     modelViewProjectionTransform[2][0] * x +
     modelViewProjectionTransform[2][1] * y +
@@ -77,23 +61,15 @@ const applyModelViewProjectionTransform = (
   return { x: ux, y: uy, z: uz };
 };
 
-const computeScreenCoordiate = (
+export const computeScreenCoordiate = (
   modelViewProjectionTransform: number[][],
   x: number,
   y: number,
   z = 0
 ) => {
-  const {
-    x: ux,
-    y: uy,
-    z: uz,
-  } = applyModelViewProjectionTransform(modelViewProjectionTransform, x, y, z);
+  const result = applyModelViewProjectionTransform(modelViewProjectionTransform, x, y, z);
+
+  const { x: ux, y: uy, z: uz } = result;
 
   return { x: ux / uz, y: uy / uz };
-};
-
-export {
-  buildModelViewProjectionTransform,
-  applyModelViewProjectionTransform,
-  computeScreenCoordiate,
 };

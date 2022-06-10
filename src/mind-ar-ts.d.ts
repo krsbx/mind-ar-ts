@@ -1,13 +1,13 @@
 import * as tf from '@tensorflow/tfjs';
 import * as THREE from 'three';
 import { Scene } from 'aframe';
-import { Controller as ImageController } from './image-target/controller';
-import { Controller as FaceController } from './face-target/controller';
+import ImageController from './image-target/controller';
+import FaceController from './face-target/controller';
 import { Controller as LocationController } from './geo-location/controller';
-import { Compiler } from './image-target/compiler';
+import ImageCompiler from './image-target/compiler';
 import { UI } from './ui/ui';
-import { MindARThree as ImageThree } from './image-target/three';
-import { MindARThree as FaceThree } from './face-target/three';
+import ImageThree from './image-target/three';
+import FaceThree from './face-target/three';
 import { Coordinates } from './geo-location/utils/types/geo-location';
 
 declare global {
@@ -15,7 +15,7 @@ declare global {
     MINDAR: {
       IMAGE: {
         Controller: typeof ImageController;
-        Compiler: typeof Compiler;
+        Compiler: typeof ImageCompiler;
         UI: typeof UI;
         MindARThree: typeof ImageThree;
         THREE: THREE;

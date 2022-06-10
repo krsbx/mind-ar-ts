@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
-import { Controller } from './controller';
+import Controller from './controller';
 import { IAnchor, IOnUpdateArgs, Matrix4Args, ThreeConstructor } from './utils/types/face-target';
 import { UI } from '../ui/ui';
 import { Helper } from '../libs';
@@ -241,6 +241,15 @@ class MindARThree {
     }
   }
 
+  private _setCameraParams() {
+    const { fov, aspect, near, far } = this.controller.getCameraParams();
+
+    if (!Helper.isNil(fov)) this.camera.fov = fov;
+    if (!Helper.isNil(aspect)) this.camera.aspect = aspect;
+    if (!Helper.isNil(near)) this.camera.near = near;
+    if (!Helper.isNil(far)) this.camera.far = far;
+  }
+
   _startAR() {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<void>(async (resolve) => {
@@ -251,11 +260,8 @@ class MindARThree {
       this._resize();
       await this.controller.setup(video);
 
-      const { fov, aspect, near, far } = this.controller.getCameraParams();
-      this.camera.fov = fov;
-      this.camera.aspect = aspect;
-      this.camera.near = near;
-      this.camera.far = far;
+      this._setCameraParams();
+
       this.camera.updateProjectionMatrix();
 
       this.renderer.setSize(this.video.videoWidth, this.video.videoHeight);
@@ -319,4 +325,4 @@ if (!window.MINDAR.FACE) window.MINDAR.FACE = {} as typeof window.MINDAR.FACE;
 window.MINDAR.FACE.MindARThree = MindARThree;
 window.MINDAR.FACE.THREE = THREE;
 
-export { MindARThree };
+export default MindARThree;

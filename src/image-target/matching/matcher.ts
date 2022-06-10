@@ -1,5 +1,6 @@
-import { match } from './matching';
+import match from './matching';
 import { IKeyFrame, IMaximaMinimaPoint } from '../utils/types/compiler';
+import { IDebugExtra } from '../utils/types/detector';
 
 class Matcher {
   private queryWidth: number;
@@ -13,14 +14,17 @@ class Matcher {
   }
 
   matchDetection(keyframes: IKeyFrame[], featurePoints: IMaximaMinimaPoint[]) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const debugExtra: Record<any, any> = { frames: [] };
+    const debugExtra: { frames: IDebugExtra[] } = { frames: [] };
 
-    let bestResult = null;
+    let bestResult: {
+      keyframeIndex: number;
+      matches: ReturnType<typeof match>['matches'];
+      H: number[];
+    } | null = null;
 
-    for (let i = 0; i < keyframes.length; i++) {
+    for (const [i, keyframe] of keyframes.entries()) {
       const matchResult = match({
-        keyframe: keyframes[i],
+        keyframe,
         querypoints: featurePoints,
         querywidth: this.queryWidth,
         queryheight: this.queryHeight,
@@ -33,34 +37,48 @@ class Matcher {
 
       debugExtra.frames.push(frameDebugExtra);
 
-      if (H && (!bestResult || bestResult.matches.length < matches.length))
-        bestResult = { keyframeIndex: i, H, matches };
+      if (H && (bestResult === null || (bestResult?.matches?.length ?? 0 < matches.length))) {
+        bestResult = {
+          keyframeIndex: i,
+          matches,
+          H,
+        };
+      }
     }
 
-    if (!bestResult) return { keyframeIndex: -1, debugExtra };
+    if (bestResult === null || !bestResult.matches)
+      return {
+        keyframeIndex: -1,
+        debugExtra,
+      };
 
     const screenCoords: Vector2[] = [];
     const worldCoords: Vector3[] = [];
     const keyframe = keyframes[bestResult.keyframeIndex];
 
-    for (let i = 0; i < bestResult.matches.length; i++) {
-      const querypoint = bestResult.matches[i].querypoint;
-      const keypoint = bestResult.matches[i].keypoint;
+    for (const bestMatch of bestResult.matches) {
+      const querypoint = bestMatch.querypoint;
+      const keypoint = bestMatch.keypoint;
 
       screenCoords.push({
         x: querypoint.x,
         y: querypoint.y,
-      } as Vector2);
+      });
 
       worldCoords.push({
         x: (keypoint.x + 0.5) / keyframe.scale,
         y: (keypoint.y + 0.5) / keyframe.scale,
         z: 0,
-      } as Vector3);
+      });
     }
 
-    return { screenCoords, worldCoords, keyframeIndex: bestResult.keyframeIndex, debugExtra };
+    return {
+      keyframeIndex: bestResult.keyframeIndex,
+      screenCoords,
+      worldCoords,
+      debugExtra,
+    };
   }
 }
 
-export { Matcher };
+export default Matcher;
