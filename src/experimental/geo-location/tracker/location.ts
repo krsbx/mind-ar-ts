@@ -24,8 +24,8 @@ class LocationTracker {
   // * We add a custom distance for specific location
   // * by doing this, user can have a better experience
   // * since multiple location can be visible at different distance
-  private minDistance: number;
-  private maxDistance: number;
+  // private minDistance: number;
+  // private maxDistance: number;
 
   constructor({
     camera,
@@ -34,8 +34,6 @@ class LocationTracker {
     location,
     longitude,
     placeIndex,
-    maxDistance = -1,
-    minDistance = -1,
   }: LocationTrackerConstructor) {
     this.camera = camera;
     this.controller = controller as any;
@@ -50,8 +48,8 @@ class LocationTracker {
 
     // * Clamp the min and max distances
     // * By doing this the min and max distance can't be lower than -1
-    this.minDistance = Math.max(-1, minDistance);
-    this.maxDistance = Math.max(-1, maxDistance);
+    // this.minDistance = Math.max(-1, minDistance);
+    // this.maxDistance = Math.max(-1, maxDistance);
 
     this.placeIndex = placeIndex;
     this.wasFound = false;
