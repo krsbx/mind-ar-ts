@@ -1,15 +1,14 @@
 {
   "name": "mind-ar-ts",
-  "private": true,
-  "version": "0.0.1",
+  "version": "0.0.5-beta1a",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
     "hiukim"
   ],
+  "main": "index.js",
   "scripts": {
     "dev": "cross-env VITE_ENV=\"development\" vite",
-    "build": "tsc && vite build",
     "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" NODE_ENV=\"production\" webpack --config webpack.config.prod.ts",
     "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" NODE_ENV=\"production\" webpack --watch --config webpack.config.dev.ts",
     "lint": "eslint --cache --fix src/*",
@@ -69,5 +68,18 @@
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,scss,md}": "prettier --write"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krsbx/mind-ar-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/krsbx/mind-ar-ts.git"
+  },
+  "files": [
+    "src",
+    "dist",
+    "assets",
+    "patches"
+  ]
 }

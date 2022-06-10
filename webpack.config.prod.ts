@@ -15,7 +15,7 @@ const config: webpack.Configuration = {
   mode: 'production',
   output: {
     filename: '[name].prod.js',
-    path: path.resolve(__dirname, 'out'),
+    path: path.resolve(__dirname, 'dist'),
     publicPath: '',
   },
   module: {
