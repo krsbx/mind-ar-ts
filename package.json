@@ -1,6 +1,6 @@
 {
   "name": "mind-ar-ts",
-  "version": "0.0.5-beta1a",
+  "version": "0.5.1-beta1a",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
@@ -8,9 +8,9 @@
   ],
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env VITE_ENV=\"development\" vite",
-    "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" NODE_ENV=\"production\" webpack --config webpack.config.prod.ts",
-    "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" NODE_ENV=\"production\" webpack --watch --config webpack.config.dev.ts",
+    "dev": "vite",
+    "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --config webpack.config.prod.ts",
+    "build:watch": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --watch --config webpack.config.dev.ts",
     "lint": "eslint --cache --fix src/*",
     "preview": "vite preview",
     "prepare": "husky install",
@@ -29,7 +29,6 @@
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "eslint": "^8.16.0",
-    "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -43,7 +42,6 @@
     "terser-webpack-plugin": "^5.3.1",
     "ts-loader": "^9.3.0",
     "ts-node": "^10.8.0",
-    "tsconfig-paths": "^4.0.0",
     "typescript": "^4.7.2",
     "vite": "^2.9.5",
     "webpack": "^5.72.0",
@@ -59,7 +57,6 @@
     "aframe": "^1.3.0",
     "ml-matrix": "^6.10.0",
     "stats-js": "^1.0.1",
-    "svd-js": "^1.1.1",
     "three": "^0.140.0",
     "three-bmfont-text": "^3.0.1",
     "tinyqueue": "^2.0.3"

@@ -5,7 +5,6 @@ import Compiler from './compiler';
 import InputLoader from './input-loader';
 import { Helper, OneEuroFilter } from '../libs';
 import ProdControllerWorker from './controller.worker.ts';
-import { IS_PRODUCTION } from '../utils/constant';
 import { ControllerConstructor } from './utils/types/image-target';
 import {
   DEFAULT_FILTER_BETA,
@@ -95,9 +94,7 @@ class Controller {
       far,
     });
 
-    this.worker = IS_PRODUCTION
-      ? new ProdControllerWorker()
-      : new Worker('/src/image-target/controller.worker.ts', { type: 'module' });
+    this.worker = new ProdControllerWorker();
 
     this.workerMatchDone = null;
     this.workerTrackDone = null;
