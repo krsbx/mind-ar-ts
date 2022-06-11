@@ -38,7 +38,9 @@ onmessage = (msg) => {
       const percentPerImage = 50.0 / targetImages.length;
 
       let percent = 0.0;
-      const list: ITrackingFeature[][] = targetImages.map((targetImage: ImageData) => {
+      const list: ITrackingFeature[][] = [];
+
+      for (const targetImage of targetImages) {
         const imageList = buildTrackingImageList(targetImage);
         const percentPerAction = percentPerImage / imageList.length;
 
@@ -47,8 +49,8 @@ onmessage = (msg) => {
           postMessage({ type: WORKER_EVENT.PROGRESS, percent });
         });
 
-        return trackingData;
-      });
+        list.push(trackingData);
+      }
 
       postMessage({
         type: WORKER_EVENT.COMPILE_DONE,

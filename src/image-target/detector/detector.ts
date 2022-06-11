@@ -131,7 +131,7 @@ class Detector {
     const featurePoints: IMaximaMinimaPoint[] = [];
 
     for (const [i, prunedExtremas] of prunedExtremasArr.entries()) {
-      if (prunedExtremas[0] === 0) continue;
+      if (prunedExtremas[0] == 0) continue;
 
       const descriptors: number[] = [];
 
@@ -423,12 +423,16 @@ class Detector {
         }
       }
 
-      const localizedExtremas: number[][] = prunedExtremasList.map((prunedExtrema) => [
-        prunedExtrema[0],
-        prunedExtrema[1],
-        prunedExtrema[2],
-        prunedExtrema[3],
-      ]);
+      const localizedExtremas: number[][] = [];
+
+      for (const prunedExtremas of prunedExtremasList) {
+        localizedExtremas.push([
+          prunedExtremas[0],
+          prunedExtremas[1],
+          prunedExtremas[2],
+          prunedExtremas[3],
+        ]);
+      }
 
       for (const [i, localizedExtrema] of localizedExtremas.entries()) {
         if (localizedExtrema[0] === 0) continue;

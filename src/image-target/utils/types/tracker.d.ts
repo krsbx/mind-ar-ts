@@ -1,9 +1,9 @@
-import { CumulativeSum } from '../../utils/cumsum';
+import Cumsum from '../../utils/cumsum';
 
 export interface IBaseOptions {
   image: ImageData;
-  imageDataCumsum: CumulativeSum;
-  imageDataSqrCumsum: CumulativeSum;
+  imageDataCumsum: Cumsum;
+  imageDataSqrCumsum: Cumsum;
   sdThresh: number;
 }
 
