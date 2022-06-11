@@ -7,7 +7,7 @@ const MIN_IMAGE_PIXEL_SIZE = 100;
 export const buildImageList = (inputImage: ImageData | ImageDataWithScale) => {
   const minScale = MIN_IMAGE_PIXEL_SIZE / Math.min(inputImage.width, inputImage.height);
 
-  const scaleList = [];
+  const scaleList: number[] = [];
   let c = minScale;
 
   // eslint-disable-next-line no-constant-condition
@@ -23,10 +23,9 @@ export const buildImageList = (inputImage: ImageData | ImageDataWithScale) => {
   scaleList.push(c);
   scaleList.reverse();
 
-  const imageList: ImageDataWithScale[] = scaleList.map((scale) => ({
-    ...(resize({ image: inputImage, ratio: scale }) as ImageData),
-    scale,
-  }));
+  const imageList: ImageDataWithScale[] = scaleList.map((scale) =>
+    Object.assign(resize({ image: inputImage, ratio: scale }), { scale })
+  );
 
   return imageList;
 };
@@ -35,10 +34,9 @@ export const buildTrackingImageList = (inputImage: ImageData | ImageDataWithScal
   const minDimension = Math.min(inputImage.width, inputImage.height);
   const scaleList = [256.0 / minDimension, 128.0 / minDimension];
 
-  const imageList: ImageDataWithScale[] = scaleList.map((scale) => ({
-    ...(resize({ image: inputImage, ratio: scale }) as ImageData),
-    scale,
-  }));
+  const imageList: ImageDataWithScale[] = scaleList.map((scale) =>
+    Object.assign(resize({ image: inputImage, ratio: scale }), { scale })
+  );
 
   return imageList;
 };

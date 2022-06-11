@@ -1,4 +1,4 @@
-import { createRandomizer } from '../randomizer';
+import createRandomizer from '../randomizer';
 
 export interface INode {
   leaf: boolean;

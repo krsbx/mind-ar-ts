@@ -32,7 +32,9 @@ class Compiler {
   ) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
-      const targetImages: ImageData[] = images.map((image) => {
+      const targetImages: ImageData[] = [];
+
+      for (const image of images) {
         const processCanvas = Helper.castTo<HTMLCanvasElement>(document.createElement('canvas'));
         processCanvas.width = image.width;
         processCanvas.height = image.height;
@@ -54,35 +56,40 @@ class Compiler {
           );
         }
 
-        return Helper.castTo<ImageData>({
-          data: greyImageData,
-          width: image.width,
-          height: image.height,
-        });
-      });
+        targetImages.push(
+          Helper.castTo<ImageData>({
+            data: greyImageData,
+            width: image.width,
+            height: image.height,
+          })
+        );
+      }
 
       // compute matching data: 50% progress
       const percentPerImage = 50.0 / targetImages.length;
 
       let percent = 0.0;
 
-      this.data = await Promise.all(
-        targetImages.map(async (targetImage) => {
-          const imageList = buildImageList(targetImage);
-          const percentPerAction = percentPerImage / imageList.length;
+      this.data = [];
 
-          const matchingData = await this._extractMatchingFeatures(imageList, () => {
-            percent += percentPerAction;
-            progressCallback(percent);
-          });
+      for (let i = 0; i < targetImages.length; i++) {
+        const targetImage = targetImages[i];
+        const imageList = buildImageList(targetImage);
+        const percentPerAction = percentPerImage / imageList.length;
 
-          return {
-            targetImage,
-            imageList,
-            matchingData,
-          } as ICompilerData;
-        })
-      );
+        const matchingData = await this._extractMatchingFeatures(imageList, () => {
+          percent += percentPerAction;
+          progressCallback(percent);
+        });
+
+        const compiledData = {
+          targetImage: targetImage,
+          imageList: imageList,
+          matchingData: matchingData,
+        } as ICompilerData;
+
+        this.data.push(compiledData);
+      }
 
       for (const [i, targetImage] of targetImages.entries()) {
         const trackingImageList = buildTrackingImageList(targetImage);
@@ -94,9 +101,7 @@ class Compiler {
       const compileTrack = () => {
         return new Promise<ITrackingFeature[][]>((resolve) => {
           const worker = new ProdCompilerWorker();
-          worker.onmessage = (e: {
-            data: { type: string; percent: number; list: ITrackingFeature[][] };
-          }) => {
+          worker.onmessage = (e) => {
             switch (e.data.type) {
               case WORKER_EVENT.PROGRESS:
                 progressCallback(50 + e.data.percent);
@@ -124,14 +129,18 @@ class Compiler {
 
   // not exporting imageList because too large. rebuild this using targetImage
   public exportData() {
-    const dataList: IDataList[] = this.data.map((data) => ({
-      targetImage: {
-        width: data.targetImage.width,
-        height: data.targetImage.height,
-      },
-      trackingData: data.trackingData,
-      matchingData: data.matchingData,
-    }));
+    const dataList: IDataList[] = [];
+
+    for (const data of this.data) {
+      dataList.push({
+        targetImage: {
+          width: data.targetImage.width,
+          height: data.targetImage.height,
+        },
+        trackingData: data.trackingData,
+        matchingData: data.matchingData,
+      });
+    }
 
     const buffer = msgpack.encode({
       v: CURRENT_VERSION,
@@ -154,7 +163,15 @@ class Compiler {
 
     const { dataList } = content;
 
-    this.data = dataList.map((data) => data as ICompilerData);
+    this.data = [];
+
+    for (const data of dataList) {
+      this.data.push({
+        targetImage: data.targetImage,
+        trackingData: data.trackingData,
+        matchingData: data.matchingData,
+      } as ICompilerData);
+    }
 
     return this.data;
   }
