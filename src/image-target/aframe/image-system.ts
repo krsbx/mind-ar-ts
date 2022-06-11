@@ -71,7 +71,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.reshowScanning = reshowScanning;
     this.shouldFaceUser = shouldFaceUser;
 
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this._registerEventListener();
   },
 

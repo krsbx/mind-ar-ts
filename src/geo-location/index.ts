@@ -10,7 +10,7 @@ if (!window.MINDAR) window.MINDAR = {} as typeof window.MINDAR;
 
 if (!window.MINDAR.LOCATION) window.MINDAR.LOCATION = geoLocation as typeof window.MINDAR.LOCATION;
 
-if (!window.MINDAR.LOCATION.UI) window.MINDAR.LOCATION.UI = UI;
+if (!window.MINDAR.LOCATION.UI) window.MINDAR.LOCATION.UI = UI as typeof window.MINDAR.LOCATION.UI;
 if (!window.MINDAR.LOCATION.Controller) window.MINDAR.LOCATION.Controller = Controller;
 
 export default geoLocation;

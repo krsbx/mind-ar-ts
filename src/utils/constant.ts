@@ -28,9 +28,6 @@ export const HIDDEN_CLASS_NAME = 'hidden';
 
 export const PRODUCTION = 'production';
 
-export const IS_PRODUCTION =
-  import.meta.env?.VITE_ENV === PRODUCTION ?? process.env?.NODE_ENV === PRODUCTION;
-
 export const EXAMPLE = {
   FACE_TARGET: `
   <a-scene mindar-face embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">

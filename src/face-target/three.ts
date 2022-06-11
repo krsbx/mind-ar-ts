@@ -97,7 +97,7 @@ class MindARThree {
   }
 
   addFaceMesh() {
-    const faceGeometry = this.controller.createThreeFaceGeometry(THREE);
+    const faceGeometry = this.controller.createThreeFaceGeometry();
     const faceMesh = new THREE.Mesh(
       faceGeometry,
       new THREE.MeshStandardMaterial({ color: 0xffffff })
@@ -318,11 +318,9 @@ class MindARThree {
   }
 }
 
-if (!window.MINDAR) window.MINDAR = {} as typeof window.MINDAR;
+if (!window.MINDAR.FACE.MindARThree)
+  window.MINDAR.FACE.MindARThree = MindARThree as typeof window.MINDAR.FACE.MindARThree;
 
-if (!window.MINDAR.FACE) window.MINDAR.FACE = {} as typeof window.MINDAR.FACE;
-
-window.MINDAR.FACE.MindARThree = MindARThree;
-window.MINDAR.FACE.THREE = THREE;
+if (!window.MINDAR.FACE.THREE) window.MINDAR.FACE.THREE = THREE;
 
 export default MindARThree;

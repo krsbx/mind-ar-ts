@@ -319,7 +319,8 @@ class MindARThree {
   }
 }
 
-if (!window.MINDAR.IMAGE.MindARThree) window.MINDAR.IMAGE.MindARThree = MindARThree;
+if (!window.MINDAR.IMAGE.MindARThree)
+  window.MINDAR.IMAGE.MindARThree = MindARThree as typeof window.MINDAR.IMAGE.MindARThree;
 if (!window.MINDAR.IMAGE.THREE) window.MINDAR.IMAGE.THREE = THREE;
 
 export default MindARThree;

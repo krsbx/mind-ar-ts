@@ -1,6 +1,6 @@
 import FaceMeshHelper from './face-mesh-helper';
 import Estimator from './face-geometry/estimator';
-import createThreeFaceGeometry from './face-geometry/face-geometry';
+import FaceGeometry from './face-geometry/face-geometry';
 import { positions as canonicalMetricLandmarks } from './face-geometry/face-data';
 import { OneEuroFilter } from '../libs';
 import { DEFAULT_FILTER_BETA, DEFAULT_FILTER_CUTOFF } from './utils/constant';
@@ -11,7 +11,7 @@ class Controller {
   private lastEstimateResult: EstimateResult | null;
   private filterMinCF: number;
   private filterBeta: number;
-  private customFaceGeometries: ReturnType<typeof createThreeFaceGeometry>[];
+  private customFaceGeometries: FaceGeometry[];
   private landmarkFilters: OneEuroFilter[];
   public onUpdate?: ((value: IOnUpdateArgs) => void) | null;
   private faceMatrixFilter: OneEuroFilter;
@@ -164,8 +164,8 @@ class Controller {
     this.processingVideo = false;
   }
 
-  public createThreeFaceGeometry(THREE: typeof AFRAME.THREE) {
-    const faceGeometry = createThreeFaceGeometry(THREE);
+  public createThreeFaceGeometry() {
+    const faceGeometry = new FaceGeometry();
     this.customFaceGeometries.push(faceGeometry);
 
     return faceGeometry;

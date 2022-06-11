@@ -44,7 +44,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.LOCATION_SYSTEM, {
   }) {
     this.showStats = showStats;
 
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this.controller = new ControllerClass() as any;
 
     this.el.emit(SYSTEM_STATE.LOCATION_INITIALIZED);
