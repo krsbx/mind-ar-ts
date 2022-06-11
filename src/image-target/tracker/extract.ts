@@ -115,7 +115,11 @@ const extract = (image: ImageData | ImageDataWithScale) => {
 
   // Step 2
   // prebuild cumulative sum matrix for fast computation
-  const imageDataSqr = imageData.map((imgData) => imgData ** 2);
+  const imageDataSqr: number[] = [];
+
+  for (const [i, imgData] of imageData.entries()) {
+    imageDataSqr[i] = imgData ** 2;
+  }
 
   const imageDataCumsum = new Cumsum(imageData, width, height);
   const imageDataSqrCumsum = new Cumsum(imageDataSqr, width, height);

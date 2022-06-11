@@ -88,10 +88,11 @@ const computeHomography = (options: {
   if (Hs.length === 0) return null;
 
   // pick the best hypothesis
-  const hypotheses: { H: number[]; cost: number }[] = Hs.map((H) => ({
-    cost: 0,
-    H,
-  }));
+  const hypotheses: { H: number[]; cost: number }[] = [];
+
+  for (const H of Hs) {
+    hypotheses.push({ H, cost: 0 });
+  }
 
   let curChuckSize = chuckSize;
 
@@ -145,9 +146,11 @@ const _checkHeuristics = ({
   if (HInv === null) return false;
 
   // 4 test points, corner of keyframe
-  const mp: number[][] = testPoints.map((testPoint) =>
-    multiplyPointHomographyInhomogenous(testPoint, HInv)
-  );
+  const mp: number[][] = [];
+
+  for (const testPoint of testPoints) {
+    mp.push(multiplyPointHomographyInhomogenous(testPoint, HInv));
+  }
 
   const smallArea = smallestTriangleArea(mp[0], mp[1], mp[2], mp[3]);
 
@@ -196,9 +199,11 @@ const _checkHomographyPointsGeometricallyConsistent = ({
   H: number[];
   testPoints: number[][];
 }) => {
-  const mappedPoints: number[][] = testPoints.map((testPoint) =>
-    multiplyPointHomographyInhomogenous(testPoint, H)
-  );
+  const mappedPoints: number[][] = [];
+
+  for (const [i, testPoint] of testPoints.entries()) {
+    mappedPoints[i] = multiplyPointHomographyInhomogenous(testPoint, H);
+  }
 
   for (let i = 0; i < testPoints.length; i++) {
     const i1 = i;

@@ -23,10 +23,11 @@ export const normalizePoints = (coords: number[][]) => {
 
   const s = (Math.sqrt(2) * coords.length) / sumDiff;
 
-  const normPoints: number[][] = coords.map((coord) => [
-    (coord[0] - meanX) * s,
-    (coord[1] - meanY) * s,
-  ]);
+  const normPoints: number[][] = [];
+
+  for (const coord of coords) {
+    normPoints.push([(coord[0] - meanX) * s, (coord[1] - meanY) * s]);
+  }
 
   return { normPoints, param: { meanX, meanY, s } };
 };
