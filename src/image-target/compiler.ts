@@ -26,7 +26,10 @@ class Compiler {
   }
 
   // input html Images
-  public compileImageTargets(images: ImageBitmap[], progressCallback: (progress: number) => void) {
+  public compileImageTargets(
+    images: (HTMLImageElement | ImageBitmap)[],
+    progressCallback: (progress: number) => void
+  ) {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<ICompilerData[]>(async (resolve) => {
       const targetImages: ImageData[] = images.map((image) => {

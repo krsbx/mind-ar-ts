@@ -42,7 +42,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     filterBeta: number;
     shouldFaceUser: boolean;
   }) {
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError });
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
     this.shouldFaceUser = shouldFaceUser;
@@ -220,9 +220,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     cameraEle.setAttribute(AR_ELEMENT_TAG.CAMERA, 'active', true);
 
     for (let i = 0; i < this.faceMeshEntities.length; i++)
-      this.faceMeshEntities[i].el.addFaceMesh(
-        this.controller.createThreeFaceGeometry(AFRAME.THREE)
-      );
+      this.faceMeshEntities[i].el.addFaceMesh(this.controller.createThreeFaceGeometry());
 
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));

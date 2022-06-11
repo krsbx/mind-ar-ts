@@ -139,8 +139,8 @@ const extract = (image: ImageData | ImageDataWithScale) => {
         cx: i,
         cy: j,
         sdThresh: TEMPLATE_SD_THRESH,
-        imageDataCumsum: imageDataCumsum as any,
-        imageDataSqrCumsum: imageDataSqrCumsum as any,
+        imageDataCumsum: imageDataCumsum,
+        imageDataSqrCumsum: imageDataSqrCumsum,
       });
 
       if (vlen === null) {
@@ -161,8 +161,8 @@ const extract = (image: ImageData | ImageDataWithScale) => {
             vlen: vlen,
             tx: i,
             ty: j,
-            imageDataCumsum: imageDataCumsum as any,
-            imageDataSqrCumsum: imageDataSqrCumsum as any,
+            imageDataCumsum: imageDataCumsum,
+            imageDataSqrCumsum: imageDataSqrCumsum,
           });
 
           if (sim === null) continue;
@@ -191,8 +191,8 @@ const extract = (image: ImageData | ImageDataWithScale) => {
     maxSimThresh: MAX_THRESH,
     minSimThresh: MIN_THRESH,
     sdThresh: SD_THRESH,
-    imageDataCumsum: imageDataCumsum as any,
-    imageDataSqrCumsum: imageDataSqrCumsum as any,
+    imageDataCumsum: imageDataCumsum,
+    imageDataSqrCumsum: imageDataSqrCumsum,
   });
 
   return coords;

@@ -5,20 +5,10 @@ import * as estimation from './estimation';
 import * as freak from './freak';
 import * as matching from './matching';
 import * as tracker from './tracker';
-import { IS_PRODUCTION } from '../../../utils/constant';
 
-const DEFAULT_WORKER = {
+export const DEFAULT_WORKER = {
   CONTROLLER: new Worker('/src/image-target/controller.worker.ts', { type: 'module' }),
   COMPILER: new Worker('/src/image-target/compiler.worker.ts', { type: 'module' }),
 };
 
-export {
-  controller,
-  detector,
-  estimation,
-  freak,
-  matching,
-  tracker,
-  DEFAULT_WORKER,
-  IS_PRODUCTION,
-};
+export { controller, detector, estimation, freak, matching, tracker };
