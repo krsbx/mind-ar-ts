@@ -1,12 +1,13 @@
 {
   "name": "mind-ar-ts",
-  "version": "0.5.1-beta1b",
+  "version": "0.5.2-beta1a",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
     "hiukim"
   ],
   "main": "index.js",
+  "types": "types/mind-ar-ts.d.ts",
   "scripts": {
     "dev": "vite",
     "build:prod": "cross-env TS_NODE_PROJECT=\"tsconfig-for-webpack-config.json\" webpack --config webpack.config.prod.ts",
@@ -74,9 +75,10 @@
     "url": "https://github.com/krsbx/mind-ar-ts.git"
   },
   "files": [
-    "src",
     "dist",
     "assets",
-    "patches"
+    "types",
+    "patches",
+    "src/**/*.d.ts"
   ]
 }
