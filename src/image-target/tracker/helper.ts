@@ -134,7 +134,11 @@ export const selectFeature = (options: IOptions) => {
   const maxFeatureNum = Math.floor(width / occSize) * Math.floor(height / occSize) + xDiv * yDiv;
 
   const coords = [];
-  const image2 = new Float32Array(imageData.length).map((_, i) => featureMap[i]);
+  const image2 = new Float32Array(imageData.length);
+
+  for (const [i, feature] of featureMap.entries()) {
+    image2[i] = feature;
+  }
 
   let num = 0;
 

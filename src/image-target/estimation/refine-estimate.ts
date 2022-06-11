@@ -32,11 +32,11 @@ const refineEstimate = ({
   const dx = worldCoords.reduce((acc, cur) => acc + cur.x, 0) / worldCoords.length;
   const dy = worldCoords.reduce((acc, cur) => acc + cur.y, 0) / worldCoords.length;
 
-  const normalizedWorldCoords: Vector3[] = worldCoords.map((worldCoord) => ({
-    x: worldCoord.x - dx,
-    y: worldCoord.y - dy,
-    z: worldCoord.z,
-  }));
+  const normalizedWorldCoords: Vector3[] = [];
+
+  for (const worldCoord of worldCoords) {
+    normalizedWorldCoords.push({ x: worldCoord.x - dx, y: worldCoord.y - dy, z: worldCoord.z });
+  }
 
   const diffModelViewTransform: number[][] = [[], [], []];
 
