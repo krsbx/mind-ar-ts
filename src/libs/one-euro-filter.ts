@@ -72,4 +72,4 @@ class OneEuroFilter {
   }
 }
 
-export { OneEuroFilter };
+export default OneEuroFilter;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
 import Controller from './controller';
 import { IAnchor, IOnUpdateArgs, Matrix4Args, ThreeConstructor } from './utils/types/face-target';
-import { UI } from '../ui/ui';
+import UI from '../ui/ui';
 import { Helper } from '../libs';
 
 class MindARThree {

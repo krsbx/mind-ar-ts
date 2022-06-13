@@ -1,5 +1,5 @@
 import Controller from './controller';
-import { UI } from '../ui/ui';
+import UI from '../ui/ui';
 
 const faceTarget = {
   Controller,

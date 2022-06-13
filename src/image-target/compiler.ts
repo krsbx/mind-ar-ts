@@ -1,6 +1,6 @@
 import { tensor as tfTensor, tidy as tfTidy, nextFrame as tfNextFrame } from '@tensorflow/tfjs';
 import * as msgpack from '@msgpack/msgpack';
-import ProdCompilerWorker from './compiler.worker.ts';
+import ProdCompilerWorker from './compiler.worker?worker&inline';
 import { buildImageList, buildTrackingImageList } from './image-list';
 import hierarchicalClusteringBuild from './matching/hierarchical-clustering';
 import {

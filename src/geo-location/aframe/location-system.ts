@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
 import { Scene } from 'aframe';
-import { UI } from '../../ui/ui';
+import UI from '../../ui/ui';
 import { Controller } from '../controller';
 import { Helper } from '../../libs';
 import { AR_ELEMENT_TAG, AR_STATE, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
