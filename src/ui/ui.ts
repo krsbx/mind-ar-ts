@@ -74,4 +74,4 @@ class UI {
   }
 }
 
-export { UI };
+export default UI;

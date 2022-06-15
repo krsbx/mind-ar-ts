@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
 import { Scene } from 'aframe';
-import { UI } from '../../ui/ui';
+import UI from '../../ui/ui';
 import Controller from '../controller';
 import { ON_UPDATE_EVENT } from '../utils/constant/controller';
 import { IOnUpdate } from '../utils/types/controller';

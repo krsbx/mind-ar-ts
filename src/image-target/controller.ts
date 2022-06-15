@@ -4,7 +4,7 @@ import CropDetector from './detector/crop-detector';
 import Compiler from './compiler';
 import InputLoader from './input-loader';
 import { Helper, OneEuroFilter } from '../libs';
-import ProdControllerWorker from './controller.worker.ts';
+import ProdControllerWorker from './controller.worker?worker&inline';
 import { ControllerConstructor } from './utils/types/image-target';
 import {
   DEFAULT_FILTER_BETA,

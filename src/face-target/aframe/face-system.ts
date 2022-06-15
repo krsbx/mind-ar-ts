@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Scene } from 'aframe';
-import { UI } from '../../ui/ui';
+import UI from '../../ui/ui';
 import Controller from '../controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
