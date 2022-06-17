@@ -56,6 +56,9 @@ declare global {
       origin?: Coordinates;
       message?: string;
       placeIndex?: number;
+      positionChange?: Vector2;
+      spreadChange?: number;
+      startSpread?: number;
     };
   }
 }
