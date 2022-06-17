@@ -1,5 +1,4 @@
-export interface ITouchState {
-  count: number;
+export interface IInternalState {
   rawPosition: Vector2;
   position: Vector2;
   spread?: number;
@@ -8,3 +7,9 @@ export interface ITouchState {
   startSpread?: number;
   spreadChange?: number;
 }
+
+export interface ITouchState extends IInternalState {
+  count: number;
+}
+
+export type IMouseState = Pick<IInternalState, 'rawPosition' | 'position' | 'startPosition'>;
