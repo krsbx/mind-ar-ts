@@ -5,8 +5,6 @@ import { Helper } from '../../libs';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME } from '../utils/constant';
 
 AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_HANDLER.SCALE, {
-  dependencies: [GESTURE_COMPONENT.GESTURE_DETECTOR],
-  isVisible: false,
   scaleFactor: 1,
   initialScale: { x: 0, y: 0, z: 0 } as Vector3,
 

@@ -4,14 +4,11 @@ import { Helper } from '../../libs';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME } from '../utils/constant';
 
 AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_HANDLER.ROTATION, {
-  dependencies: [GESTURE_COMPONENT.GESTURE_DETECTOR],
-  isVisible: false,
   el: Helper.castTo<Entity>(null),
 
   schema: {
     enabled: { type: 'boolean', default: true },
     rotationFactor: { type: 'number', default: 5 },
-    locationBased: { type: 'boolean', default: false },
   },
 
   init: function () {

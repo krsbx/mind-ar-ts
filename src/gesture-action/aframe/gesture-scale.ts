@@ -5,8 +5,6 @@ import { Helper } from '../../libs';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME } from '../utils/constant';
 
 AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_HANDLER.SCALE, {
-  dependencies: [GESTURE_COMPONENT.GESTURE_DETECTOR],
-  isVisible: false,
   scaleFactor: 1,
   initialScale: { x: 0, y: 0, z: 0 } as Vector3,
 
@@ -16,13 +14,11 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_HANDLER.SCALE, {
     enabled: { type: 'boolean', default: true },
     minScale: { type: 'number', default: 0.3 },
     maxScale: { type: 'number', default: 8 },
-    locationBased: { type: 'boolean', default: false },
   },
 
   init: function () {
     if (!this.el.sceneEl) return;
 
-    this.isVisible = this.data.locationBased;
     this.initialScale = this.el.object3D.scale.clone();
 
     this.el.sceneEl.addEventListener(AR_EVENT_NAME.MARKER_FOUND, () => {
