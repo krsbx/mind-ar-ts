@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Entity } from 'aframe';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_ELEMENT_TAG } from '../../utils/constant';
+import { Helper } from '../../libs';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.OCCULDER, {
-  el: null as any,
+  el: Helper.castTo<Entity>(null),
 
   init: function () {
     this.el.addEventListener(AR_EVENT_NAME.MODEL_LOADED, this.onModelLoaded.bind(this));

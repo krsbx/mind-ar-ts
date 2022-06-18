@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Entity } from 'aframe';
 import { Matrix4 } from 'three';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
   dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
-  el: null as any,
+  el: Helper.castTo<Entity>(null),
   postMatrix: Helper.castTo<Matrix4>(null), // rescale the anchor to make width of 1 unit = physical width of card
 
   schema: {
@@ -13,7 +14,9 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM];
+    if (!this.el.sceneEl) return;
+
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM] as any;
     arSystem.registerAnchor(this, this.data.targetIndex);
 
     const root = this.el.object3D;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Scene } from 'aframe';
+import { Entity } from 'aframe';
 import UI from '../../ui/ui';
 import Controller from '../controller';
 import { Helper } from '../../libs';
@@ -18,7 +18,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   filterBeta: Infinity,
   controller: Helper.castTo<Controller>(null),
   ui: Helper.castTo<UI>(null),
-  el: null as any,
+
+  el: Helper.castTo<Entity>(null),
+
   shouldFaceUser: true,
   lastHasFace: false,
 
@@ -57,10 +59,11 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   },
 
   start: function () {
+    if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
+
+    this.container = this.el.sceneEl.parentNode as HTMLDivElement;
+
     this.ui.showLoading();
-
-    this.container = this.el.sceneEl.parentNode;
-
     this._startVideo();
   },
 
@@ -230,7 +233,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   _resize: function () {
     screenResizer(this.video, this.container);
 
-    const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as Scene;
+    const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as Entity;
 
     sceneEl.style.top = this.video.style.top;
     sceneEl.style.left = this.video.style.left;
