@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Entity } from 'aframe';
+import { Helper } from '../../libs';
 import { AR_STATE } from '../../utils/constant';
 import { AR_COMPONENT_NAME } from '../utils/constant/aframe';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
   dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
 
-  el: null as any,
+  el: Helper.castTo<Entity>(null),
 
   schema: {
     imageTargetSrc: { type: 'string' },
@@ -24,7 +26,9 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM];
+    if (!this.el.sceneEl) return;
+
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM] as any;
 
     arSystem.setup({
       imageTargetSrc: this.data.imageTargetSrc,

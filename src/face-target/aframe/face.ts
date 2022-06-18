@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Entity } from 'aframe';
 import { AR_COMPONENT_NAME } from '../utils/constant';
 import { AR_STATE, AR_ELEMENT_TAG } from '../../utils/constant';
+import { Helper } from '../../libs';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.FACE, {
   dependencies: [AR_COMPONENT_NAME.FACE_SYSTEM],
 
-  el: null as any,
+  el: Helper.castTo<Entity>(null),
 
   schema: {
     autoStart: { type: 'boolean', default: true },
@@ -19,7 +21,9 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.FACE, {
   },
 
   init: function () {
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.FACE_SYSTEM];
+    if (!this.el.sceneEl) return;
+
+    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.FACE_SYSTEM] as any;
 
     if (this.data.faceOccluder) {
       const faceOccluderMeshEntity = document.createElement(AR_ELEMENT_TAG.A_ENTITY);

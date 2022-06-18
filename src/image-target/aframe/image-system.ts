@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
-import { Scene } from 'aframe';
+import { Entity } from 'aframe';
 import UI from '../../ui/ui';
 import Controller from '../controller';
 import { ON_UPDATE_EVENT } from '../utils/constant/controller';
@@ -25,7 +25,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   showStats: false,
   controller: Helper.castTo<Controller>(null),
   ui: Helper.castTo<UI>(null),
-  el: null as any,
+  el: Helper.castTo<Entity>(null),
   mainStats: Helper.castTo<Stats>(null),
   reshowScanning: true,
   shouldFaceUser: false,
@@ -94,7 +94,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   },
 
   start: function () {
-    this.container = this.el.sceneEl.parentNode;
+    if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
+
+    this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     if (this.showStats) {
       this.mainStats = new Stats();
@@ -258,7 +260,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     const far = proj[14] / (proj[10] + 1.0);
 
     const newAspect = container.clientWidth / container.clientHeight;
-    const cameraEle = container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Scene;
+    const cameraEle = container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Entity;
 
     const camera = cameraEle.getObject3D(AR_ELEMENT_TAG.CAMERA) as any;
     camera.fov = fov;
