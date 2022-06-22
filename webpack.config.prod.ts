@@ -11,6 +11,7 @@ const config: webpack.Configuration = {
     'mindar-face-three': './src/face-target/three.ts',
     'mindar-location': './src/geo-location/index.ts',
     'mindar-location-aframe': './src/geo-location/aframe.ts',
+    'mindar-gesture': './src/gesture-action/aframe.ts',
   },
   mode: 'production',
   output: {
