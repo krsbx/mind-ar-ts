@@ -27,6 +27,7 @@
     "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
+    "aframe-typescript-class-components": "^0.3.3",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "eslint": "^8.16.0",

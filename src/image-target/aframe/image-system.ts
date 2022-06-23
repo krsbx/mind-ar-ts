@@ -9,32 +9,33 @@ import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
+import { BaseSystem, toSystem } from 'aframe-typescript-class-components';
+import { MindARImageTarget } from './image-target';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.IMAGE;
 
-AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
-  container: Helper.castTo<HTMLDivElement>(null),
-  video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
-  imageTargetSrc: '',
-  maxTrack: -1,
-  filterMinCF: -Infinity,
-  filterBeta: Infinity,
-  missTolerance: -Infinity,
-  warmupTolerance: -Infinity,
-  showStats: false,
-  controller: Helper.castTo<Controller>(null),
-  ui: Helper.castTo<UI>(null),
-  el: Helper.castTo<Entity>(null),
-  mainStats: Helper.castTo<Stats>(null),
-  reshowScanning: true,
-  shouldFaceUser: false,
+export class MindARImageSystem extends BaseSystem {
+  container!: HTMLDivElement;
+  video!: HTMLVideoElement;
+  anchorEntities: { el: MindARImageTarget; targetIndex: number }[] = [];
+  imageTargetSrc = '';
+  maxTrack = -1;
+  filterMinCF = -Infinity;
+  filterBeta = Infinity;
+  missTolerance = -Infinity;
+  warmupTolerance = -Infinity;
+  showStats = false;
+  controller!: Controller;
+  ui!: UI;
+  mainStats!: Stats;
+  reshowScanning = true;
+  shouldFaceUser = false;
 
-  init: function () {
+  public init() {
     this.anchorEntities = [];
-  },
+  }
 
-  setup: function ({
+  public setup({
     imageTargetSrc,
     maxTrack,
     showStats,
@@ -73,9 +74,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
 
     this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this._registerEventListener();
-  },
+  }
 
-  _registerEventListener: function () {
+  private _registerEventListener() {
     // Subcribe to the targetFound event
     // This event is fired when the target is found
     this.el.addEventListener(AR_EVENT_NAME.MARKER_FOUND, () => {
@@ -87,16 +88,16 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.el.addEventListener(AR_EVENT_NAME.MARKER_LOST, () => {
       if (this.reshowScanning) this.ui.showScanning();
     });
-  },
+  }
 
-  registerAnchor: function (el: any, targetIndex: number) {
+  public registerAnchor(el: MindARImageTarget, targetIndex: number) {
     this.anchorEntities.push({ el, targetIndex });
-  },
+  }
 
-  start: function () {
-    if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
+  public start() {
+    if (!this.el.sceneEl) return;
 
-    this.container = this.el.sceneEl.parentNode as HTMLDivElement;
+    this.container = Helper.castTo<HTMLDivElement>(this.el.sceneEl.parentNode);
 
     if (this.showStats) {
       this.mainStats = new Stats();
@@ -107,13 +108,13 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
 
     this.ui.showLoading();
     this._startVideo();
-  },
+  }
 
-  switchTarget: function (targetIndex: number) {
+  public switchTarget(targetIndex: number) {
     this.controller.interestedTargetIndex = targetIndex;
-  },
+  }
 
-  stop: function () {
+  public stop() {
     this.pause();
 
     if (!this.video) return;
@@ -129,27 +130,27 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     });
 
     this.video.remove();
-  },
+  }
 
-  switchCamera: function () {
+  public switchCamera() {
     this.shouldFaceUser = !this.shouldFaceUser;
 
     this.stop();
     this.start();
-  },
+  }
 
-  pause: function (keepVideo = false) {
+  public pause(keepVideo = false) {
     if (!keepVideo) this.video.pause();
 
     this.controller.stopProcessVideo();
-  },
+  }
 
-  unpause: function () {
+  public unpause() {
     this.video.play();
     this.controller.processVideo(this.video);
-  },
+  }
 
-  _startVideo: async function () {
+  private async _startVideo() {
     this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
     this.video.setAttribute('autoplay', '');
@@ -197,9 +198,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
       console.log('getUserMedia error', err);
       this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
     }
-  },
+  }
 
-  _startAR: async function () {
+  private async _startAR() {
     this.controller = new ControllerClass({
       inputWidth: this.video.videoWidth,
       inputHeight: this.video.videoHeight,
@@ -247,9 +248,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.ui.showScanning();
 
     this.controller.processVideo(this.video);
-  },
+  }
 
-  _resize: function () {
+  private _resize() {
     const { vh } = screenResizer(this.video, this.container);
 
     const container = this.container;
@@ -268,5 +269,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     camera.near = near;
     camera.far = far;
     camera.updateProjectionMatrix();
-  },
-});
+  }
+}
+
+AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, toSystem(MindARImageSystem));
