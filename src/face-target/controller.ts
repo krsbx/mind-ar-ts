@@ -4,7 +4,7 @@ import FaceGeometry from './face-geometry/face-geometry';
 import { positions as canonicalMetricLandmarks } from './face-geometry/face-data';
 import { OneEuroFilter } from '../libs';
 import { DEFAULT_FILTER_BETA, DEFAULT_FILTER_CUTOFF } from './utils/constant';
-import { EstimateResult, IOnUpdateArgs } from './utils/types/face-target';
+import { EstimateResult, IOnUpdateArgs, Matrix4Args } from './utils/types/face-target';
 
 class Controller {
   private estimator: Estimator | null;
@@ -192,7 +192,7 @@ class Controller {
       metricLandmarks[landmarkIndex][2],
     ];
 
-    const m = [
+    const m: Matrix4Args = [
       fm[0] * s,
       fm[1] * s,
       fm[2] * s,

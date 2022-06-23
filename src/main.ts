@@ -3,7 +3,7 @@ import { EXAMPLE } from './utils/constant';
 
 const app = document.querySelector('#app') as unknown as HTMLDivElement;
 
-const SCENE = EXAMPLE.IMAGE_TARGET;
+const SCENE = EXAMPLE.FACE_TARGET;
 
 app.innerHTML = `
   <h1>Hello Mind AR J/TS!</h1>

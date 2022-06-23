@@ -1,35 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Entity } from 'aframe';
+import { BaseSystem, toSystem } from 'aframe-typescript-class-components';
 import UI from '../../ui/ui';
 import Controller from '../controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
+import { MindARFaceTarget } from './face-target';
+import { MindARFaceDefaultOccluder } from './face-default-occluder';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.FACE;
 
-AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
-  container: Helper.castTo<HTMLDivElement>(null),
-  video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
-  faceMeshEntities: [] as any[],
-  filterMinCF: -Infinity,
-  filterBeta: Infinity,
-  controller: Helper.castTo<Controller>(null),
-  ui: Helper.castTo<UI>(null),
+export class MindARFaceSystem extends BaseSystem {
+  container!: HTMLDivElement;
+  video!: HTMLVideoElement;
+  anchorEntities: { el: MindARFaceTarget; targetIndex: number }[] = [];
+  faceMeshEntities: { el: MindARFaceDefaultOccluder }[] = [];
+  filterMinCF = -Infinity;
+  filterBeta = Infinity;
+  controller!: Controller;
+  ui!: UI;
 
-  el: Helper.castTo<Entity>(null),
+  shouldFaceUser = true;
+  lastHasFace = false;
 
-  shouldFaceUser: true,
-  lastHasFace: false,
-
-  init: function () {
+  public init() {
     this.anchorEntities = [];
     this.faceMeshEntities = [];
-  },
+  }
 
-  setup: function ({
+  public setup({
     uiLoading,
     uiScanning,
     uiError,
@@ -48,26 +49,26 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
     this.shouldFaceUser = shouldFaceUser;
-  },
+  }
 
-  registerFaceMesh: function (el: any) {
+  public registerFaceMesh(el: MindARFaceDefaultOccluder) {
     this.faceMeshEntities.push({ el });
-  },
+  }
 
-  registerAnchor: function (el: any, targetIndex: number) {
+  public registerAnchor(el: MindARFaceTarget, targetIndex: number) {
     this.anchorEntities.push({ el, targetIndex });
-  },
+  }
 
-  start: function () {
+  public start() {
     if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
 
     this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     this.ui.showLoading();
     this._startVideo();
-  },
+  }
 
-  stop: function () {
+  public stop() {
     this.pause();
 
     if (!this.video) return;
@@ -83,27 +84,27 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     });
 
     this.video.remove();
-  },
+  }
 
-  switchCamera: function () {
+  public switchCamera() {
     this.shouldFaceUser = !this.shouldFaceUser;
 
     this.stop();
     this.start();
-  },
+  }
 
-  pause: function (keepVideo = false) {
+  public pause(keepVideo = false) {
     if (!keepVideo) this.video.pause();
 
     this.controller.stopProcessVideo();
-  },
+  }
 
-  unpause: function () {
+  public unpause() {
     this.video.play();
     this.controller.processVideo(this.video);
-  },
+  }
 
-  _startVideo: async function () {
+  private async _startVideo() {
     this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
     this.video.setAttribute('autoplay', '');
@@ -155,9 +156,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
       console.log('getUserMedia error', err);
       this.el.emit(AR_STATE.AR_ERROR, { error: 'VIDEO_FAIL' });
     }
-  },
+  }
 
-  _processVideo: function () {
+  private _processVideo() {
     this.controller.onUpdate = ({ hasFace, estimateResult }) => {
       if (hasFace && !this.lastHasFace) {
         this.el.emit(AR_EVENT_NAME.TARGET_FOUND);
@@ -196,13 +197,15 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     };
 
     this.controller.processVideo(this.video);
-  },
+  }
 
-  _setupAR: async function () {
-    this.controller = new ControllerClass({
-      filterMinCF: this.filterMinCF,
-      filterBeta: this.filterBeta,
-    }) as any;
+  private async _setupAR() {
+    this.controller = Helper.castTo<Controller>(
+      new ControllerClass({
+        filterMinCF: this.filterMinCF,
+        filterBeta: this.filterBeta,
+      })
+    );
 
     this._resize();
 
@@ -218,7 +221,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     camera.far = far;
     camera.updateProjectionMatrix();
 
-    const cameraEle = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as any;
+    const cameraEle = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Entity;
     cameraEle.setObject3D(AR_ELEMENT_TAG.CAMERA, camera);
     cameraEle.setAttribute(AR_ELEMENT_TAG.CAMERA, 'active', true);
 
@@ -228,9 +231,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
     this.el.emit(AR_STATE.AR_READY);
-  },
+  }
 
-  _resize: function () {
+  private _resize() {
     screenResizer(this.video, this.container);
 
     const sceneEl = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_SCENE)[0] as Entity;
@@ -239,5 +242,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     sceneEl.style.left = this.video.style.left;
     sceneEl.style.width = this.video.style.width;
     sceneEl.style.height = this.video.style.height;
-  },
-});
+  }
+}
+
+AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, toSystem(MindARFaceSystem));

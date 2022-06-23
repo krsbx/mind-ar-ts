@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
 import { Entity } from 'aframe';
+import { BaseSystem, toSystem } from 'aframe-typescript-class-components';
 import UI from '../../ui/ui';
 import Controller from '../controller';
 import { ON_UPDATE_EVENT } from '../utils/constant/controller';
@@ -9,7 +10,6 @@ import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
-import { BaseSystem, toSystem } from 'aframe-typescript-class-components';
 import { MindARImageTarget } from './image-target';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.IMAGE;
@@ -201,32 +201,34 @@ export class MindARImageSystem extends BaseSystem {
   }
 
   private async _startAR() {
-    this.controller = new ControllerClass({
-      inputWidth: this.video.videoWidth,
-      inputHeight: this.video.videoHeight,
-      maxTrack: this.maxTrack,
-      filterMinCF: this.filterMinCF,
-      filterBeta: this.filterBeta,
-      missTolerance: this.missTolerance,
-      warmupTolerance: this.warmupTolerance,
-      onUpdate: (data: IOnUpdate) => {
-        switch (data.type) {
-          case ON_UPDATE_EVENT.DONE:
-            if (this.mainStats) this.mainStats.update();
-            break;
-          case ON_UPDATE_EVENT.UPDATE_MATRIX:
-            // eslint-disable-next-line no-case-declarations
-            const { targetIndex, worldMatrix } = data;
+    this.controller = Helper.castTo<Controller>(
+      new ControllerClass({
+        inputWidth: this.video.videoWidth,
+        inputHeight: this.video.videoHeight,
+        maxTrack: this.maxTrack,
+        filterMinCF: this.filterMinCF,
+        filterBeta: this.filterBeta,
+        missTolerance: this.missTolerance,
+        warmupTolerance: this.warmupTolerance,
+        onUpdate: (data: IOnUpdate) => {
+          switch (data.type) {
+            case ON_UPDATE_EVENT.DONE:
+              if (this.mainStats) this.mainStats.update();
+              break;
+            case ON_UPDATE_EVENT.UPDATE_MATRIX:
+              // eslint-disable-next-line no-case-declarations
+              const { targetIndex, worldMatrix } = data;
 
-            for (const anchorEntity of this.anchorEntities) {
-              if (anchorEntity.targetIndex === targetIndex)
-                anchorEntity.el.updateWorldMatrix(worldMatrix);
-            }
+              for (const anchorEntity of this.anchorEntities) {
+                if (anchorEntity.targetIndex === targetIndex)
+                  anchorEntity.el.updateWorldMatrix(worldMatrix);
+              }
 
-            break;
-        }
-      },
-    }) as any;
+              break;
+          }
+        },
+      })
+    );
 
     this._resize();
     window.addEventListener(GLOBAL_AR_EVENT_NAME.SCREEN_RESIZE, this._resize.bind(this));
