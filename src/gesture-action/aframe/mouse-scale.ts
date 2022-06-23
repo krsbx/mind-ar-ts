@@ -1,22 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Entity } from 'aframe';
+import { Schema } from 'aframe';
+import { BaseComponent, toComponent } from 'aframe-typescript-class-components';
 import { AR_EVENT_NAME } from '../../image-target/utils/constant/aframe';
-import { Helper } from '../../libs';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME } from '../utils/constant';
+import { IMouseGestureScale } from './aframe';
 
-AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_HANDLER.SCALE, {
-  scaleFactor: 1,
-  initialScale: { x: 0, y: 0, z: 0 } as Vector3,
+export class MindARMouseScale extends BaseComponent<IMouseGestureScale> {
+  scaleFactor = 1;
+  initialScale: Vector3 = { x: 0, y: 0, z: 0 };
 
-  el: Helper.castTo<Entity>(null),
-
-  schema: {
+  static schema: Schema<IMouseGestureScale> = {
     enabled: { type: 'boolean', default: true },
     minScale: { type: 'number', default: 0.3 },
     maxScale: { type: 'number', default: 8 },
-  },
+  };
 
-  init: function () {
+  public init() {
     if (!this.el.sceneEl) return;
 
     this.initialScale = this.el.object3D.scale.clone();
@@ -35,9 +33,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_HANDLER.SCALE, {
 
       this.el.sceneEl.removeEventListener(GESTURE_EVENT_NAME.SCALE_MOUSE_MOVE, this.onScaling);
     });
-  },
+  }
 
-  onScaling: function (event: Event) {
+  public onScaling(event: Event) {
     if (!this.data.enabled) return;
     if (!event.detail.spreadChange) return;
 
@@ -52,5 +50,7 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_HANDLER.SCALE, {
       this.initialScale.y * this.scaleFactor,
       this.initialScale.z * this.scaleFactor
     );
-  },
-});
+  }
+}
+
+AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_HANDLER.SCALE, toComponent(MindARMouseScale));

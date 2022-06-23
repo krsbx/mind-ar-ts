@@ -1,30 +1,32 @@
-import { Entity } from 'aframe';
+import { Entity, Schema } from 'aframe';
+import { BaseComponent, toComponent } from 'aframe-typescript-class-components';
 import { Helper } from '../../libs';
 import { GESTURE_COMPONENT } from '../utils/constant';
 import { ITouchState } from '../utils/types/aframe';
+import { IDetector, IGestureDetector } from './aframe';
 
-type InternalState = ITouchState | null;
+export class MindARGestureDetector extends BaseComponent<IDetector> {
+  targetElement!: Entity;
+  internalState!: IGestureDetector;
 
-AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, {
-  targetElement: Helper.castTo<Entity>(null),
-  internalState: {
-    previousState: null as InternalState,
-    currentState: null as InternalState,
-  },
-
-  schema: {
+  static schema: Schema<IDetector> = {
     enabled: { type: 'boolean', default: true },
-  },
+  };
 
-  init: function () {
+  public init() {
     if (!this.targetElement) this.targetElement = this.el;
+
+    this.internalState = {
+      currentState: null,
+      previousState: null,
+    };
 
     this.targetElement.addEventListener('touchstart', this.onTouch.bind(this));
     this.targetElement.addEventListener('touchend', this.onTouch.bind(this));
     this.targetElement.addEventListener('touchmove', this.onTouch.bind(this));
-  },
+  }
 
-  onTouch: function (ev: Event) {
+  public onTouch(ev: Event) {
     if (!this.data.enabled) return;
 
     const event = ev as TouchEvent;
@@ -42,9 +44,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, {
     if (gestureEnded) this.onTouchEnd(previousState);
     if (gestureStarted) this.onTouchStart(currentState);
     if (gestureContinues) this.onTouchMove(previousState, currentState);
-  },
+  }
 
-  onTouchStart: function (currentState: ITouchState) {
+  public onTouchStart(currentState: ITouchState) {
     currentState.startTime = performance.now();
     currentState.startPosition = currentState.position;
     currentState.startSpread = currentState.spread;
@@ -54,17 +56,17 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, {
     this.el.emit(eventName, currentState);
 
     this.internalState.previousState = currentState;
-  },
+  }
 
-  onTouchEnd: function (previousState: ITouchState) {
+  public onTouchEnd(previousState: ITouchState) {
     const eventName = this.getEventPrefix(previousState.count) + 'fingerend';
 
     this.el.emit(eventName, previousState);
 
     this.internalState.previousState = null;
-  },
+  }
 
-  onTouchMove: function (previousState: ITouchState, currentState: ITouchState) {
+  public onTouchMove(previousState: ITouchState, currentState: ITouchState) {
     const eventDetail = {
       positionChange: {
         x: currentState.position.x - previousState.position.x,
@@ -85,9 +87,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, {
 
     const eventName = this.getEventPrefix(currentState.count) + 'fingermove';
     this.el.emit(eventName, eventDetail);
-  },
+  }
 
-  getTouchState: function (ev: TouchEvent) {
+  public getTouchState(ev: TouchEvent) {
     if (ev.touches.length === 0) return null;
 
     const zeroPosXY = {
@@ -139,11 +141,13 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, {
     touchState.spread = spread * scale;
 
     return touchState;
-  },
+  }
 
-  getEventPrefix: function (touchCount: number) {
+  public getEventPrefix(touchCount: number) {
     const names = ['one', 'two', 'three', 'many'];
 
     return names[Math.min(touchCount, 4) - 1];
-  },
-});
+  }
+}
+
+AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_DETECTOR, toComponent(MindARGestureDetector));

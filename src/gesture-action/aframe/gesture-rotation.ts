@@ -1,17 +1,16 @@
-import { Entity } from 'aframe';
+import { Schema } from 'aframe';
+import { BaseComponent, toComponent } from 'aframe-typescript-class-components';
 import { AR_EVENT_NAME } from '../../image-target/utils/constant/aframe';
-import { Helper } from '../../libs';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME } from '../utils/constant';
+import { IMouseGestureRotation } from './aframe';
 
-AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_HANDLER.ROTATION, {
-  el: Helper.castTo<Entity>(null),
-
-  schema: {
+export class MindARGestureRotation extends BaseComponent<IMouseGestureRotation> {
+  static schema: Schema<IMouseGestureRotation> = {
     enabled: { type: 'boolean', default: true },
     rotationFactor: { type: 'number', default: 5 },
-  },
+  };
 
-  init: function () {
+  public init() {
     if (!this.el.sceneEl) return;
 
     this.el.sceneEl.addEventListener(AR_EVENT_NAME.MARKER_FOUND, () => {
@@ -28,13 +27,18 @@ AFRAME.registerComponent(GESTURE_COMPONENT.GESTURE_HANDLER.ROTATION, {
 
       this.el.sceneEl.removeEventListener(GESTURE_EVENT_NAME.ONE_FINGER_MOVE, this.onRotation);
     });
-  },
+  }
 
-  onRotation: function (event: Event) {
+  public onRotation(event: Event) {
     if (!this.data.enabled) return;
     if (!event.detail.positionChange) return;
 
     this.el.object3D.rotation.y += event.detail.positionChange.x * this.data.rotationFactor;
     this.el.object3D.rotation.x += event.detail.positionChange.y * this.data.rotationFactor;
-  },
-});
+  }
+}
+
+AFRAME.registerComponent(
+  GESTURE_COMPONENT.GESTURE_HANDLER.ROTATION,
+  toComponent(MindARGestureRotation)
+);

@@ -1,24 +1,25 @@
-import { Entity } from 'aframe';
-import { Helper } from '../../libs';
+import { Entity, Schema } from 'aframe';
+import { BaseComponent, toComponent } from 'aframe-typescript-class-components';
 import { GESTURE_COMPONENT, GESTURE_EVENT_NAME, MOUSE_SCALE_STEP } from '../utils/constant';
 import { IMouseState } from '../utils/types/aframe';
+import { IDetector, IMouseDetector } from './aframe';
 
-type InternalState = IMouseState | null;
+export class MindARMouseDetector extends BaseComponent<IDetector> {
+  targetElement!: Entity;
+  internalState!: IMouseDetector;
 
-AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
-  targetElement: Helper.castTo<Entity>(null),
-  internalState: {
-    previousState: null as InternalState,
-    currentState: null as InternalState,
-    active: false,
-  },
-
-  schema: {
+  static schema: Schema<IDetector> = {
     enabled: { type: 'boolean', default: true },
-  },
+  };
 
-  init: function () {
+  public init() {
     if (!this.targetElement) this.targetElement = this.el;
+
+    this.internalState = {
+      currentState: null,
+      previousState: null,
+      active: false,
+    };
 
     this.targetElement.addEventListener('mousedown', (e) => {
       this.internalState.active = true;
@@ -33,9 +34,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
     this.targetElement.addEventListener('mousemove', this.onMouse.bind(this));
 
     this.targetElement.addEventListener('wheel', this.onWheel.bind(this));
-  },
+  }
 
-  onMouse: function (ev: Event) {
+  public onMouse(ev: Event) {
     if (!this.data.enabled) return;
 
     const event = ev as MouseEvent;
@@ -53,23 +54,23 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
     if (gestureEnded) this.onMouseEnd(previousState);
     if (gestureStarted) this.onMouseStart(currentState);
     if (gestureContinues) this.onMouseMove(previousState, currentState);
-  },
+  }
 
-  onMouseStart: function (currentState: IMouseState) {
+  public onMouseStart(currentState: IMouseState) {
     currentState.startPosition = currentState.position;
 
     this.el.emit(GESTURE_EVENT_NAME.ROTATE_MOUSE_START, currentState);
 
     this.internalState.previousState = currentState;
-  },
+  }
 
-  onMouseEnd: function (previousState: IMouseState) {
+  public onMouseEnd(previousState: IMouseState) {
     this.el.emit(GESTURE_EVENT_NAME.ROTATE_MOUSE_END, previousState);
 
     this.internalState.previousState = null;
-  },
+  }
 
-  onMouseMove: function (previousState: IMouseState, currentState: IMouseState) {
+  public onMouseMove(previousState: IMouseState, currentState: IMouseState) {
     const eventDetail = {
       positionChange: {
         x: currentState.position.x - previousState.position.x,
@@ -85,9 +86,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
     Object.assign(eventDetail, previousState);
 
     this.el.emit(GESTURE_EVENT_NAME.ROTATE_MOUSE_MOVE, eventDetail);
-  },
+  }
 
-  getMouseState: function (event: MouseEvent) {
+  public getMouseState(event: MouseEvent) {
     const zeroPosXY = {
       x: 0,
       y: 0,
@@ -112,9 +113,9 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
     };
 
     return mouseState;
-  },
+  }
 
-  onWheel: function (ev: Event) {
+  public onWheel(ev: Event) {
     const event = ev as WheelEvent;
 
     const scale = 2 / (window.innerHeight + window.innerWidth);
@@ -124,5 +125,7 @@ AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, {
     this.el.emit(GESTURE_EVENT_NAME.SCALE_MOUSE_MOVE, {
       spreadChange,
     });
-  },
-});
+  }
+}
+
+AFRAME.registerComponent(GESTURE_COMPONENT.MOUSE_DETECTOR, toComponent(MindARMouseDetector));
