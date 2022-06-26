@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Entity } from 'aframe';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_ELEMENT_TAG } from '../../utils/constant';
@@ -13,13 +12,13 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.OCCULDER, {
   },
 
   onModelLoaded: function () {
-    this.el.getObject3D(AR_ELEMENT_TAG.MESH).traverse((o: any) => {
-      if (o.isMesh) {
+    this.el.getObject3D(AR_ELEMENT_TAG.MESH).traverse((o) => {
+      if ((<THREE.Mesh>o).isMesh) {
         const material = new AFRAME.THREE.MeshStandardMaterial({
           colorWrite: false,
         });
 
-        o.material = material;
+        (<THREE.Mesh>o).material = material;
       }
     });
   },

@@ -1,4 +1,4 @@
-import { Estimator } from '../../face-geometry/estimator';
+import Estimator from '../../face-geometry/estimator';
 
 export type EstimateResult = ReturnType<Estimator['estimate']>;
 

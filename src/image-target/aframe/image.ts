@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Entity } from 'aframe';
+import { Entity, SystemDefinition } from 'aframe';
 import { Helper } from '../../libs';
 import { AR_STATE } from '../../utils/constant';
 import { AR_COMPONENT_NAME } from '../utils/constant/aframe';
+import { IMindARImageSystem } from '../../../types/image-target/aframe';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
   dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
@@ -23,12 +23,16 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
     uiError: { type: 'string', default: 'yes' },
     reshowScanning: { type: 'boolean', default: true },
     shouldFaceUser: { type: 'boolean', default: false },
+    _positionSettings: { type: 'string', default: 'absolute' },
+    _positionZIndex: { type: 'int', default: -2 },
   },
 
   init: function () {
     if (!this.el.sceneEl) return;
 
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM] as any;
+    const arSystem = this.el.sceneEl.systems[
+      AR_COMPONENT_NAME.IMAGE_SYSTEM
+    ] as SystemDefinition<IMindARImageSystem>;
 
     arSystem.setup({
       imageTargetSrc: this.data.imageTargetSrc,
@@ -43,6 +47,8 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE, {
       uiError: this.data.uiError,
       reshowScanning: this.data.reshowScanning,
       shouldFaceUser: this.data.shouldFaceUser,
+      _positionSettings: this.data._positionSettings,
+      _positionZIndex: this.data._positionZIndex,
     });
 
     if (this.data.autoStart)

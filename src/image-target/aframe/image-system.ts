@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import Stats from 'stats-js';
 import { Entity } from 'aframe';
 import UI from '../../ui/ui';
@@ -9,13 +8,14 @@ import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME, STATS_STYLE } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
+import { IImageSetupParams, IImageTarget } from '../../../types/image-target/aframe';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.IMAGE;
 
 AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
+  anchorEntities: [] as { el: IImageTarget; targetIndex: number }[],
   imageTargetSrc: '',
   maxTrack: -1,
   filterMinCF: -Infinity,
@@ -29,6 +29,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   mainStats: Helper.castTo<Stats>(null),
   reshowScanning: true,
   shouldFaceUser: false,
+
+  _positionSettings: 'absolute',
+  _positionZIndex: -2,
 
   init: function () {
     this.anchorEntities = [];
@@ -47,20 +50,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     filterBeta,
     reshowScanning,
     shouldFaceUser,
-  }: {
-    imageTargetSrc: string;
-    maxTrack: number;
-    showStats: boolean;
-    uiLoading: string;
-    uiScanning: string;
-    uiError: string;
-    missTolerance: number;
-    warmupTolerance: number;
-    filterMinCF: number;
-    filterBeta: number;
-    reshowScanning: boolean;
-    shouldFaceUser: boolean;
-  }) {
+    _positionSettings,
+    _positionZIndex,
+  }: IImageSetupParams) {
     this.imageTargetSrc = imageTargetSrc;
     this.maxTrack = maxTrack;
     this.filterMinCF = filterMinCF;
@@ -71,7 +63,11 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.reshowScanning = reshowScanning;
     this.shouldFaceUser = shouldFaceUser;
 
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
+    if (!Helper.isNil(_positionSettings)) this._positionSettings = _positionSettings;
+    if (!Helper.isNil(_positionZIndex)) this._positionZIndex = _positionZIndex;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError, zIndex: _positionZIndex }) as any;
     this._registerEventListener();
   },
 
@@ -89,13 +85,14 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     });
   },
 
-  registerAnchor: function (el: any, targetIndex: number) {
+  registerAnchor: function (el: IImageTarget, targetIndex: number) {
     this.anchorEntities.push({ el, targetIndex });
   },
 
   start: function () {
     if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
 
+    this.el.sceneEl.style.zIndex = `${this._positionZIndex + 1}`;
     this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     if (this.showStats) {
@@ -156,10 +153,10 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     this.video.setAttribute('muted', '');
     this.video.setAttribute('playsinline', '');
 
-    this.video.style.position = 'absolute';
+    this.video.style.position = this._positionSettings;
     this.video.style.top = '0px';
     this.video.style.left = '0px';
-    this.video.style.zIndex = '-2';
+    this.video.style.zIndex = `${this._positionZIndex}`;
 
     this.container.appendChild(this.video);
 
@@ -225,6 +222,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
             break;
         }
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
 
     this._resize();
@@ -262,7 +260,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     const newAspect = container.clientWidth / container.clientHeight;
     const cameraEle = container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Entity;
 
-    const camera = cameraEle.getObject3D(AR_ELEMENT_TAG.CAMERA) as any;
+    const camera = cameraEle.getObject3D(AR_ELEMENT_TAG.CAMERA) as THREE.PerspectiveCamera;
     camera.fov = fov;
     camera.aspect = newAspect;
     camera.near = near;

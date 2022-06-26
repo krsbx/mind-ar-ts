@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Entity } from 'aframe';
+import { Entity, SystemDefinition } from 'aframe';
 import { Matrix4 } from 'three';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant/aframe';
+import { IMindARImageSystem } from '../../../types/image-target/aframe';
 
 AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
   dependencies: [AR_COMPONENT_NAME.IMAGE_SYSTEM],
@@ -16,7 +16,9 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
   init: function () {
     if (!this.el.sceneEl) return;
 
-    const arSystem = this.el.sceneEl.systems[AR_COMPONENT_NAME.IMAGE_SYSTEM] as any;
+    const arSystem = this.el.sceneEl.systems[
+      AR_COMPONENT_NAME.IMAGE_SYSTEM
+    ] as SystemDefinition<IMindARImageSystem>;
     arSystem.registerAnchor(this, this.data.targetIndex);
 
     const root = this.el.object3D;
@@ -40,7 +42,7 @@ AFRAME.registerComponent(AR_COMPONENT_NAME.IMAGE_TARGET, {
     this.postMatrix.compose(position, quaternion, scale);
   },
 
-  updateWorldMatrix(worldMatrix: number[] | null) {
+  updateWorldMatrix(worldMatrix?: number[] | null) {
     if (!this.el.object3D.visible && worldMatrix) this.el.emit(AR_EVENT_NAME.MARKER_FOUND);
     else if (this.el.object3D.visible && !worldMatrix) this.el.emit(AR_EVENT_NAME.MARKER_LOST);
 
