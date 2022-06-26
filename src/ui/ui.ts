@@ -3,7 +3,7 @@ import loadingHTML from './loading.html?raw';
 import compatibilityHTML from './compatibility.html?raw';
 import scanningHTML from './scanning.html?raw';
 import { Helper } from '../libs';
-import { CONFIRMATION, HIDDEN_CLASS_NAME } from '../utils/constant';
+import { AR_ELEMENT_TAG, CONFIRMATION, HIDDEN_CLASS_NAME } from '../utils/constant';
 
 class UI {
   private loadingModal: HTMLElement;
@@ -14,10 +14,12 @@ class UI {
     uiLoading,
     uiScanning,
     uiError,
+    zIndex,
   }: {
     uiLoading: string;
     uiScanning: string;
     uiError: string;
+    zIndex?: number;
   }) {
     if (uiLoading === CONFIRMATION.YES) this.loadingModal = this._loadHTML(loadingHTML);
     else this.loadingModal = document.querySelector(uiLoading);
@@ -28,49 +30,64 @@ class UI {
     if (uiScanning === CONFIRMATION.YES) this.scanningMask = this._loadHTML(scanningHTML);
     else this.scanningMask = document.querySelector(uiScanning);
 
+    this._setZIndex(zIndex ?? 2);
+
     this.hideLoading();
     this.hideCompatibility();
     this.hideScanning();
   }
 
-  showLoading() {
+  public showLoading() {
     if (!this.loadingModal) return;
+
     this.loadingModal.classList.remove(HIDDEN_CLASS_NAME);
   }
 
-  hideLoading() {
+  public hideLoading() {
     if (!this.loadingModal) return;
+
     this.loadingModal.classList.add(HIDDEN_CLASS_NAME);
   }
 
-  showCompatibility() {
+  public showCompatibility() {
     if (!this.compatibilityModal) return;
+
     this.compatibilityModal.classList.remove(HIDDEN_CLASS_NAME);
   }
 
-  hideCompatibility() {
+  public hideCompatibility() {
     if (!this.compatibilityModal) return;
+
     this.compatibilityModal.classList.add(HIDDEN_CLASS_NAME);
   }
 
-  showScanning() {
+  public showScanning() {
     if (!this.scanningMask) return;
     this.scanningMask.classList.remove(HIDDEN_CLASS_NAME);
   }
 
-  hideScanning() {
+  public hideScanning() {
     if (!this.scanningMask) return;
+
     this.scanningMask.classList.add(HIDDEN_CLASS_NAME);
   }
 
-  _loadHTML(html: string) {
+  private _loadHTML(html: string) {
     const e = Helper.castTo<HTMLTemplateElement>(document.createElement('template'));
     e.innerHTML = html.trim();
 
     const rootNode = e.content.firstChild as ChildNode;
-    document.getElementsByTagName('body')[0].appendChild(rootNode);
+    document.querySelector(AR_ELEMENT_TAG.A_SCENE).appendChild(rootNode);
 
     return rootNode as HTMLElement;
+  }
+
+  private _setZIndex(zIndex: number | string) {
+    zIndex = `${zIndex}`;
+
+    if (this.loadingModal) this.loadingModal.style.zIndex = zIndex;
+    if (this.compatibilityModal) this.compatibilityModal.style.zIndex = zIndex;
+    if (this.scanningMask) this.scanningMask.style.zIndex = zIndex;
   }
 }
 

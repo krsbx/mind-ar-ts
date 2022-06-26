@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Entity } from 'aframe';
 import UI from '../../ui/ui';
 import Controller from '../controller';
@@ -6,14 +5,19 @@ import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
 import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
+import {
+  IFaceDefaultOccluder,
+  IFaceSetupParams,
+  IFaceTarget,
+} from '../../../types/face-target/aframe';
 
 const { Controller: ControllerClass, UI: UIClass } = window.MINDAR.FACE;
 
 AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   container: Helper.castTo<HTMLDivElement>(null),
   video: Helper.castTo<HTMLVideoElement>(null),
-  anchorEntities: [] as any[],
-  faceMeshEntities: [] as any[],
+  anchorEntities: [] as { el: IFaceTarget; targetIndex: number }[],
+  faceMeshEntities: [] as { el: IFaceDefaultOccluder }[],
   filterMinCF: -Infinity,
   filterBeta: Infinity,
   controller: Helper.castTo<Controller>(null),
@@ -23,6 +27,9 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
 
   shouldFaceUser: true,
   lastHasFace: false,
+
+  _positionSettings: 'absolute',
+  _positionZIndex: -2,
 
   init: function () {
     this.anchorEntities = [];
@@ -36,31 +43,31 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     filterMinCF,
     filterBeta,
     shouldFaceUser,
-  }: {
-    uiLoading: string;
-    uiScanning: string;
-    uiError: string;
-    filterMinCF: number;
-    filterBeta: number;
-    shouldFaceUser: boolean;
-  }) {
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
+    _positionSettings,
+    _positionZIndex,
+  }: IFaceSetupParams) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError, zIndex: _positionZIndex }) as any;
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
     this.shouldFaceUser = shouldFaceUser;
+
+    if (!Helper.isNil(_positionSettings)) this._positionSettings = _positionSettings;
+    if (!Helper.isNil(_positionZIndex)) this._positionZIndex = _positionZIndex;
   },
 
-  registerFaceMesh: function (el: any) {
+  registerFaceMesh: function (el: IFaceDefaultOccluder) {
     this.faceMeshEntities.push({ el });
   },
 
-  registerAnchor: function (el: any, targetIndex: number) {
+  registerAnchor: function (el: IFaceTarget, targetIndex: number) {
     this.anchorEntities.push({ el, targetIndex });
   },
 
   start: function () {
     if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
 
+    this.el.sceneEl.style.zIndex = `${this._positionZIndex + 1}`;
     this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     this.ui.showLoading();
@@ -110,10 +117,10 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.video.setAttribute('muted', '');
     this.video.setAttribute('playsinline', '');
 
-    this.video.style.position = 'absolute';
+    this.video.style.position = this._positionSettings;
     this.video.style.top = '0px';
     this.video.style.left = '0px';
-    this.video.style.zIndex = '-2';
+    this.video.style.zIndex = `${this._positionZIndex}`;
 
     this.container.appendChild(this.video);
 
@@ -202,6 +209,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.controller = new ControllerClass({
       filterMinCF: this.filterMinCF,
       filterBeta: this.filterBeta,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
 
     this._resize();
@@ -211,14 +219,16 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
 
     const { fov, aspect, near, far } = this.controller.getCameraParams();
 
-    const camera = new AFRAME.THREE.PerspectiveCamera() as any;
-    camera.fov = fov;
-    camera.aspect = aspect;
-    camera.near = near;
-    camera.far = far;
+    const camera = new AFRAME.THREE.PerspectiveCamera();
+    /* eslint-disable @typescript-eslint/no-non-null-assertion */
+    camera.fov = fov!;
+    camera.aspect = aspect!;
+    camera.near = near!;
+    camera.far = far!;
+    /* eslint-enable @typescript-eslint/no-non-null-assertion */
     camera.updateProjectionMatrix();
 
-    const cameraEle = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as any;
+    const cameraEle = this.container.getElementsByTagName(AR_ELEMENT_TAG.A_CAMERA)[0] as Entity;
     cameraEle.setObject3D(AR_ELEMENT_TAG.CAMERA, camera);
     cameraEle.setAttribute(AR_ELEMENT_TAG.CAMERA, 'active', true);
 

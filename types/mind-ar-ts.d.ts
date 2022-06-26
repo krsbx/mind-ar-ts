@@ -5,7 +5,7 @@ import ImageController from './image-target/controller';
 import FaceController from './face-target/controller';
 import { Controller as LocationController } from './geo-location/controller';
 import ImageCompiler from './image-target/compiler';
-import { UI } from './ui';
+import UI from './ui';
 import ImageThree from './image-target/three';
 import FaceThree from './face-target/three';
 import { Coordinates } from './src/geo-location/utils/geo-location';
