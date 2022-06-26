@@ -27,3 +27,5 @@ Track compiled `image target` from `compiler` using `Image Target` components.
 | uiLoading, uiScanning, uiError | Show the corresponding UI                                              | yes           |
 | reshowScanning                 | Determine wheter reshow the scanning UI after target image lost or not | true          |
 | shouldFaceUser                 | Determine wheter use front camera or not                               | false         |
+| \_positionSettings             | Set the position of the a-scene/video                                  | absolute      |
+| \_positionZIndex               | Set the zIndex of the a-scene/video/ui overlay                         | -2            |
