@@ -67,7 +67,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
     if (!Helper.isNil(_positionZIndex)) this._positionZIndex = _positionZIndex;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError, zIndex: _positionZIndex }) as any;
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this._registerEventListener();
   },
 
@@ -92,7 +92,6 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.IMAGE_SYSTEM, {
   start: function () {
     if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
 
-    this.el.sceneEl.style.zIndex = `${this._positionZIndex + 1}`;
     this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     if (this.showStats) {
