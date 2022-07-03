@@ -14,7 +14,6 @@ class UI {
     uiLoading,
     uiScanning,
     uiError,
-    zIndex,
   }: {
     uiLoading: string;
     uiScanning: string;
@@ -29,8 +28,6 @@ class UI {
 
     if (uiScanning === CONFIRMATION.YES) this.scanningMask = this._loadHTML(scanningHTML);
     else this.scanningMask = document.querySelector(uiScanning);
-
-    this._setZIndex(zIndex ?? 2);
 
     this.hideLoading();
     this.hideCompatibility();
@@ -80,14 +77,6 @@ class UI {
     document.querySelector(AR_ELEMENT_TAG.A_SCENE).appendChild(rootNode);
 
     return rootNode as HTMLElement;
-  }
-
-  private _setZIndex(zIndex: number | string) {
-    zIndex = `${zIndex}`;
-
-    if (this.loadingModal) this.loadingModal.style.zIndex = zIndex;
-    if (this.compatibilityModal) this.compatibilityModal.style.zIndex = zIndex;
-    if (this.scanningMask) this.scanningMask.style.zIndex = zIndex;
   }
 }
 

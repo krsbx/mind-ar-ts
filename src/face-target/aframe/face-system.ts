@@ -47,7 +47,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     _positionZIndex,
   }: IFaceSetupParams) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.ui = new UIClass({ uiLoading, uiScanning, uiError, zIndex: _positionZIndex }) as any;
+    this.ui = new UIClass({ uiLoading, uiScanning, uiError }) as any;
     this.filterMinCF = filterMinCF;
     this.filterBeta = filterBeta;
     this.shouldFaceUser = shouldFaceUser;
@@ -67,7 +67,6 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
   start: function () {
     if (!this.el.sceneEl || !this.el.sceneEl.parentNode) return;
 
-    this.el.sceneEl.style.zIndex = `${this._positionZIndex + 1}`;
     this.container = this.el.sceneEl.parentNode as HTMLDivElement;
 
     this.ui.showLoading();
