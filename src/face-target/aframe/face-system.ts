@@ -3,7 +3,7 @@ import UI from '../../ui/ui';
 import Controller from '../controller';
 import { Helper } from '../../libs';
 import { AR_COMPONENT_NAME, AR_EVENT_NAME } from '../utils/constant';
-import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME } from '../../utils/constant';
+import { AR_STATE, AR_ELEMENT_TAG, GLOBAL_AR_EVENT_NAME, VIDEO_ID } from '../../utils/constant';
 import screenResizer from '../../utils/screen-resizer';
 import {
   IFaceDefaultOccluder,
@@ -109,9 +109,32 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.controller.processVideo(this.video);
   },
 
+  _removeOldVideo: function () {
+    const video = document.getElementById(VIDEO_ID) as HTMLVideoElement;
+
+    this.pause();
+
+    if (!video) return;
+
+    const { srcObject } = video;
+
+    if (!srcObject) return;
+
+    const tracks = (srcObject as MediaStream).getTracks();
+
+    tracks.forEach(function (track) {
+      track.stop();
+    });
+
+    video.remove();
+  },
+
   _startVideo: async function () {
+    this._removeOldVideo();
+
     this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
+    this.video.id = VIDEO_ID;
     this.video.setAttribute('autoplay', '');
     this.video.setAttribute('muted', '');
     this.video.setAttribute('playsinline', '');
