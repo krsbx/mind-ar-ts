@@ -13,6 +13,9 @@ dist-ssr
 *.local
 .eslintcache
 
+# production
+mind-ar-ts-*.tgz
+
 # Ignore the package-lock.json file
 package-lock.json
 

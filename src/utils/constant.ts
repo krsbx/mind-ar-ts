@@ -1,5 +1,7 @@
 export const STATS_STYLE = 'position: absolute; top: 0px; left: 0px; z-index: 999';
 
+export const VIDEO_ID = 'mindar-video';
+
 export const GLOBAL_AR_EVENT_NAME = {
   SCREEN_RESIZE: 'resize',
   LOADED_METADATA: 'loadedmetadata',
