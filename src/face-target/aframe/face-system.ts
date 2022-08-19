@@ -109,29 +109,7 @@ AFRAME.registerSystem(AR_COMPONENT_NAME.FACE_SYSTEM, {
     this.controller.processVideo(this.video);
   },
 
-  _removeOldVideo: function () {
-    const video = document.getElementById(VIDEO_ID) as HTMLVideoElement;
-
-    this.pause();
-
-    if (!video) return;
-
-    const { srcObject } = video;
-
-    if (!srcObject) return;
-
-    const tracks = (srcObject as MediaStream).getTracks();
-
-    tracks.forEach(function (track) {
-      track.stop();
-    });
-
-    video.remove();
-  },
-
   _startVideo: async function () {
-    this._removeOldVideo();
-
     this.video = Helper.castTo<HTMLVideoElement>(document.createElement('video'));
 
     this.video.id = VIDEO_ID;
