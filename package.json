@@ -1,6 +1,6 @@
 {
   "name": "mind-ar-ts",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
