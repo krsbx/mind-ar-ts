@@ -1,6 +1,6 @@
 {
   "name": "mind-ar-ts",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
@@ -21,11 +21,8 @@
   "devDependencies": {
     "@commitlint/cli": "^17.0.0",
     "@commitlint/config-conventional": "^17.0.0",
-    "@mediapipe/face_mesh": "^0.4.1633559619",
-    "@msgpack/msgpack": "^2.7.2",
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@rollup/plugin-dynamic-import-vars": "^1.4.3",
-    "@techstark/opencv-js": "^4.5.5-release.2",
     "@tensorflow/tfjs": "^3.18.0",
     "@tensorflow/tfjs-backend-webgl": "^3.18.0",
     "@types/aframe": "^1.2.0",
@@ -58,6 +55,11 @@
     "webpack": "^5.72.0",
     "webpack-cli": "^4.9.2",
     "worker-loader": "^3.0.8"
+  },
+  "dependencies": {
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@msgpack/msgpack": "^2.7.2",
+    "@techstark/opencv-js": "^4.5.5-release.2"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
