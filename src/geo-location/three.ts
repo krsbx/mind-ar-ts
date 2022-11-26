@@ -1,3 +1,0 @@
-class MindARThree {}
-
-export { MindARThree };
