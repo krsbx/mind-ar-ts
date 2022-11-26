@@ -1,6 +1,6 @@
 {
   "name": "mind-ar-ts",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Mind AR JS but with TS integrations",
   "contributors": [
     "krsbx",
@@ -72,12 +72,5 @@
   },
   "bugs": {
     "url": "https://github.com/krsbx/mind-ar-ts.git"
-  },
-  "files": [
-    "dist",
-    "assets",
-    "types",
-    "patches",
-    "src/**/*.d.ts"
-  ]
+  }
 }
