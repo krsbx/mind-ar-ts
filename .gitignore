@@ -12,6 +12,7 @@ out
 dist-ssr
 *.local
 .eslintcache
+dist
 
 # production
 mind-ar-ts-*.tgz

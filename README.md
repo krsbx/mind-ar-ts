@@ -53,7 +53,8 @@ Whatever you can think of. It's an opensource web AR framework for everyone!
 #### Directories explained
 
 1. `/src` folder contains majority of the source code
-2. `/dist` folder contains the built library
+2. `/out` folder contains the built library in development mode
+3. `/dist` folder contains the built library
 
 #### To create a production build
 
