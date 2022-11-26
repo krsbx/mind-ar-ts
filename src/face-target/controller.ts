@@ -74,7 +74,9 @@ class Controller {
   }
 
   public async dummyRun(input: HTMLVideoElement) {
-    await this.faceMeshHelper?.detect(input);
+    if (!this.faceMeshHelper) return;
+
+    await this.faceMeshHelper.detect(input);
   }
 
   private _onNoMultiFaceLandmarks() {

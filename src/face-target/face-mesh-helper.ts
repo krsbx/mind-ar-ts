@@ -21,7 +21,9 @@ class FaceMeshHelper {
     });
 
     this.faceMesh.onResults((results) => {
-      this.detectResolve?.(results);
+      if (!this.detectResolve) return;
+
+      this.detectResolve(results);
     });
   }
 
