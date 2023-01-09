@@ -23,7 +23,7 @@
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@rollup/plugin-dynamic-import-vars": "^1.4.3",
     "@tensorflow/tfjs": "^3.18.0",
-    "@tensorflow/tfjs-backend-webgl": "^3.18.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.2.0",
     "@types/aframe": "^1.2.0",
     "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
