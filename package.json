@@ -22,7 +22,7 @@
     "@commitlint/config-conventional": "^17.0.0",
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@rollup/plugin-dynamic-import-vars": "^1.4.3",
-    "@tensorflow/tfjs": "^3.18.0",
+    "@tensorflow/tfjs": "^4.6.0",
     "@tensorflow/tfjs-backend-webgl": "^3.18.0",
     "@types/aframe": "^1.2.0",
     "@types/webpack": "^5.28.0",
